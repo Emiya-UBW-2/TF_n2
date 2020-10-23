@@ -20,8 +20,8 @@ public:
 
 	}
 	void set_map_pre() {
-		MV1::Load("data/map/model.mv1", &map, true);		   //map
-		MV1::Load("data/map/col.mv1", &map_col, true);		   //mapコリジョン
+		MV1::Load("data/map_new/model.mv1", &map, true);		   //map
+		MV1::Load("data/map_new/col.mv1", &map_col, true);		   //mapコリジョン
 		MV1::Load("data/model/tree/model.mv1", &tree_model, true); //木
 		MV1::Load("data/model/tree/model2.mv1", &tree_far, true); //木
 		MV1::Load("data/model/sky/model.mv1", &sky, true);	 //空

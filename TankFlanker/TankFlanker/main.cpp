@@ -123,7 +123,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			//t.obj.SetFrameLocalMatrix(chara.back().vehicle[2].use_veh.catapult[0].first + 2, MATRIX_ref::RotX(deg2rad(-75)) * MATRIX_ref::Mtrans(chara.back().vehicle[2].use_veh.catapult[0].second));
 			//飛行機
 			auto pp = Vehicles[2][0].obj.frame(Vehicles[2][0].catapult[0].first + 1) - Vehicles[2][0].obj.frame(Vehicles[2][0].catapult[0].first);
-			chara.back().vehicle[1].pos = chara.back().vehicle[2].pos + Vehicles[2][0].obj.frame(Vehicles[2][0].catapult[0].first) + VGet(0.f, 5.f, 0.f);
+			chara.back().vehicle[1].pos = //chara.back().vehicle[2].pos + Vehicles[2][0].obj.frame(Vehicles[2][0].catapult[0].first) + 
+				VGet(0.f, 5.f, 0.f);
 			chara.back().vehicle[1].mat = MATRIX_ref::RotY(atan2f(-pp.x(), -pp.z()));
 		}
 		for (int i = 0; i < 2; i++) {
@@ -1104,8 +1105,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						c.mode = 0; //戦車などのモードにする
 						//veh2.obj.SetFrameLocalMatrix(veh2.use_veh.catapult[0].first + 2, MATRIX_ref::RotX(deg2rad(-75)) * MATRIX_ref::Mtrans(veh2.use_veh.catapult[0].second));
 						auto pp = veh2.obj.frame(veh2.use_veh.catapult[0].first + 1) - veh2.obj.frame(veh2.use_veh.catapult[0].first);
-						veh.pos = veh2.obj.frame(veh2.use_veh.catapult[0].first) + VGet(0.f, 5.f, 0.f);
-						veh.mat = MATRIX_ref::RotY(atan2f(-pp.x(), -pp.z()));
+						veh.pos = //veh2.obj.frame(veh2.use_veh.catapult[0].first) + 
+							VGet(0.f, 5.f, 0.f);
+						veh.mat = //MATRIX_ref::RotY(atan2f(-pp.x(), -pp.z()));
+							MGetIdent();
 						veh.xradadd_right = 0.f;
 						veh.xradadd_left = 0.f;
 						veh.yradadd_left = 0.f;
