@@ -32,7 +32,7 @@ public:
 		const float& far_distance = 1000.f, const float& near_distance = 100.f) {
 		if (dof_flag) {
 			//
-			FarScreen.SetDraw_Screen(far_distance, (far_distance < 5000.f) ? 6000.0f : (far_distance + 1000.f), fov, campos, camvec, camup);
+			FarScreen.SetDraw_Screen(far_distance, 30000.f, fov, campos, camvec, camup);
 			skyhandle.DrawGraph(0, 0, FALSE);
 			doing();
 			//
@@ -44,7 +44,7 @@ public:
 			doing();
 			DrawEffekseer3D();
 			//
-			NearScreen.SetDraw_Screen(0.01f, near_distance + 1.f, fov, campos, camvec, camup);
+			NearScreen.SetDraw_Screen(1.f, near_distance + 1.f, fov, campos, camvec, camup);
 			MainScreen.DrawGraph(0, 0, false);
 			doing();
 		}

@@ -154,10 +154,11 @@ public:
 
 
 	void sea_draw(const VECTOR_ref& campos) {
-		SetFogStartEnd(0.0f, 6000.f);
+		SetFogStartEnd(0.0f, 25000.f);
 		SetFogColor(128, 192, 255);
 		{
-			sea.SetPosition(VGet(campos.x(), 0.f, campos.z()));
+			sea.SetPosition(VGet(campos.x(), -5.f, campos.z()));
+			sea.SetScale(VGet(10.f, 10.f, 10.f));
 			sea.DrawModel();
 		}
 	}
