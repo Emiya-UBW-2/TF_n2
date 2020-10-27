@@ -101,7 +101,7 @@ private:
 	static constexpr int invalid_handle = -1;
 
 public:
-	constexpr Effekseer3DPlayingHandle() noexcept : handle_(invalid_handle) {}
+	constexpr Effekseer3DPlayingHandle(void) noexcept : handle_(invalid_handle) {}
 	Effekseer3DPlayingHandle(const Effekseer3DPlayingHandle&) = delete;
 	Effekseer3DPlayingHandle(Effekseer3DPlayingHandle&& o) noexcept : handle_(o.handle_) {
 		o.handle_ = invalid_handle;
@@ -112,7 +112,7 @@ public:
 		o.handle_ = invalid_handle;
 		return *this;
 	}
-	~Effekseer3DPlayingHandle() noexcept {
+	~Effekseer3DPlayingHandle(void) noexcept {
 		if (-1 != this->handle_) {
 			this->Stop();
 		}
@@ -122,13 +122,13 @@ public:
 	    @return	再生中かどうか?
 	    @return	true:再生中、false:再生されていない、もしくは再生終了
 	*/
-	bool IsPlaying() const noexcept {
+	bool IsPlaying(void) const noexcept {
 		return 0 == IsEffekseer3DEffectPlaying(this->handle_);
 	}
 	/**
 	 * @brief 3D表示のエフェクトを停止する。
 	 */
-	void Stop() const noexcept {
+	void Stop(void) const noexcept {
 		StopEffekseer3DEffect(this->handle_);
 	}
 	/**
@@ -136,7 +136,7 @@ public:
 	    @param	x	X座標
 	    @param	y	Y座標
 	*/
-	void SetPos(VECTOR_ref pos) const noexcept {
+	void SetPos(const VECTOR_ref& pos) const noexcept {
 		SetPosPlayingEffekseer3DEffect(this->handle_, pos.x(), pos.y(), pos.z());
 	}
 	/**
@@ -148,7 +148,7 @@ public:
 	    回転の方向は時計回りである。
 	    回転の順番は Z軸回転 → X軸回転 → Y軸回転である。
 	*/
-	void SetRotation(float x, float y, float z) const noexcept {
+	void SetRotation(const float& x, const float& y, const float& z) const noexcept {
 		SetRotationPlayingEffekseer3DEffect(this->handle_, x, y, z);
 	}
 	/**
@@ -157,33 +157,33 @@ public:
 	    @param	y	Y方向拡大率
 	    @param	z	Z方向拡大率
 	*/
-	void SetScale(float size) const noexcept {
+	void SetScale(const float& size) const noexcept {
 		SetScalePlayingEffekseer3DEffect(this->handle_, size, size, size);
 	}
 	/**
 	    @brief	再生中の3D表示のエフェクトの再生速度を取得する。
 	    @return	再生速度
 	*/
-	float GetSpeed() const noexcept {
+	float GetSpeed(void) const noexcept {
 		return GetSpeedPlayingEffekseer3DEffect(this->handle_);
 	}
 	/**
 	    @brief	再生中の3D表示のエフェクトの再生速度を設定する。
 	    @param	speed	再生速度
 	*/
-	void SetSpeed(float speed) const noexcept {
+	void SetSpeed(const float& speed) const noexcept {
 		SetSpeedPlayingEffekseer3DEffect(this->handle_, speed);
 	}
 	/**
 	 * @brief 再生中の3D表示のエフェクトの色を設定する。
 	 */
-	void SetColor(int r, int g, int b, int a) const noexcept {
+	void SetColor(const int& r, const int& g, const int& b, const int& a) const noexcept {
 		SetColorPlayingEffekseer3DEffect(this->handle_, r, g, b, a);
 	}
 	/**
 	 * @brief ハンドルを破棄する
 	 */
-	void Dispose() noexcept {
+	void Dispose(void) noexcept {
 		if (-1 != this->handle_) {
 			this->Stop();
 			this->handle_ = -1;
@@ -196,7 +196,7 @@ public:
 	    特定のエフェクトを描画する。
 	    DrawEffekseer3Dとは併用できない。
 	*/
-	void Draw() noexcept {
+	void Draw(void) noexcept {
 		DrawEffekseer3D_Draw(this->handle_);
 	}
 	[[deprecated]] int get() const noexcept { return this->handle_; }
@@ -209,7 +209,7 @@ private:
 	static constexpr int invalid_handle = -1;
 
 public:
-	constexpr EffekseerEffectHandle() noexcept : handle_(invalid_handle) {}
+	constexpr EffekseerEffectHandle(void) noexcept : handle_(invalid_handle) {}
 	EffekseerEffectHandle(const EffekseerEffectHandle&) = delete;
 	EffekseerEffectHandle(EffekseerEffectHandle&& o) noexcept : handle_(o.handle_) {
 		o.handle_ = invalid_handle;
@@ -220,12 +220,12 @@ public:
 		o.handle_ = invalid_handle;
 		return *this;
 	}
-	~EffekseerEffectHandle() noexcept {
+	~EffekseerEffectHandle(void) noexcept {
 		if (-1 != this->handle_) {
 			DeleteEffekseerEffect(this->handle_);
 		}
 	}
-	void Dispose() noexcept {
+	void Dispose(void) noexcept {
 		if (-1 != this->handle_) {
 			DeleteEffekseerEffect(this->handle_);
 			this->handle_ = -1;
@@ -242,14 +242,14 @@ public:
 	    @brief	メモリ上のEffekseerのエフェクトリソースを3D表示で再生する。
 	    @return	エフェクトのハンドル
 	*/
-	Effekseer3DPlayingHandle Play3D() const noexcept {
+	Effekseer3DPlayingHandle Play3D(void) const noexcept {
 		return { PlayEffekseer3DEffect(this->handle_) };
 	}
-	[[deprecated]] int get() const noexcept { return this->handle_; }
+	[[deprecated]] int get(void) const noexcept { return this->handle_; }
 	constexpr explicit operator bool() { return -1 != this->handle_; }
 	// LoadEffekseerEffectはfileNameをstd::wstringに必ず格納する、オーバーロード必要
-	static EffekseerEffectHandle load(const char* fileName, float magnification = 1.0f) noexcept { return { LoadEffekseerEffect(fileName, magnification) }; }
-	static EffekseerEffectHandle load(const wchar_t* fileName, float magnification = 1.0f) noexcept { return { LoadEffekseerEffect(fileName, magnification) }; }
-	static EffekseerEffectHandle load(const std::string& fileName, float magnification = 1.0f) noexcept { return load(fileName.c_str(), magnification); }
-	static EffekseerEffectHandle load(const std::wstring& fileName, float magnification = 1.0f) noexcept { return load(fileName.c_str(), magnification); }
+	static EffekseerEffectHandle load(const char* fileName, const float& magnification = 1.0f) noexcept { return { LoadEffekseerEffect(fileName, magnification) }; }
+	static EffekseerEffectHandle load(const wchar_t* fileName, const float& magnification = 1.0f) noexcept { return { LoadEffekseerEffect(fileName, magnification) }; }
+	static EffekseerEffectHandle load(const std::string& fileName, const float& magnification = 1.0f) noexcept { return load(fileName.c_str(), magnification); }
+	static EffekseerEffectHandle load(const std::wstring& fileName, const float& magnification = 1.0f) noexcept { return load(fileName.c_str(), magnification); }
 };

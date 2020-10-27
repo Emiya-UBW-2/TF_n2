@@ -6,7 +6,13 @@ class VECTOR_ref {
 public:
 	VECTOR_ref() noexcept : value(DxLib::VGet(0, 0, 0)) {}
 	VECTOR_ref(VECTOR value) { this->value = value; }
-	//‰ÁŽZ
+	//
+	bool operator==(VECTOR_ref obj) {
+		return (this->value.x == obj.value.x)&(this->value.y == obj.value.y)&(this->value.z == obj.value.z);
+	}
+	bool operator!=(VECTOR_ref obj) {
+		return (this->value.x != obj.value.x)|(this->value.y != obj.value.y)|(this->value.z != obj.value.z);
+	}//‰ÁŽZ
 	VECTOR_ref operator+(VECTOR_ref obj) { return VECTOR_ref(DxLib::VAdd(this->value, obj.value)); }
 	VECTOR_ref operator+=(VECTOR_ref obj) {
 		this->value = DxLib::VAdd(this->value, obj.value);
@@ -52,7 +58,12 @@ public:
 	float yadd(float p) noexcept { this->value.y += p; return this->value.y; }
 	float zadd(float p) noexcept { this->value.z += p; return this->value.z; }
 };
+//
+static bool Hit_Capsule_Tri(VECTOR_ref startpos, VECTOR_ref endpos, float size, VECTOR_ref tri_p1, VECTOR_ref tri_p2, VECTOR_ref tri_p3) {
+	return HitCheck_Capsule_Triangle(startpos.get(), endpos.get(), size, tri_p1.get(), tri_p2.get(), tri_p3.get()) == TRUE;
+}
 
+//
 class MATRIX_ref {
 	MATRIX value;
 public:
