@@ -7,7 +7,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
-#include "DXLib_ref.h"
+#include "DXLib_ref/DXLib_ref.h"
 constexpr auto veh_all = 3;//車種
 void set_effect(EffectS* efh, VECTOR_ref pos, VECTOR_ref nor, float scale = 1.f) {
 	efh->flug = true;
@@ -25,9 +25,6 @@ void set_pos_effect(EffectS* efh, const EffekseerEffectHandle& handle) {
 	}
 	//IsEffekseer3DEffectPlaying(player[0].effcs[i].handle)
 }
-
-typedef std::pair<int, VECTOR_ref> frames;
-typedef std::pair<bool, uint8_t> switchs;
 
 //要改善
 class Mainclass {
@@ -55,12 +52,6 @@ private:
 		VECTOR_ref pos;	      /*座標*/
 		MATRIX_ref mat;	      /**/
 	};								      /**/
-	struct b2Pats {
-		VECTOR_ref pos;/*仮*/
-	};
-	struct FootWorld {
-		std::vector<b2Pats> Foot,Wheel,Yudo; /**/
-	};
 public:
 	//弾薬
 	class Ammos {
@@ -77,13 +68,13 @@ public:
 			int mdata = FileRead_open("data/ammo/ammo.txt", FALSE);
 			while (true) {
 				a.resize(a.size() + 1);
-				a.back().name_a = getparam_str(mdata);
-				a.back().type_a = uint16_t(getparam_i(mdata)); //ap=0,he=1
-				a.back().caliber_a = getparam_f(mdata);
-				a.back().pene_a = getparam_f(mdata);
-				a.back().speed_a = getparam_f(mdata);
-				a.back().damage_a = uint16_t(getparam_u(mdata));
-				if (get_str(mdata).find("end") != std::string::npos) {
+				a.back().name_a = getparams::_str(mdata);
+				a.back().type_a = uint16_t(getparams::_ulong(mdata)); //ap=0,he=1
+				a.back().caliber_a = getparams::_float(mdata);
+				a.back().pene_a = getparams::_float(mdata);
+				a.back().speed_a = getparams::_float(mdata);
+				a.back().damage_a = uint16_t(getparams::_ulong(mdata));
+				if (getparams::get_str(mdata).find("end") != std::string::npos) {
 					break;
 				}
 			}
@@ -374,7 +365,7 @@ public:
 				for (int i = 0; i < t.col.mesh_num(); i++) {
 					std::string p = t.col.material_name(i);
 					if (p.find("armer", 0) != std::string::npos) {
-						t.armer_mesh.emplace_back(i, std::stof(getright(p.c_str())));//装甲
+						t.armer_mesh.emplace_back(i, std::stof(getparams::getright(p.c_str())));//装甲
 					}
 					else if (p.find("space", 0) != std::string::npos) {
 						t.space_mesh.emplace_back(i);//空間装甲
@@ -412,23 +403,23 @@ public:
 				{
 					int mdata = FileRead_open(("data/tank/" + t.name + "/data.txt").c_str(), FALSE);
 					char mstr[64]; /*tank*/
-					t.isfloat = getparam_bool(mdata);
-					t.flont_speed_limit = getparam_f(mdata);
-					t.back_speed_limit = getparam_f(mdata);
-					t.body_rad_limit = getparam_f(mdata);
-					t.turret_rad_limit = getparam_f(mdata);
-					t.HP = uint16_t(getparam_u(mdata));
+					t.isfloat = getparams::_bool(mdata);
+					t.flont_speed_limit = getparams::_float(mdata);
+					t.back_speed_limit = getparams::_float(mdata);
+					t.body_rad_limit = getparams::_float(mdata);
+					t.turret_rad_limit = getparams::_float(mdata);
+					t.HP = uint16_t(getparams::_ulong(mdata));
 					FileRead_gets(mstr, 64, mdata);
 					for (auto& g : t.gunframe) {
-						g.name = getright(mstr);
-						g.load_time = getparam_f(mdata);
-						g.rounds = uint16_t(getparam_u(mdata));
+						g.name = getparams::getright(mstr);
+						g.load_time = getparams::_float(mdata);
+						g.rounds = uint16_t(getparams::_ulong(mdata));
 						while (true) {
 							FileRead_gets(mstr, 64, mdata);
 							if (std::string(mstr).find(("useammo" + std::to_string(g.useammo.size()))) == std::string::npos) {
 								break;
 							}
-							g.useammo.emplace_back(getright(mstr));
+							g.useammo.emplace_back(getparams::getright(mstr));
 						}
 					}
 					FileRead_close(mdata);
@@ -518,7 +509,7 @@ public:
 					if (p.find("armer", 0) != std::string::npos) { //装甲
 						t.armer_mesh.resize(t.armer_mesh.size() + 1);
 						t.armer_mesh.back().first = i;
-						t.armer_mesh.back().second = std::stof(getright(p.c_str())); //装甲値
+						t.armer_mesh.back().second = std::stof(getparams::getright(p.c_str())); //装甲値
 					}
 					else if (p.find("space", 0) != std::string::npos) {		    //空間装甲
 						t.space_mesh.resize(t.space_mesh.size() + 1);
@@ -562,24 +553,24 @@ public:
 				{
 					int mdata = FileRead_open(("data/plane/" + t.name + "/data.txt").c_str(), FALSE);
 					char mstr[64]; /*tank*/
-					t.isfloat = getparam_bool(mdata);
-					t.max_speed_limit = getparam_f(mdata) / 3.6f;
-					t.mid_speed_limit = getparam_f(mdata) / 3.6f;
-					t.min_speed_limit = getparam_f(mdata) / 3.6f;
-					t.body_rad_limit = getparam_f(mdata);
-					t.HP = uint16_t(getparam_u(mdata));
+					t.isfloat = getparams::_bool(mdata);
+					t.max_speed_limit = getparams::_float(mdata) / 3.6f;
+					t.mid_speed_limit = getparams::_float(mdata) / 3.6f;
+					t.min_speed_limit = getparams::_float(mdata) / 3.6f;
+					t.body_rad_limit = getparams::_float(mdata);
+					t.HP = uint16_t(getparams::_ulong(mdata));
 					FileRead_gets(mstr, 64, mdata);
 					for (auto& g : t.gunframe) {
-						g.name = getright(mstr);
-						g.load_time = getparam_f(mdata);
-						g.rounds = uint16_t(getparam_u(mdata));
+						g.name = getparams::getright(mstr);
+						g.load_time = getparams::_float(mdata);
+						g.rounds = uint16_t(getparams::_ulong(mdata));
 						while (true) {
 							FileRead_gets(mstr, 64, mdata);
 							if (std::string(mstr).find(("useammo" + std::to_string(g.useammo.size()))) == std::string::npos) {
 								break;
 							}
 							g.useammo.resize(g.useammo.size() + 1);
-							g.useammo.back() = getright(mstr);
+							g.useammo.back() = getparams::getright(mstr);
 						}
 					}
 					FileRead_close(mdata);
@@ -605,7 +596,7 @@ public:
 					if (p.find("armer", 0) != std::string::npos) { //装甲
 						t.armer_mesh.resize(t.armer_mesh.size() + 1);
 						t.armer_mesh.back().first = i;
-						t.armer_mesh.back().second = std::stof(getright(p.c_str())); //装甲値
+						t.armer_mesh.back().second = std::stof(getparams::getright(p.c_str())); //装甲値
 					}
 					else if (p.find("space", 0) != std::string::npos) {		    //空間装甲
 						t.space_mesh.resize(t.space_mesh.size() + 1);
@@ -645,24 +636,24 @@ public:
 				{
 					int mdata = FileRead_open(("data/carrier/" + t.name + "/data.txt").c_str(), FALSE);
 					char mstr[64]; /*tank*/
-					t.isfloat = getparam_bool(mdata);
-					t.max_speed_limit = getparam_f(mdata) / 3.6f;
-					t.mid_speed_limit = getparam_f(mdata) / 3.6f;
-					t.min_speed_limit = getparam_f(mdata) / 3.6f;
-					t.body_rad_limit = getparam_f(mdata);
-					t.HP = uint16_t(getparam_u(mdata));
+					t.isfloat = getparams::_bool(mdata);
+					t.max_speed_limit = getparams::_float(mdata) / 3.6f;
+					t.mid_speed_limit = getparams::_float(mdata) / 3.6f;
+					t.min_speed_limit = getparams::_float(mdata) / 3.6f;
+					t.body_rad_limit = getparams::_float(mdata);
+					t.HP = uint16_t(getparams::_ulong(mdata));
 					FileRead_gets(mstr, 64, mdata);
 					for (auto& g : t.gunframe) {
-						g.name = getright(mstr);
-						g.load_time = getparam_f(mdata);
-						g.rounds = uint16_t(getparam_u(mdata));
+						g.name = getparams::getright(mstr);
+						g.load_time = getparams::_float(mdata);
+						g.rounds = uint16_t(getparams::_ulong(mdata));
 						while (true) {
 							FileRead_gets(mstr, 64, mdata);
 							if (std::string(mstr).find(("useammo" + std::to_string(g.useammo.size()))) == std::string::npos) {
 								break;
 							}
 							g.useammo.resize(g.useammo.size() + 1);
-							g.useammo.back() = getright(mstr);
+							g.useammo.back() = getparams::getright(mstr);
 						}
 					}
 					FileRead_close(mdata);
@@ -777,10 +768,6 @@ private:
 	};
 public:
 	//マップ
-	struct wallPats {
-		b2Pats b2;
-		std::array<VECTOR_ref, 2> pos;
-	};
 	struct treePats {
 		MV1 obj, obj_far;
 		MATRIX_ref mat;
@@ -802,26 +789,19 @@ public:
 		size_t gun_effcnt = 0;
 
 		//操作関連//==================================================
-		uint8_t mode = 0;		      //フライト(形態)モード
 		std::array<bool, 15> key{ false };    //キー
 		float view_xrad = 0.f, view_yrad = 0.f; //砲塔操作用ベクトル
 		//戦車//==================================================
-		b2Pats b2mine;			       /*box2d*/
-		float spd = 0.f;		       /*box2d*/
 		int hitbuf = 0;		       /*使用弾痕*/
-		float xradp_shot = 0.f, xrad_shot = 0.f; //射撃反動x
-		float zradp_shot = 0.f, zrad_shot = 0.f; //射撃反動z
-		VECTOR_ref wheel_normal;	       /*ノーマル*/
-		std::array<FootWorld, 2> foot; /*足*/
 		//飛行機//==================================================
 		p_animes p_anime_geardown;		    //車輪アニメーション
-		switchs changegear = { false, uint8_t(0) }; //ギアアップスイッチ
-		switchs landing = { false, uint8_t(0) }; //着艦フックスイッチ
+		switchs changegear; //ギアアップスイッチ
+		switchs landing; //着艦フックスイッチ
 		float p_landing_per = 0.f;		    //着艦フック
 		std::array<p_animes, 6> p_animes_rudder;      //ラダーアニメーション
 		std::vector<frames> p_burner;		    //バーナー
 		//共通項//==================================================
-		std::array<vehicles, veh_all> vehicle; //0=戦車,1=飛行機
+		vehicles vehicle;
 
 		//セット
 		template <size_t N>
@@ -832,15 +812,13 @@ public:
 				fill_id(c.effcs);			      //エフェクト
 				//共通
 				{
-					int i = 0;
-					for (auto& veh : c.vehicle) {
+					auto& veh = c.vehicle;
+					{
 						veh.reset();
-						veh.use_id = std::min<size_t>(veh.use_id, vehcs[i].size() - 1);
-						veh.use_veh.into(vehcs[i][veh.use_id]);
-						veh.obj = vehcs[i][veh.use_id].obj.Duplicate();
-						veh.col = vehcs[i][veh.use_id].col.Duplicate();
-
-						i++;
+						veh.use_id = std::min<size_t>(veh.use_id, vehcs[1].size() - 1);
+						veh.use_veh.into(vehcs[1][veh.use_id]);
+						veh.obj = vehcs[1][veh.use_id].obj.Duplicate();
+						veh.col = vehcs[1][veh.use_id].col.Duplicate();
 						//コリジョン
 						for (int j = 0; j < veh.col.mesh_num(); j++) {
 							veh.col.SetupCollInfo(8, 8, 8, -1, j);
@@ -895,114 +873,9 @@ public:
 						}
 					}
 				}
-				//戦車
-				{
-					auto& veh = c.vehicle[0];
-					//戦車物理set
-					b2PolygonShape dynamicBox; /*ダイナミックボディに別のボックスシェイプを定義します。*/
-					dynamicBox.SetAsBox(
-						(veh.use_veh.maxpos.x() - veh.use_veh.minpos.x()) / 2, (veh.use_veh.maxpos.z() - veh.use_veh.minpos.z()) / 2, b2Vec2((veh.use_veh.minpos.x() + veh.use_veh.maxpos.x()) / 2, (veh.use_veh.minpos.z() + veh.use_veh.maxpos.z()) / 2), 0.f);
-					b2FixtureDef fixtureDef;					 /*動的ボディフィクスチャを定義します*/
-					fixtureDef.shape = &dynamicBox;				 /**/
-					fixtureDef.density = 1.0f;					 /*ボックス密度をゼロ以外に設定すると、動的になる*/
-					fixtureDef.friction = 0.3f;					 /*デフォルトの摩擦をオーバーライド*/
-					b2BodyDef bodyDef;						 /*ダイナミックボディを定義します。その位置を設定し、ボディファクトリを呼び出す*/
-					bodyDef.type = b2_dynamicBody;					 /**/
-					bodyDef.position.Set(veh.pos.x(), veh.pos.z());			 /**/
-					bodyDef.angle = atan2f(-veh.mat.zvec().x(), -veh.mat.zvec().z()); /**/
-					c.b2mine.body.reset(world->CreateBody(&bodyDef));		 /**/
-					c.b2mine.playerfix = c.b2mine.body->CreateFixture(&fixtureDef);   /*シェイプをボディに追加*/
-					c.wheel_normal = VGet(0.f, 1.f, 0.f);			 //転輪の法線ズ
-
-					/* 剛体を保持およびシミュレートするワールドオブジェクトを構築*/
-					for (size_t k = 0; k < 2; ++k) {
-						auto& f = c.foot[k];
-						f.world = new b2World(b2Vec2(0.0f, 0.0f));
-						{
-							b2Body* ground = NULL;
-							{
-								b2BodyDef bd;
-								ground = f.world->CreateBody(&bd);
-								b2EdgeShape shape;
-								shape.Set(b2Vec2(-40.0f, -10.0f), b2Vec2(40.0f, -10.0f));
-								ground->CreateFixture(&shape, 0.0f);
-							}
-							b2Body* prevBody = ground;
-
-							//履帯
-							f.Foot.clear();
-							{
-								VECTOR_ref vects;
-								for (auto& w : veh.use_veh.b2upsideframe[k]) {
-									vects = w.second;
-									if (vects.x() * ((k == 0) ? 1 : -1) > 0) {
-										f.Foot.resize(f.Foot.size() + 1);
-										b2PolygonShape f_dynamicBox; /*ダイナミックボディに別のボックスシェイプを定義します。*/
-										f_dynamicBox.SetAsBox(0.2f, 0.05f);
-										b2FixtureDef f_fixtureDef;
-										f_fixtureDef.shape = &f_dynamicBox;
-										f_fixtureDef.density = 20.0f;
-										f_fixtureDef.friction = 0.2f;
-										b2BodyDef f_bodyDef;
-										f_bodyDef.type = b2_dynamicBody;
-										f_bodyDef.position.Set(vects.z(), vects.y());
-										f.Foot.back().body.reset(f.world->CreateBody(&f_bodyDef));
-										f.Foot.back().playerfix = f.Foot.back().body->CreateFixture(&f_fixtureDef); // シェイプをボディに追加します。
-										f.f_jointDef.Initialize(prevBody, f.Foot.back().body.get(), b2Vec2(vects.z(), vects.y()));
-										f.world->CreateJoint(&f.f_jointDef);
-										prevBody = f.Foot.back().body.get();
-									}
-								}
-								if (f.Foot.size() != 0) {
-									f.f_jointDef.Initialize(prevBody, ground, b2Vec2(vects.z(), vects.y()));
-									f.world->CreateJoint(&f.f_jointDef);
-								}
-							}
-
-							//転輪(動く)
-							f.Wheel.clear();
-							f.Yudo.clear();
-							if (f.Foot.size() != 0) {
-								for (auto& w : veh.use_veh.wheelframe) {
-									VECTOR_ref vects = VECTOR_ref(VTransform(VGet(0, 0, 0), veh.obj.GetFrameLocalMatrix(w.frame.first).get()));
-									if (vects.x() * ((k == 0) ? 1 : -1) > 0) {
-										f.Wheel.resize(f.Wheel.size() + 1);
-										b2CircleShape shape;
-										shape.m_radius = VTransform(VGet(0, 0, 0), veh.obj.GetFrameLocalMatrix(w.frame.first).get()).y - 0.1f;
-										b2FixtureDef fw_fixtureDef;
-										fw_fixtureDef.shape = &shape;
-										fw_fixtureDef.density = 1.0f;
-										b2BodyDef fw_bodyDef;
-										fw_bodyDef.type = b2_kinematicBody;
-										fw_bodyDef.position.Set(vects.z(), vects.y());
-										f.Wheel.back().body.reset(f.world->CreateBody(&fw_bodyDef));
-										f.Wheel.back().playerfix = f.Wheel.back().body->CreateFixture(&fw_fixtureDef);
-									}
-								}
-								//誘導輪(動かない)
-								for (auto& w : veh.use_veh.wheelframe_nospring) {
-									VECTOR_ref vects = VTransform(VGet(0, 0, 0), veh.obj.GetFrameLocalMatrix(w.frame.first).get());
-									if (vects.x() * ((k == 0) ? 1 : -1) > 0) {
-										f.Yudo.resize(f.Yudo.size() + 1);
-										b2CircleShape shape;
-										shape.m_radius = 0.05f;
-										b2FixtureDef fy_fixtureDef;
-										fy_fixtureDef.shape = &shape;
-										fy_fixtureDef.density = 1.0f;
-										b2BodyDef fy_bodyDef;
-										fy_bodyDef.type = b2_kinematicBody;
-										fy_bodyDef.position.Set(vects.z(), vects.y());
-										f.Yudo.back().body.reset(f.world->CreateBody(&fy_bodyDef));
-										f.Yudo.back().playerfix = f.Yudo.back().body->CreateFixture(&fy_fixtureDef);
-									}
-								}
-							}
-						}
-					}
-				}
 				//飛行機
 				{
-					auto& veh = c.vehicle[1];
+					auto& veh = c.vehicle;
 					{
 						c.p_anime_geardown.first = MV1AttachAnim(veh.obj.get(), 1);
 						c.p_anime_geardown.second = 1.f;
@@ -1026,7 +899,7 @@ public:
 			}
 		}
 		//弾き
-		bool get_reco(std::vector<Chara>& tgts, ammos& c, const uint8_t& type) {
+		bool get_reco(std::vector<Chara>& tgts, ammos& c) {
 			if (c.flug) {
 				bool is_hit;
 				std::optional<size_t> hitnear;
@@ -1038,7 +911,7 @@ public:
 					//とりあえず当たったかどうか探す
 					is_hit = false;
 					{
-						auto& veh = t.vehicle[type];
+						auto& veh = t.vehicle;
 						//モジュール
 						for (auto& m : veh.use_veh.module_mesh) {
 							veh.hitres[m] = veh.col.CollCheck_Line(c.repos, (c.pos + (c.pos - c.repos) * (0.1f)), -1, int(m));
