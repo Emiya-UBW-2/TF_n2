@@ -44,7 +44,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	/*BOX2D*/
 	VECTOR_ref eyevec;					    //視点
 	VECTOR_ref campos, camvec, camup;			    //カメラ
-	std::array<VECTOR_ref, veh_all> aimpos;			    //機体の狙い
+	VECTOR_ref aimpos;			    //機体の狙い
 	VECTOR_ref aimposout;					    //UIに出力
 	GraphHandle BufScreen = GraphHandle::Make(dispx, dispy);    //描画スクリーン
 	GraphHandle outScreen = GraphHandle::Make(dispx, dispy);    //描画スクリーン
@@ -80,7 +80,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	Mainclass::Vehcs::set_vehicles(&Vehicles);					//車輛
 	VECTOR_ref HMDpos, HMDxvec, HMDyvec, HMDzvec;
 	MATRIX_ref HMDmat;
-	bool HMDon;
 
 	//ココから繰り返し読み込み//-------------------------------------------------------------------
 	bool ending = true;
@@ -830,7 +829,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 						else {
 							if ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0) {
-								eyevec = (camvec - aimpos[1]).Norm();
+								eyevec = (camvec - aimpos).Norm();
 								campos = camvec + eyevec * range;
 								camup = veh.mat.yvec();
 
@@ -879,8 +878,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				//地形
 				mapparts->map_col_line_nearest(startpos, &endpos);
 				//
-				easing_set(&aimpos[1], endpos, 0.9f, fps);
-				aimposout = ConvWorldPosToScreenPos(aimpos[1].get());
+				easing_set(&aimpos, endpos, 0.9f, fps);
+				aimposout = ConvWorldPosToScreenPos(aimpos.get());
 			}
 			//
 			//描画
