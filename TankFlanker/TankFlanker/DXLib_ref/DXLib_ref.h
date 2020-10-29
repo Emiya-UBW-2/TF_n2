@@ -288,8 +288,8 @@ private:
 	char hmd_num = -1;
 	char hand1_num = -1;
 	char hand2_num = -1;
-	std::array<GraphHandle, 3> outScreen;	//スクリーンバッファ
 public:
+	std::array<GraphHandle, 3> outScreen;	//スクリーンバッファ
 	std::vector<char> tracker_num;
 
 	DXDraw(const char* title, const float& fps = 60.f, const bool& use_VR = false) {

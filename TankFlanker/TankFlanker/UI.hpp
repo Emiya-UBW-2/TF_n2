@@ -32,7 +32,6 @@ private:
 		;
 	VECTOR_ref cockpit_v;
 	MV1 cockpit;
-	GraphHandle cockpitScreen;
 	//
 	float siz_autoaim = 0.f;
 	float siz_autoaim_pic = 0.f;
@@ -42,6 +41,7 @@ private:
 	int disp_y = 1080;
 	float ch_veh = 1.f;
 public:
+	GraphHandle cockpitScreen;
 	UI(const int& o_xd, const int& o_yd, const int& xd, const int& yd) {
 		out_disp_x = o_xd;
 		out_disp_y = o_yd;
@@ -356,22 +356,13 @@ public:
 			}
 		}
 	}
-
-	void draw(
-		const VECTOR_ref& aimpos,
+	void draw_in_cockpit(
 		const Mainclass::Chara& chara,
-		const bool& ads,
-		const float& fps,
-		const bool& auto_aim,
-		const float& auto_aim_dist,
-		const VECTOR_ref& auto_aim_pos,
-		const float& ratio,
 		const VECTOR_ref& campos,
 		const VECTOR_ref& camvec,
 		const VECTOR_ref& camup,
-		const VECTOR_ref& eye_pos_ads,
-		const bool& vr = false,
-		const bool& chveh = false
+		const VECTOR_ref& eye_pos_ads
+
 	) {
 		//コックピット
 		{
@@ -379,7 +370,7 @@ public:
 			auto fov = GetCameraFov();
 			{
 				SetupCamera_Perspective(fov);
-				cockpitScreen.SetDraw_Screen(VGet(0.f, 0.f, 0.f), VECTOR_ref(camvec) - campos, camup,fov, 0.01f, 2.0f);
+				cockpitScreen.SetDraw_Screen(VGet(0.f, 0.f, 0.f), VECTOR_ref(camvec) - campos, camup, fov, 0.01f, 2.0f);
 
 				float px = (chara.p_animes_rudder[1].second - chara.p_animes_rudder[0].second)*deg2rad(30);
 				float pz = (chara.p_animes_rudder[2].second - chara.p_animes_rudder[3].second)*deg2rad(30);
@@ -416,6 +407,19 @@ public:
 			SetDrawScreen(scr);
 			SetupCamera_Perspective(fov);
 		}
+	}
+
+	void draw(
+		const VECTOR_ref& aimpos,
+		const Mainclass::Chara& chara,
+		const float& fps,
+		const bool& auto_aim,
+		const float& auto_aim_dist,
+		const VECTOR_ref& auto_aim_pos,
+		const float& ratio,
+		const bool& vr = false,
+		const bool& chveh = false
+	) {
 		//オートエイム
 		if (auto_aim) {
 			int siz = int(siz_autoaim);
@@ -440,10 +444,6 @@ public:
 				circle.DrawExtendGraph(int(aimpos.x()) - y_r(siz, out_disp_y), int(aimpos.y()) - y_r(siz, out_disp_y), int(aimpos.x()) + y_r(siz, out_disp_y), int(aimpos.y()) + y_r(siz, out_disp_y), TRUE);
 			}
 			aim.DrawExtendGraph(disp_x / 2 - y_r(siz, out_disp_y), disp_y / 2 - y_r(siz, out_disp_y), disp_x / 2 + y_r(siz, out_disp_y), disp_y / 2 + y_r(siz, out_disp_y), TRUE);
-		}
-		//ADS用
-		if (ads) {
-			cockpitScreen.DrawGraph(0, 0, true);
 		}
 		//
 		{

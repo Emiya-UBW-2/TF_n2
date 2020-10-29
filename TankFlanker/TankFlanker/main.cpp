@@ -9,10 +9,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	bool bloom_e = false;
 	bool shadow_e = false;
 	bool useVR_e = true;
-	int dispx = 1080; /*描画X*/
-	int dispy = 1200; /*描画Y*/
-	int out_dispx = dispx * 960 / dispy; /*ウィンドウX*/
-	int out_dispy = dispy * 960 / dispy; /*ウィンドウY*/
 	{
 		SetOutApplicationLogValidFlag(FALSE);  /*log*/
 		int mdata = FileRead_open("data/setting.txt", FALSE);
@@ -22,38 +18,23 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		useVR_e = getparams::_bool(mdata);
 		FileRead_close(mdata);
 	}
-	//DXLib描画
-	//画面指定
-	if (useVR_e) {
-		dispx = 1080 * 2;
-		dispy = 1200 * 2;
-		out_dispx = dispx * 960 / dispy;
-		out_dispy = dispy * 960 / dispy;
-	}
-	else {
-		dispx = 1920;
-		dispy = 1080;
-		out_dispx = dispx;
-		out_dispy = dispy;
-	}
 	//
 	auto Drawparts = std::make_unique<DXDraw>("TankFlanker", 90.f,useVR_e);		 /*汎用クラス*/
-	auto UIparts = std::make_unique<UI>(out_dispx, out_dispy, dispx, dispy);		 /*UI*/
+	auto UIparts = std::make_unique<UI>(Drawparts->out_disp_x, Drawparts->out_disp_y, Drawparts->disp_x, Drawparts->disp_y);		 /*UI*/
 	auto Debugparts = std::make_unique<DeBuG>(90);						 /*デバッグ*/
-	auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, dispx, dispy);	 /*ホストパスエフェクト*/
-	/*BOX2D*/
+	auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);	 /*ホストパスエフェクト*/
+	DXDraw::cam_info cams;
 	VECTOR_ref eyevec;					    //視点
-	VECTOR_ref campos, camvec, camup;			    //カメラ
 	VECTOR_ref aimpos;			    //機体の狙い
 	VECTOR_ref aimposout;					    //UIに出力
-	GraphHandle BufScreen = GraphHandle::Make(dispx, dispy);    //描画スクリーン
-	GraphHandle outScreen = GraphHandle::Make(dispx, dispy);    //描画スクリーン
+	GraphHandle BufScreen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);    //描画スクリーン
+	GraphHandle outScreen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);    //描画スクリーン
 	/*map*/
-	auto mapparts = std::make_unique<Mapclass>(dispx, dispy);
+	auto mapparts = std::make_unique<Mapclass>(Drawparts->disp_x, Drawparts->disp_y);
 	//その他
 	MV1 hit_pic;      //弾痕
 	//操作
-	float fov = deg2rad(useVR_e ? 90 : 45);
+	cams.fov = deg2rad(Drawparts->use_vr ? 90 : 45);
 	bool ads = false;
 	int Rot = 0;
 	float ratio = 1.f;
@@ -142,7 +123,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				mapparts->map_get().DrawModel();
 			}
 			//海
-			mapparts->sea_draw(campos);
+			mapparts->sea_draw(cams.campos);
 			//機体
 			SetFogStartEnd(0.0f, 3000.f);
 			SetFogColor(128, 128, 128);
@@ -168,7 +149,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				for (auto& g : c.vehicle.Gun_) {
 					for (auto& a : g.bullet) {
 						if (a.flug) {
-							DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - campos).size() / 24.f))*(1.f / std::max(ratio / 8.5f, 1.f)), a.color, GetColor(255, 255, 255));
+							DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - cams.campos).size() / 24.f))*(1.f / std::max(ratio / 8.5f, 1.f)), a.color, GetColor(255, 255, 255));
 						}
 					}
 				}
@@ -184,7 +165,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		Rot = 0;
 		tgt = chara.size();
 		eyevec = mine.vehicle.mat.zvec() * -1.f;
-		campos = mine.vehicle.pos + VGet(0.f, 3.f, 0.f) + eyevec * range;
+		cams.campos = mine.vehicle.pos + VGet(0.f, 3.f, 0.f) + eyevec * range;
 		for (auto& c : chara) {
 			for (auto& g : c.vehicle.use_veh.wheelframe) {
 				//g.gndsmkeffcs.handle = Drawparts->get_gndhitHandle().Play3D();
@@ -192,7 +173,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 		}
 		SetMouseDispFlag(FALSE);
-		SetMousePoint(dispx / 2, dispy / 2);
+		SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 		while (ProcessMessage() == 0) {
 			const auto fps = GetFPS();
 			const auto waits = GetNowHiPerformanceCount();
@@ -274,7 +255,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						//カタパルト
 						mine.key[14] = (CheckHitKey(KEY_INPUT_SPACE) != 0);
 					}
-					if (useVR_e) {
+					if (Drawparts->use_vr) {
 						if (Drawparts->get_hand1_num() != -1) {
 							auto& ptr_LEFTHAND = *Drawparts->get_device_hand1();
 							if (ptr_LEFTHAND.turn && ptr_LEFTHAND.now) {
@@ -318,8 +299,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 				//マウスと視点角度をリンク
-				if (useVR_e) {
-					SetMousePoint(dispx / 2, dispy / 2);
+				if (Drawparts->use_vr) {
+					SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 					Drawparts->GetDevicePositionVR(Drawparts->get_hmd_num(), &HMDpos, &HMDmat);
 					HMDmat = MATRIX_ref::Axis1(HMDmat.xvec()*-1.f, HMDmat.yvec(), HMDmat.zvec()*-1.f);
 					eye_pos_ads = HMDmat.yvec() * -0.5f + VGet(HMDpos.x()*-1.f, HMDpos.y(), HMDpos.z()*-1.f);
@@ -334,16 +315,16 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				else {
 					int mousex, mousey;
 					GetMousePoint(&mousex, &mousey);
-					SetMousePoint(dispx / 2, dispy / 2);
+					SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 					if (ads) {
-						float y = atan2f(eyevec.x(), eyevec.z()) + deg2rad(float(mousex - dispx / 2) * 0.1f / ratio);
-						float x = atan2f(eyevec.y(), std::hypotf(eyevec.x(), eyevec.z())) + deg2rad(float(mousey - dispy / 2) * 0.1f / ratio);
+						float y = atan2f(eyevec.x(), eyevec.z()) + deg2rad(float(mousex - Drawparts->disp_x / 2) * 0.1f / ratio);
+						float x = atan2f(eyevec.y(), std::hypotf(eyevec.x(), eyevec.z())) + deg2rad(float(mousey - Drawparts->disp_y / 2) * 0.1f / ratio);
 						x = std::clamp(x, deg2rad(-45), deg2rad(45));
 						eyevec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
 					}
 					else {
-						float y = atan2f(eyevec.x(), eyevec.z()) + deg2rad(float(mousex - dispx / 2) * 0.1f);
-						float x = atan2f(eyevec.y(), std::hypotf(eyevec.x(), eyevec.z())) + deg2rad(float(mousey - dispy / 2) * 0.1f);
+						float y = atan2f(eyevec.x(), eyevec.z()) + deg2rad(float(mousex - Drawparts->disp_x / 2) * 0.1f);
+						float x = atan2f(eyevec.y(), std::hypotf(eyevec.x(), eyevec.z())) + deg2rad(float(mousey - Drawparts->disp_y / 2) * 0.1f);
 						x = std::clamp(x, deg2rad(-25), deg2rad(89));
 						eyevec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
 					}
@@ -790,122 +771,134 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 			//影用意
 			if (shadow_e) {
-				Drawparts->Ready_Shadow(campos, draw_in_shadow_sky, VGet(500.f, 500.f, 500.f));
+				Drawparts->Ready_Shadow(cams.campos, draw_in_shadow_sky, VGet(500.f, 500.f, 500.f));
 			}
 			Drawparts->Move_Player();
-			//campos,camvec,camupの指定
+			//描画
 			{
-				auto& veh = mine.vehicle;
 				{
-					if (ads) {
-						campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
-						campos.y(std::max(campos.y(), 5.f));
-						if (useVR_e) {
-							camvec = campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
-						}
-						else {
-							if ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0) {
-								eyevec = veh.mat.zvec();
-								camvec = campos - eyevec;
-							}
-							else {
-								camvec = campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
-							}
-						}
-						camup = veh.mat.yvec();
-					}
-					else {
-						camvec = veh.pos + veh.mat.yvec() * (6.f);
-						camvec.y(std::max(camvec.y(), 5.f));
-						if (useVR_e) {
-							campos = camvec + MATRIX_ref::Vtrans(eyevec, veh.mat) * range;
-							campos.y(std::max(campos.y(), 0.f));
-							if (mapparts->map_col_line_nearest(camvec, &campos)) {
-								campos = camvec + (campos - camvec) * (0.9f);
-							}
-							camup = veh.mat.yvec();
-						}
-						else {
-							if ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0) {
-								eyevec = (camvec - aimpos).Norm();
-								campos = camvec + eyevec * range;
-								camup = veh.mat.yvec();
-
-							}
-							else {
-								campos = camvec + eyevec * range;
-								campos.y(std::max(campos.y(), 0.f));
-								if (mapparts->map_col_line_nearest(camvec, &campos)) {
-									campos = camvec + (campos - camvec) * (0.9f);
+					//視点取得
+					{
+						//campos,camvec,camup
+						{
+							auto& veh = mine.vehicle;
+							if (ads) {
+								cams.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
+								cams.campos.y(std::max(cams.campos.y(), 5.f));
+								if (Drawparts->use_vr) {
+									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
 								}
-								camup = VGet(0.f, 1.f, 0.f);
+								else {
+									if ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0) {
+										eyevec = veh.mat.zvec();
+										cams.camvec = cams.campos - eyevec;
+									}
+									else {
+										cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
+									}
+								}
+								cams.camup = veh.mat.yvec();
+							}
+							else {
+								cams.camvec = veh.pos + veh.mat.yvec() * (6.f);
+								cams.camvec.y(std::max(cams.camvec.y(), 5.f));
+								if (Drawparts->use_vr) {
+									cams.campos = cams.camvec + MATRIX_ref::Vtrans(eyevec, veh.mat) * range;
+									cams.campos.y(std::max(cams.campos.y(), 0.f));
+									if (mapparts->map_col_line_nearest(cams.camvec, &cams.campos)) {
+										cams.campos = cams.camvec + (cams.campos - cams.camvec) * (0.9f);
+									}
+									cams.camup = veh.mat.yvec();
+								}
+								else {
+									if ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0) {
+										eyevec = (cams.camvec - aimpos).Norm();
+										cams.campos = cams.camvec + eyevec * range;
+										cams.camup = veh.mat.yvec();
+
+									}
+									else {
+										cams.campos = cams.camvec + eyevec * range;
+										cams.campos.y(std::max(cams.campos.y(), 0.f));
+										if (mapparts->map_col_line_nearest(cams.camvec, &cams.campos)) {
+											cams.campos = cams.camvec + (cams.campos - cams.camvec) * (0.9f);
+										}
+										cams.camup = VGet(0.f, 1.f, 0.f);
+									}
+								}
+
 							}
 						}
+						//near,far
+						{
+							cams.far_ = 1.f;
+							cams.near_ = 1.f;
+							if (ads) {
+								VECTOR_ref aimingpos = cams.campos + (cams.camvec - cams.campos).Norm() * (3000.f);
+								mapparts->map_col_line_nearest(cams.campos, &aimingpos);
+								cams.far_ = std::clamp((cams.campos - aimingpos).size(), 300.f, 3000.f);
+							}
+							else {
+								cams.far_ = 6000.f;
+							}
 
+							cams.near_ = ads ? (5.f + 25.f * (cams.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
+						}
+					}
+					//照準座標取得
+					{
+						GraphHandle::SetDraw_Screen(DX_SCREEN_BACK, cams.campos, cams.camvec, cams.camup, cams.fov / ratio, 0.01f, 5000.0f);
+						{
+							VECTOR_ref startpos, endpos;
+							startpos = mine.vehicle.pos;
+							endpos = startpos + mine.vehicle.mat.zvec() * (-1000.f);
+							//地形
+							mapparts->map_col_line_nearest(startpos, &endpos);
+							//
+							easing_set(&aimpos, endpos, 0.9f, fps);
+							aimposout = ConvWorldPosToScreenPos(aimpos.get());
+						}
 					}
 				}
-			}
-			{
-				float fardist = 1.f;
-				float neardist = 1.f;
-				if (ads) {
-					VECTOR_ref aimingpos = campos + (camvec - campos).Norm() * (3000.f);
-					mapparts->map_col_line_nearest(campos, &aimingpos);
-					fardist = std::clamp((campos - aimingpos).size(), 300.f, 3000.f);
+				//UI
+				outScreen.SetDraw_Screen();
+				{
+					UIparts->draw(aimposout, mine, fps, lock_on.first, distance, aimposout_lockon, ratio, Drawparts->use_vr, false);
+					//VR用オプション
+					if (Drawparts->use_vr) {
+						UIparts->draw_in_vr(*Drawparts->get_device_hand1());
+					}
 				}
-				else {
-					fardist = 6000.f;
-				}
-
-				neardist = ads ? (5.f + 25.f * (fardist - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
 				//被写体深度描画
 				if (shadow_e) {
-					Hostpassparts->dof(&BufScreen, mapparts->sky_draw(campos, camvec, camup, fov / ratio), [&Drawparts, &draw_on_shadow] { Drawparts->Draw_by_Shadow(draw_on_shadow); }, campos, camvec, camup, fov / ratio, fardist, neardist);
+					Hostpassparts->dof(&BufScreen, mapparts->sky_draw(cams.campos, cams.camvec, cams.camup, cams.fov / ratio), [&Drawparts, &draw_on_shadow] { Drawparts->Draw_by_Shadow(draw_on_shadow); }, cams.campos, cams.camvec, cams.camup, cams.fov / ratio, cams.far_, cams.near_);
 				}
 				else {
-					Hostpassparts->dof(&BufScreen, mapparts->sky_draw(campos, camvec, camup, fov / ratio), draw_on_shadow, campos, camvec, camup, fov / ratio, fardist, neardist);
+					Hostpassparts->dof(&BufScreen, mapparts->sky_draw(cams.campos, cams.camvec, cams.camup, cams.fov / ratio), draw_on_shadow, cams.campos, cams.camvec, cams.camup, cams.fov / ratio, cams.far_, cams.near_);
 				}
+				//VRに移す
+				Drawparts->draw_VR(
+					[&] {
+						//
+						BufScreen.DrawGraph(0, 0, false);
+						//ブルーム
+						Hostpassparts->bloom(BufScreen, 255);
+						//
+						UIparts->draw_in_cockpit(mine, cams.campos, cams.camvec, cams.camup, eye_pos_ads);
+						if (ads) {
+							UIparts->cockpitScreen.DrawGraph(0, 0, true);
+						}
+						//UI
+						outScreen.DrawGraph(0, 0, true);
+					},
+					cams);
 			}
+			//draw
+			GraphHandle::SetDraw_Screen(int(DX_SCREEN_BACK), false);
+			{
+				outScreen.DrawExtendGraph(0, 0, Drawparts->out_disp_x, Drawparts->out_disp_y, false);
+				Drawparts->outScreen[0].DrawExtendGraph(0, 0, Drawparts->out_disp_x, Drawparts->out_disp_y, false);
 
-			GraphHandle::SetDraw_Screen(DX_SCREEN_BACK, campos, camvec, camup, fov / ratio, 0.01f, 5000.0f);
-			//照準座標取得
-			{
-				VECTOR_ref startpos, endpos;
-				startpos = mine.vehicle.pos;
-				endpos = startpos + mine.vehicle.mat.zvec() * (-1000.f);
-				//地形
-				mapparts->map_col_line_nearest(startpos, &endpos);
-				//
-				easing_set(&aimpos, endpos, 0.9f, fps);
-				aimposout = ConvWorldPosToScreenPos(aimpos.get());
-			}
-			//
-			//描画
-			outScreen.SetDraw_Screen();
-			{
-				//背景
-				BufScreen.DrawGraph(0, 0, false);
-				//ブルーム
-				Hostpassparts->bloom(BufScreen, 255);
-				//UI
-				UIparts->draw(aimposout, mine, ads, fps, lock_on.first, distance, aimposout_lockon, ratio, campos, camvec, camup, eye_pos_ads,useVR_e, false);
-				//VR用オプション
-				if (useVR_e) {
-					UIparts->draw_in_vr(*Drawparts->get_device_hand1());
-				}
-			}
-			//VRに移す
-			if (useVR_e) {
-				GraphHandle::SetDraw_Screen(int(DX_SCREEN_BACK));
-				outScreen.DrawGraph(0, 0, false);
-				for (char i = 0; i < 2; i++) {
-					Drawparts->PutEye((ID3D11Texture2D*)GetUseDirect3D11BackBufferTexture2D(), i);
-				}
-			}
-			GraphHandle::SetDraw_Screen(int(DX_SCREEN_BACK));
-			{
-				outScreen.DrawExtendGraph(0, 0, out_dispx, out_dispy, false);
-				//デバッグ
 				Debugparts->end_way();
 				Debugparts->debug(10, 10, float(GetNowHiPerformanceCount() - waits) / 1000.f);
 			}
@@ -919,7 +912,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 		}
 		SetMouseDispFlag(TRUE);
-		SetMousePoint(dispx / 2, dispy / 2);
+		SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 		//解放
 		{
 			for (auto& c : chara) {
