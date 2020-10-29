@@ -206,7 +206,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		//キャラ設定
 		fill_id(chara); //ID
 		for (auto& c : chara) {
-			c.set_human(Vehicles, Ammo, hit_pic, world);
+			c.set_human(Vehicles, Ammo, hit_pic);
 		}
 		//必要な時に当たり判定をリフレッシュする(仮)
 		auto ref_col = [&chara](const Mainclass::Chara& p, const VECTOR_ref& startpos, const VECTOR_ref& endpos) {

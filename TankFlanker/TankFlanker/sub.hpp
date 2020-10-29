@@ -7,7 +7,6 @@
 #include <memory>
 #include <optional>
 #include <vector>
-#include "Box2D/Box2D.h"
 #include "DXLib_ref.h"
 constexpr auto veh_all = 3;//車種
 void set_effect(EffectS* efh, VECTOR_ref pos, VECTOR_ref nor, float scale = 1.f) {
@@ -26,14 +25,6 @@ void set_pos_effect(EffectS* efh, const EffekseerEffectHandle& handle) {
 	}
 	//IsEffekseer3DEffectPlaying(player[0].effcs[i].handle)
 }
-namespace std {
-	template <>
-	struct default_delete<b2Body> {
-		void operator()(b2Body* body) const {
-			body->GetWorld()->DestroyBody(body);
-		}
-	};
-}; // namespace std
 
 typedef std::pair<int, VECTOR_ref> frames;
 typedef std::pair<bool, uint8_t> switchs;
@@ -65,13 +56,9 @@ private:
 		MATRIX_ref mat;	      /**/
 	};								      /**/
 	struct b2Pats {
-		std::unique_ptr<b2Body> body;    /**/
-		b2Fixture* playerfix{ nullptr }; /**/
 		VECTOR_ref pos;/*仮*/
 	};
 	struct FootWorld {
-		b2World* world=nullptr;			     /*足world*/
-		b2RevoluteJointDef f_jointDef;	     /*ジョイント*/
 		std::vector<b2Pats> Foot,Wheel,Yudo; /**/
 	};
 public:
@@ -838,7 +825,7 @@ public:
 
 		//セット
 		template <size_t N>
-		void set_human(const std::array<std::vector<Mainclass::Vehcs>, N>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic, std::unique_ptr<b2World>& world) {
+		void set_human(const std::array<std::vector<Mainclass::Vehcs>, N>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
 			auto& c = *this;
 			{
 				std::fill(c.key.begin(), c.key.end(), false); //操作
