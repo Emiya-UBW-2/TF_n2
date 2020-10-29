@@ -8,7 +8,6 @@
 #include <optional>
 #include <vector>
 #include "DXLib_ref/DXLib_ref.h"
-constexpr auto veh_all = 3;//車種
 
 //要改善
 class Mainclass {
@@ -168,248 +167,17 @@ public:
 			}
 		}
 		//メイン読み込み
-		template <size_t N>
-		static void set_vehicles(std::array<std::vector<Mainclass::Vehcs>, N>* vehcs) {
+		static void set_vehicles(std::vector<Mainclass::Vehcs>* vehcs) {
 			using namespace std::literals;
 			//共通
-			for (auto& veh : (*vehcs)) {
-				for (auto& t : veh) {
-					//αテスト
-					t.obj.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
-					//
-					GetGraphSize(t.ui_pic.get(), &t.pic_x, &t.pic_y);
-				}
+			for (auto& t : *vehcs) {
+				//αテスト
+				t.obj.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
+				//
+				GetGraphSize(t.ui_pic.get(), &t.pic_x, &t.pic_y);
 			}
 			//固有
-			for (auto& t : (*vehcs)[0]) {
-				t.down_in_water = 0.f;
-				for (int i = 0; i < t.obj.mesh_num(); i++) {
-					auto p = t.obj.mesh_maxpos(i).y();
-					if (t.down_in_water < p) {
-						t.down_in_water = p;
-					}
-				}
-				t.down_in_water /= 2.f;
-				for (int i = 0; i < t.obj.frame_num(); i++) {
-					std::string p = t.obj.frame_name(i);
-					if (p.find("転輪", 0) != std::string::npos) {
-						t.wheelframe.resize(t.wheelframe.size() + 1);
-						t.wheelframe.back().frame = { i,t.obj.frame(i) };
-					}
-					else if ((p.find("輪", 0) != std::string::npos) && (p.find("転輪", 0) == std::string::npos)) {
-						t.wheelframe_nospring.resize(t.wheelframe_nospring.size() + 1);
-						t.wheelframe_nospring.back().frame = { i,t.obj.frame(i) };
-					}
-					else if (p.find("旋回", 0) != std::string::npos) {
-						t.gunframe.resize(t.gunframe.size() + 1);
-						auto& b = t.gunframe.back();
-						b.frame1 = { i,t.obj.frame(i) };
-						auto p2 = t.obj.frame_parent(b.frame1.first);
-						if (p2 >= 0) {
-							b.frame1.second -= t.obj.frame(int(p2)); //親がいる時引いとく
-						}
-						if (t.obj.frame_child_num(b.frame1.first) > 0) {
-							if (t.obj.frame_name(b.frame1.first + 1).find("仰角", 0) != std::string::npos) {
-								b.frame2 = { b.frame1.first + 1,t.obj.frame(b.frame1.first + 1) - t.obj.frame(b.frame1.first) };
-								if (t.obj.frame_child_num(b.frame1.first) > 0) {
-									b.frame3 = { b.frame2.first + 1,t.obj.frame(b.frame2.first + 1) - t.obj.frame(b.frame2.first) };
-								}
-								else {
-									b.frame3.first = -1;
-								}
-							}
-						}
-						else {
-							b.frame2.first = -1;
-						}
-					}
-					else if (p.find("min", 0) != std::string::npos) {
-						t.minpos = t.obj.frame(i);
-					}
-					else if (p.find("max", 0) != std::string::npos) {
-						t.maxpos = t.obj.frame(i);
-					}
-					else if (p.find("２D物理", 0) != std::string::npos || p.find("2D物理", 0) != std::string::npos) { //2D物理
-						t.b2upsideframe[0].clear();
-						t.b2upsideframe[1].clear();
-						for (int z = 0; z < t.obj.frame_child_num(i); z++) {
-							if (t.obj.frame(i + 1 + z).x() > 0) {
-								t.b2upsideframe[0].emplace_back(i + 1 + z, t.obj.frame(i + 1 + z));
-							}
-							else {
-								t.b2upsideframe[1].emplace_back(i + 1 + z, t.obj.frame(i + 1 + z));
-							}
-						}
-						std::sort(t.b2upsideframe[0].begin(), t.b2upsideframe[0].end(), [](const frames& x, const frames& y) { return x.second.z() < y.second.z(); }); //ソート
-						std::sort(t.b2upsideframe[1].begin(), t.b2upsideframe[1].end(), [](const frames& x, const frames& y) { return x.second.z() < y.second.z(); }); //ソート
-					}
-					else if (p.find("履帯設置部", 0) != std::string::npos) { //2D物理
-						t.b2downsideframe[0].clear();
-						t.b2downsideframe[1].clear();
-						for (int z = 0; z < t.obj.frame_child_num(i); z++) {
-							if (t.obj.frame(i + 1 + z).x() > 0) {
-								t.b2downsideframe[0].emplace_back(i + 1 + z, t.obj.frame(i + 1 + z));
-							}
-							else {
-								t.b2downsideframe[1].emplace_back(i + 1 + z, t.obj.frame(i + 1 + z));
-							}
-						}
-					}
-					else if (p.find("視点", 0) != std::string::npos) {
-						t.fps_view.first = i;
-						t.fps_view.second = t.obj.frame(t.fps_view.first);
-					}
-
-				}
-				//2	左後部0
-				{
-					float tmp = 0.f;
-					for (auto& f : t.wheelframe) {
-						if (f.frame.second.x() >= 0) {
-							t.square[0] = f.frame.first;
-							tmp = f.frame.second.z();
-							break;
-						}
-					}
-					for (auto& f : t.wheelframe) {
-						if (t.square[0] != f.frame.first) {
-							if (f.frame.second.x() >= 0) {
-								if (tmp < f.frame.second.z()) {
-									t.square[0] = f.frame.first;
-									tmp = f.frame.second.z();
-								}
-							}
-						}
-					}
-				}
-				//10	左前部1
-				{
-					float tmp = 0.f;
-					for (auto& f : t.wheelframe) {
-						if (f.frame.second.x() >= 0) {
-							t.square[1] = f.frame.first;
-							tmp = f.frame.second.z();
-							break;
-						}
-					}
-					for (auto& f : t.wheelframe) {
-						if (t.square[1] != f.frame.first) {
-							if (f.frame.second.x() >= 0) {
-								if (tmp > f.frame.second.z()) {
-									t.square[1] = f.frame.first;
-									tmp = f.frame.second.z();
-								}
-							}
-						}
-					}
-				}
-				//3	右後部2
-				{
-					float tmp = 0.f;
-					for (auto& f : t.wheelframe) {
-						if (!(f.frame.second.x() >= 0)) {
-							t.square[2] = f.frame.first;
-							tmp = f.frame.second.z();
-							break;
-						}
-					}
-					for (auto& f : t.wheelframe) {
-						if (t.square[2] != f.frame.first) {
-							if (!(f.frame.second.x() >= 0)) {
-								if (tmp < f.frame.second.z()) {
-									t.square[2] = f.frame.first;
-									tmp = f.frame.second.z();
-								}
-							}
-						}
-					}
-				}
-				//11	右前部3
-				{
-					float tmp = 0.f;
-					for (auto& f : t.wheelframe) {
-						if (!(f.frame.second.x() >= 0)) {
-							t.square[3] = f.frame.first;
-							tmp = f.frame.second.z();
-							break;
-						}
-					}
-					for (auto& f : t.wheelframe) {
-						if (t.square[3] != f.frame.first) {
-							if (!(f.frame.second.x() >= 0)) {
-								if (tmp > f.frame.second.z()) {
-									t.square[3] = f.frame.first;
-									tmp = f.frame.second.z();
-								}
-							}
-						}
-					}
-				}
-				//装甲
-				for (int i = 0; i < t.col.mesh_num(); i++) {
-					std::string p = t.col.material_name(i);
-					if (p.find("armer", 0) != std::string::npos) {
-						t.armer_mesh.emplace_back(i, std::stof(getparams::getright(p.c_str())));//装甲
-					}
-					else if (p.find("space", 0) != std::string::npos) {
-						t.space_mesh.emplace_back(i);//空間装甲
-					}
-					else {
-						t.module_mesh.emplace_back(i);//モジュール
-					}
-				}
-				//迷彩
-				{
-					t.camo_tex = -1;
-					for (int i = 0; i < MV1GetTextureNum(t.obj.get()); i++) {
-						std::string p = MV1GetTextureName(t.obj.get(), i);
-						if (p.find("b.", 0) != std::string::npos || p.find("B.", 0) != std::string::npos) {
-							t.camo_tex = i;
-							break;
-						}
-					}
-					SetUseTransColor(FALSE);
-					WIN32_FIND_DATA win32fdt;
-					HANDLE hFind;
-					hFind = FindFirstFile(("data/tank/"s + t.name + "/B*.jpg").c_str(), &win32fdt);
-					if (hFind != INVALID_HANDLE_VALUE) {
-						do {
-							if (win32fdt.cFileName[0] != '.') {
-								t.camog.resize(t.camog.size() + 1);
-								t.camog.back() = MV1LoadTexture(("data/tank/"s + t.name + "/" + win32fdt.cFileName).c_str());
-							}
-						} while (FindNextFile(hFind, &win32fdt));
-					} //else{ return false; }
-					FindClose(hFind);
-					SetUseTransColor(TRUE);
-				}
-				//data
-				{
-					int mdata = FileRead_open(("data/tank/" + t.name + "/data.txt").c_str(), FALSE);
-					char mstr[64]; /*tank*/
-					t.isfloat = getparams::_bool(mdata);
-					t.flont_speed_limit = getparams::_float(mdata);
-					t.back_speed_limit = getparams::_float(mdata);
-					t.body_rad_limit = getparams::_float(mdata);
-					t.turret_rad_limit = getparams::_float(mdata);
-					t.HP = uint16_t(getparams::_ulong(mdata));
-					FileRead_gets(mstr, 64, mdata);
-					for (auto& g : t.gunframe) {
-						g.name = getparams::getright(mstr);
-						g.load_time = getparams::_float(mdata);
-						g.rounds = uint16_t(getparams::_ulong(mdata));
-						while (true) {
-							FileRead_gets(mstr, 64, mdata);
-							if (std::string(mstr).find(("useammo" + std::to_string(g.useammo.size()))) == std::string::npos) {
-								break;
-							}
-							g.useammo.emplace_back(getparams::getright(mstr));
-						}
-					}
-					FileRead_close(mdata);
-				}
-			}
-			for (auto& t : (*vehcs)[1]) {
+			for (auto& t : (*vehcs)) {
 				//
 				t.down_in_water = 0.f;
 				for (int i = 0; i < t.obj.mesh_num(); i++) {
@@ -536,89 +304,6 @@ public:
 				//データ取得
 				{
 					int mdata = FileRead_open(("data/plane/" + t.name + "/data.txt").c_str(), FALSE);
-					char mstr[64]; /*tank*/
-					t.isfloat = getparams::_bool(mdata);
-					t.max_speed_limit = getparams::_float(mdata) / 3.6f;
-					t.mid_speed_limit = getparams::_float(mdata) / 3.6f;
-					t.min_speed_limit = getparams::_float(mdata) / 3.6f;
-					t.body_rad_limit = getparams::_float(mdata);
-					t.HP = uint16_t(getparams::_ulong(mdata));
-					FileRead_gets(mstr, 64, mdata);
-					for (auto& g : t.gunframe) {
-						g.name = getparams::getright(mstr);
-						g.load_time = getparams::_float(mdata);
-						g.rounds = uint16_t(getparams::_ulong(mdata));
-						while (true) {
-							FileRead_gets(mstr, 64, mdata);
-							if (std::string(mstr).find(("useammo" + std::to_string(g.useammo.size()))) == std::string::npos) {
-								break;
-							}
-							g.useammo.resize(g.useammo.size() + 1);
-							g.useammo.back() = getparams::getright(mstr);
-						}
-					}
-					FileRead_close(mdata);
-				}
-			}
-			for (auto& t : (*vehcs)[2]) {
-
-				for (int i = 0; i < t.obj.frame_num(); i++) {
-					std::string p = t.obj.frame_name(i);
-					if (p.find("ﾜｲﾔｰ", 0) != std::string::npos) {
-						t.wire.resize(t.wire.size() + 1);
-						t.wire.back().first = i;
-						t.wire.back().second = t.obj.frame(t.wire.back().first);
-					}
-					else if (p.find("ｶﾀﾊﾟﾙﾄ", 0) != std::string::npos) {
-						t.catapult.resize(t.catapult.size() + 1);
-						t.catapult.back().first = i;
-						t.catapult.back().second = t.obj.frame(t.catapult.back().first + 2) - t.obj.frame(t.catapult.back().first);
-					}
-				}
-				for (int i = 0; i < t.col.mesh_num(); i++) {
-					std::string p = t.col.material_name(i);
-					if (p.find("armer", 0) != std::string::npos) { //装甲
-						t.armer_mesh.resize(t.armer_mesh.size() + 1);
-						t.armer_mesh.back().first = i;
-						t.armer_mesh.back().second = std::stof(getparams::getright(p.c_str())); //装甲値
-					}
-					else if (p.find("space", 0) != std::string::npos) {		    //空間装甲
-						t.space_mesh.resize(t.space_mesh.size() + 1);
-						t.space_mesh.back() = i;
-					}
-					else { //モジュール
-						t.module_mesh.resize(t.module_mesh.size() + 1);
-						t.module_mesh.back() = i;
-					}
-				}
-
-
-				VECTOR_ref size;
-				for (int i = 0; i < t.col.mesh_num(); i++) {
-					VECTOR_ref sizetmp = t.col.mesh_maxpos(i) - t.col.mesh_minpos(i);
-					if (size.x() < sizetmp.x()) {
-						size.x(sizetmp.x());
-					}
-					if (size.y() < sizetmp.y()) {
-						size.y(sizetmp.y());
-					}
-					if (size.z() < sizetmp.z()) {
-						size.z(sizetmp.z());
-					}
-				}
-
-				/*
-				for (int i = 0; i < t.col.mesh_num(); i++) {
-					t.col.SetupCollInfo(int(size.x() / 5.f), int(size.y() / 5.f), int(size.z() / 5.f), 0, i);
-				}
-				*/
-				//t.col.SetupCollInfo(int(size.x() / 5.f), int(size.y() / 5.f), int(size.z() / 5.f), 0, 0);
-				//
-				//t.obj.SetFrameLocalMatrix(t.catapult[0].first + 2, MATRIX_ref::RotX(deg2rad(-75)) * MATRIX_ref::Mtrans(t.catapult[0].second));
-
-								//データ取得
-				{
-					int mdata = FileRead_open(("data/carrier/" + t.name + "/data.txt").c_str(), FALSE);
 					char mstr[64]; /*tank*/
 					t.isfloat = getparams::_bool(mdata);
 					t.max_speed_limit = getparams::_float(mdata) / 3.6f;
@@ -788,8 +473,7 @@ public:
 		vehicles vehicle;
 
 		//セット
-		template <size_t N>
-		void set_human(const std::array<std::vector<Mainclass::Vehcs>, N>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
+		void set_human(const std::vector<Mainclass::Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
 			auto& c = *this;
 			{
 				std::fill(c.key.begin(), c.key.end(), false); //操作
@@ -799,10 +483,10 @@ public:
 					auto& veh = c.vehicle;
 					{
 						veh.reset();
-						veh.use_id = std::min<size_t>(veh.use_id, vehcs[1].size() - 1);
-						veh.use_veh.into(vehcs[1][veh.use_id]);
-						veh.obj = vehcs[1][veh.use_id].obj.Duplicate();
-						veh.col = vehcs[1][veh.use_id].col.Duplicate();
+						veh.use_id = std::min<size_t>(veh.use_id, vehcs.size() - 1);
+						veh.use_veh.into(vehcs[veh.use_id]);
+						veh.obj = vehcs[veh.use_id].obj.Duplicate();
+						veh.col = vehcs[veh.use_id].col.Duplicate();
 						//コリジョン
 						for (int j = 0; j < veh.col.mesh_num(); j++) {
 							veh.col.SetupCollInfo(8, 8, 8, -1, j);

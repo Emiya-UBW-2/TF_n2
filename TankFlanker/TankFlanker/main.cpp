@@ -71,14 +71,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	std::vector<Mainclass::treePats> tree;					//壁をセット
 	MV1::Load("data/model/hit/model.mv1", &hit_pic, true);			//弾痕
 	std::vector<Mainclass::Ammos> Ammo;						//弾薬
-	std::array<std::vector<Mainclass::Vehcs>, veh_all> Vehicles;			/*車輛データ*/
-	Mainclass::Vehcs::set_vehicles_pre("data/tank/", &Vehicles[0], true);		/**/
-	Mainclass::Vehcs::set_vehicles_pre("data/plane/", &Vehicles[1], true);		/**/
-	Mainclass::Vehcs::set_vehicles_pre("data/carrier/", &Vehicles[2], true);	/**/
+	std::vector<Mainclass::Vehcs> Vehicles;			/*車輛データ*/
+	Mainclass::Vehcs::set_vehicles_pre("data/plane/", &Vehicles, true);		/**/
 	UIparts->load_window("車両モデル");					//ロード画面
 	Mainclass::Ammos::set_ammos(&Ammo);							//弾薬
 	Mainclass::Vehcs::set_vehicles(&Vehicles);					//車輛
-	VECTOR_ref HMDpos, HMDxvec, HMDyvec, HMDzvec;
+	VECTOR_ref HMDpos;
 	MATRIX_ref HMDmat;
 
 	//ココから繰り返し読み込み//-------------------------------------------------------------------
