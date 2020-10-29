@@ -1,4 +1,5 @@
 #pragma once
+#include "DXLib_ref/DXLib_ref.h"
 
 class HostPassEffect {
 private:
@@ -32,11 +33,11 @@ public:
 		const float& far_distance = 1000.f, const float& near_distance = 100.f) {
 		if (dof_flag) {
 			//
-			FarScreen.SetDraw_Screen(far_distance, (far_distance < 5000.f) ? 6000.0f : (far_distance + 1000.f), fov, campos, camvec, camup);
+			FarScreen.SetDraw_Screen(campos, camvec, camup,fov, far_distance, 30000.f);
 			skyhandle.DrawGraph(0, 0, FALSE);
 			doing();
 			//
-			MainScreen.SetDraw_Screen(near_distance, far_distance + 50.f, fov, campos, camvec, camup);
+			MainScreen.SetDraw_Screen(campos, camvec, camup,fov, near_distance, far_distance + 50.f);
 			Effekseer_Sync3DSetting();
 			GraphFilter(FarScreen.get(), DX_GRAPH_FILTER_GAUSS, 16, 200);
 			FarScreen.DrawGraph(0, 0, false);
@@ -44,13 +45,13 @@ public:
 			doing();
 			DrawEffekseer3D();
 			//
-			NearScreen.SetDraw_Screen(0.01f, near_distance + 1.f, fov, campos, camvec, camup);
+			NearScreen.SetDraw_Screen(campos, camvec, camup,fov, 1.f, near_distance + 1.f);
 			MainScreen.DrawGraph(0, 0, false);
 			doing();
 		}
 		else {
 			//
-			NearScreen.SetDraw_Screen(std::clamp(near_distance, 0.1f, 2000.f), 2000.f, fov, campos, camvec, camup);
+			NearScreen.SetDraw_Screen(campos, camvec, camup,fov, std::clamp(near_distance, 0.1f, 2000.f), 2000.f);
 			Effekseer_Sync3DSetting();
 			skyhandle.DrawGraph(0, 0, FALSE);
 			UpdateEffekseer3D(); //2.0ms

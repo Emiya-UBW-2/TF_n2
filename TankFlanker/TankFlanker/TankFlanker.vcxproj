@@ -100,21 +100,20 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="debug.hpp" />
-    <ClInclude Include="DXLib_mat.hpp" />
-    <ClInclude Include="DXLib_ref.h" />
-    <ClInclude Include="EffekseerEffectHandle.hpp" />
-    <ClInclude Include="FontHandle.hpp" />
-    <ClInclude Include="GraphHandle.hpp" />
+    <ClInclude Include="DXLib_ref\debug.hpp" />
+    <ClInclude Include="DXLib_ref\DXLib_mat.hpp" />
+    <ClInclude Include="DXLib_ref\DXLib_ref.h" />
+    <ClInclude Include="DXLib_ref\EffekseerEffectHandle.hpp" />
+    <ClInclude Include="DXLib_ref\FontHandle.hpp" />
+    <ClInclude Include="DXLib_ref\GraphHandle.hpp" />
+    <ClInclude Include="DXLib_ref\MV1ModelHandle.hpp" />
+    <ClInclude Include="DXLib_ref\SoundHandle.hpp" />
     <ClInclude Include="HostPass.hpp" />
     <ClInclude Include="make_thread.hpp" />
     <ClInclude Include="map.hpp" />
-    <ClInclude Include="MV1ModelHandle.hpp" />
-    <ClInclude Include="SoundHandle.hpp" />
     <ClInclude Include="sub.hpp" />
     <ClInclude Include="UI.hpp" />
     <ClInclude Include="useful.hpp" />
-    <ClInclude Include="VR.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
