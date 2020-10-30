@@ -124,7 +124,6 @@ public:
 			GetMousePoint(&m_x, &m_y);
 
 			while (ProcessMessage() == 0) {
-				const auto fps = GetFPS();
 				const auto waits = GetNowHiPerformanceCount();
 
 				if (CheckHitKey(KEY_INPUT_ESCAPE) != 0) {
@@ -138,8 +137,8 @@ public:
 					yrad_im = std::clamp(yrad_im + float(m_x - x) / 5.f, -120.f, -30.f);
 					xrad_im = std::clamp(xrad_im + float(m_y - y), -45.f, 45.f);
 
-					easing_set(&yrad_m, deg2rad(yrad_im), 0.9f, fps);
-					easing_set(&xrad_m, deg2rad(xrad_im), 0.9f, fps);
+					easing_set(&yrad_m, deg2rad(yrad_im), 0.9f);
+					easing_set(&xrad_m, deg2rad(xrad_im), 0.9f);
 					GetMousePoint(&m_x, &m_y);
 
 					upct = std::clamp<uint8_t>(upct + 1, 0, ((CheckHitKey(KEY_INPUT_D) != 0) ? 2 : 0));
@@ -154,22 +153,19 @@ public:
 					rtct = 0;
 				}
 
-				easing_set(&ber_r, float(out_disp_y / 4), 0.95f, fps);
+				easing_set(&ber_r, float(out_disp_y / 4), 0.95f);
 
 				auto& veh = chara->vehicle;
 				{
 					if (CheckHitKey(KEY_INPUT_SPACE) != 0 || speed != 0.f) {
-						speed = std::clamp(speed + 2.5f / 3.6f / fps, 0.f, 200.f / 3.6f / fps);
+						speed = std::clamp(speed + 2.5f / 3.6f / GetFPS(), 0.f, 200.f / 3.6f / GetFPS());
 						pos.zadd(-speed);
 						startp = true;
 					}
 					auto old = veh.camo_sel;
 					if (!startp) {
 						VECTOR_ref campos_t = (MATRIX_ref::RotY(yrad_m) * MATRIX_ref::RotX(xrad_m)).zvec() * (-30.f) + VGet(0.f, 3.f, 0.f);
-						easing_set(&campos,
-							campos_t + VGet(float(-200 + GetRand(400)) / 100.f, float(-200 + GetRand(400)) / 100.f, float(-200 + GetRand(400)) / 100.f),
-							0.95f,
-							fps);
+						easing_set(&campos, campos_t + VGet(float(-200 + GetRand(400)) / 100.f, float(-200 + GetRand(400)) / 100.f, float(-200 + GetRand(400)) / 100.f), 0.95f);
 
 						camaim = pos + VGet(0.f, 3.f, 0.f);
 						if (upct == 1) {
@@ -203,9 +199,8 @@ public:
 							(float(-25 + GetRand(50)) / 100.f) * (1.f - (pos.z() / -120.f)),
 								(float(-25 + GetRand(50)) / 100.f) * (1.f - (pos.z() / -120.f)),
 								(float(-25 + GetRand(50)) / 100.f) * (1.f - (pos.z() / -120.f)) + 15.f),
-							0.95f,
-							fps);
-						easing_set(&camaim, pos + VGet((float(-200 + GetRand(400)) / 100.f) * (1.f - (pos.z() / -120.f)), (float(-200 + GetRand(400)) / 100.f) * (1.f - (pos.z() / -120.f)) + 3.f, (float(-200 + GetRand(400)) / 100.f) * (1.f - (pos.z() / -120.f))), 0.95f, fps);
+							0.95f);
+						easing_set(&camaim, pos + VGet((float(-200 + GetRand(400)) / 100.f) * (1.f - (pos.z() / -120.f)), (float(-200 + GetRand(400)) / 100.f) * (1.f - (pos.z() / -120.f)) + 3.f, (float(-200 + GetRand(400)) / 100.f) * (1.f - (pos.z() / -120.f))), 0.95f);
 					}
 					if ((*vehcs)[veh.use_id].camog.size() > 0) {
 						SetDrawScreen(CamScreen.get());
@@ -290,7 +285,7 @@ public:
 						SetFogEnable(TRUE);
 					}
 
-					easing_set(&rad, deg2rad(rad_i + yrad_im), 0.9f, fps);
+					easing_set(&rad, deg2rad(rad_i + yrad_im), 0.9f);
 
 					GraphHandle::SetDraw_Screen(DX_SCREEN_BACK, campos, camaim, VGet(0.f, 1.f, 0.f), fov, 3.0f, 150.f);
 					{
@@ -304,10 +299,10 @@ public:
 					DrawBox(0, 0, out_disp_x, out_disp_y, GetColor(255, 255, 255), TRUE);
 					SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
 					if (pos.z() <= -30.f && pos.z() > -60.f) {
-						easing_set(&fov, deg2rad(90 / 2) / 2.f, 0.95f, fps);
+						easing_set(&fov, deg2rad(90 / 2) / 2.f, 0.95f);
 					}
 					if (pos.z() <= -60.f) {
-						easing_set(&fov, deg2rad(90 / 2) / 4.f, 0.95f, fps);
+						easing_set(&fov, deg2rad(90 / 2) / 4.f, 0.95f);
 					}
 
 					if (pos.z() < -120.f) {
@@ -338,14 +333,13 @@ public:
 		float bar = 0.f, cnt = 0.f;
 		auto all = GetASyncLoadNum();
 		while (ProcessMessage() == 0) {
-			const auto fps = GetFPS();
 			SetDrawScreen(DX_SCREEN_BACK);
 			ClearDrawScreen();
 			{
 				font18.DrawStringFormat(0, out_disp_y - y_r(70, out_disp_y), GetColor(0, 255, 0), " loading... : %04d/%04d  ", all - GetASyncLoadNum(), all);
 				font12.DrawStringFormat(out_disp_x - font12.GetDrawWidthFormat("%s “Ç‚Ýž‚Ý’† ", mes), out_disp_y - y_r(70, out_disp_y), GetColor(0, 255, 0), "%s “Ç‚Ýž‚Ý’† ", mes);
 				DrawBox(0, out_disp_y - y_r(50, out_disp_y), int(float(out_disp_x) * bar / float(all)), out_disp_y - y_r(40, out_disp_y), GetColor(0, 255, 0), TRUE);
-				easing_set(&bar, float(all - GetASyncLoadNum()), 0.95f, fps);
+				easing_set(&bar, float(all - GetASyncLoadNum()), 0.95f);
 			}
 			ScreenFlip();
 			if (GetASyncLoadNum() == 0) {
@@ -412,11 +406,9 @@ public:
 	void draw(
 		const VECTOR_ref& aimpos,
 		const Mainclass::Chara& chara,
-		const float& fps,
 		const bool& auto_aim,
 		const float& auto_aim_dist,
 		const VECTOR_ref& auto_aim_pos,
-		const float& ratio,
 		const bool& vr = false,
 		const bool& chveh = false
 	) {
@@ -430,8 +422,8 @@ public:
 				DrawRotaGraph(int(auto_aim_pos.x()) + y_r(siz, out_disp_y), int(auto_aim_pos.y()) + y_r(siz, out_disp_y), siz_autoaim_pic, deg2rad(180), lock.get(), TRUE);
 				DrawRotaGraph(int(auto_aim_pos.x()) - y_r(siz, out_disp_y), int(auto_aim_pos.y()) + y_r(siz, out_disp_y), siz_autoaim_pic, deg2rad(270), lock.get(), TRUE);
 			}
-			easing_set(&siz_autoaim, 32.f * ratio * 100.f / auto_aim_dist, 0.8f, fps);
-			easing_set(&siz_autoaim_pic, 1.f, 0.8f, fps);
+			easing_set(&siz_autoaim, 32.f * 100.f / auto_aim_dist, 0.8f);
+			easing_set(&siz_autoaim_pic, 1.f, 0.8f);
 		}
 		else {
 			siz_autoaim = float(disp_x);
@@ -556,17 +548,17 @@ public:
 						SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
 
 						if (ch_veh > 1.f) {
-							ch_veh -= 1.f / fps;
+							ch_veh -= 1.f / GetFPS();
 						}
 						else {
-							easing_set(&ch_veh, 0.f, 0.95f, fps);
+							easing_set(&ch_veh, 0.f, 0.95f);
 						}
 					}
 					{
 						auto& veh = chara.vehicle;
 						auto per = 255;
 						DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + int(ber), yp + ys / 2 + ys * 2 / 3, GetColor(per, 0, 0), TRUE);
-						easing_set(&ber, float(xs * int(veh.HP) / int(veh.use_veh.HP)), 0.975f, fps);
+						easing_set(&ber, float(xs * int(veh.HP) / int(veh.use_veh.HP)), 0.975f);
 						DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + xs * int(veh.HP) / int(veh.use_veh.HP), yp + ys / 2 + ys * 2 / 3, GetColor(0, per, 0), TRUE);
 						SetDrawBright(per, per, per);
 						font->DrawStringFormat(

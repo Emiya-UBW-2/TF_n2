@@ -106,25 +106,25 @@ public:
 	}
 };
 //イージング
-void easing_set(float* first, const float& aim, const float& ratio, const float& fps) {
+void easing_set(float* first, const float& aim, const float& ratio) {
 	if (ratio == 0.f) {
 		*first = aim;
 	}
 	else {
 		if (aim != 0.f) {
-			*first += (aim - *first) * (1.f - powf(ratio, 60.f / fps));
+			*first += (aim - *first) * (1.f - powf(ratio, 60.f / GetFPS()));
 		}
 		else {
-			*first *= powf(ratio, 60.f / fps);
+			*first *= powf(ratio, 60.f / GetFPS());
 		}
 	}
 };
-void easing_set(VECTOR_ref* first, const VECTOR_ref& aim, const float& ratio, const float& fps) {
+void easing_set(VECTOR_ref* first, const VECTOR_ref& aim, const float& ratio) {
 	if (ratio == 0.f) {
 		*first = aim;
 	}
 	else {
-		*first += (VECTOR_ref(aim) - *first) * (1.f - powf(ratio, 60.f / fps));
+		*first += (VECTOR_ref(aim) - *first) * (1.f - powf(ratio, 60.f / GetFPS()));
 	}
 };
 //ID割り当て
@@ -181,12 +181,12 @@ enum Effect {
 }; 
 
 struct EffectS {
-	bool flug{ false };		 /**/
-	size_t id = 0;
+	bool flug{ false };				 /**/
+	size_t id = 0;					 /**/
 	Effekseer3DPlayingHandle handle; /**/
-	VECTOR_ref pos;			 /**/
-	VECTOR_ref nor;			 /**/
-	float scale = 1.f;		 /**/
+	VECTOR_ref pos;					 /**/
+	VECTOR_ref nor;					 /**/
+	float scale = 1.f;				 /**/
 };
 void set_effect(EffectS* efh, VECTOR_ref pos, VECTOR_ref nor, float scale = 1.f) {
 	efh->flug = true;
@@ -242,13 +242,13 @@ private:
 		VECTOR_ref WorldPos[4];	// 鏡のワールド座標
 		COLOR_F AmbientColor;	// 鏡の Ambient Color
 		COLOR_U8 DiffuseColor;	// 鏡の Diffuse Color
-		int BlendParam[2];		// 鏡のブレンドモードとパラメータ
+		int BlendParam[2] = { 0,0 };		// 鏡のブレンドモードとパラメータ
 		GraphHandle Handle;		// 鏡に映る映像の取得に使用するスクリーン
 		FLOAT4 ScreenPosW[4];	// 鏡に映る映像の取得に使用するクリーンの中の鏡の四隅の座標( 同次座標 )
 		bool canlook = false;	//鏡が見えているか否か
 	};
 	std::vector<Mirror_mod> Mirror_obj;
-	int MIRROR_POINTNUM = 64;	// 鏡の描画に使用する面の頂点分割数
+	size_t MIRROR_POINTNUM = 64;	// 鏡の描画に使用する面の頂点分割数
 	int MIRROR_NUM = 2;			// 鏡の数
 	std::vector <VERTEX3D> Vert;
 	std::vector <unsigned short> Index;
