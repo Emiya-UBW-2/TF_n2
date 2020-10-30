@@ -29,15 +29,14 @@ public:
 	template <typename T2>
 	void dof(
 		GraphHandle* buf, GraphHandle& skyhandle, T2 doing,
-		const VECTOR_ref& campos, const VECTOR_ref& camvec, const VECTOR_ref& camup, const float& fov,
-		const float& far_distance = 1000.f, const float& near_distance = 100.f) {
+		DXDraw::cam_info& cams) {
 		if (dof_flag) {
 			//
-			FarScreen.SetDraw_Screen(campos, camvec, camup,fov, far_distance, 30000.f);
+			FarScreen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.far_, 100000.f);
 			skyhandle.DrawGraph(0, 0, FALSE);
 			doing();
 			//
-			MainScreen.SetDraw_Screen(campos, camvec, camup,fov, near_distance, far_distance + 50.f);
+			MainScreen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_ + 50.f);
 			Effekseer_Sync3DSetting();
 			GraphFilter(FarScreen.get(), DX_GRAPH_FILTER_GAUSS, 16, 200);
 			FarScreen.DrawGraph(0, 0, false);
@@ -45,13 +44,13 @@ public:
 			doing();
 			DrawEffekseer3D();
 			//
-			NearScreen.SetDraw_Screen(campos, camvec, camup,fov, 1.f, near_distance + 1.f);
+			NearScreen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, cams.near_ + 1.f);
 			MainScreen.DrawGraph(0, 0, false);
 			doing();
 		}
 		else {
 			//
-			NearScreen.SetDraw_Screen(campos, camvec, camup,fov, std::clamp(near_distance, 0.1f, 2000.f), 2000.f);
+			NearScreen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, std::clamp(cams.near_, 0.1f, 2000.f), 2000.f);
 			Effekseer_Sync3DSetting();
 			skyhandle.DrawGraph(0, 0, FALSE);
 			UpdateEffekseer3D(); //2.0ms

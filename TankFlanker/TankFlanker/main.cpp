@@ -29,6 +29,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	VECTOR_ref aimposout;					    //UIに出力
 	GraphHandle BufScreen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);    //描画スクリーン
 	GraphHandle outScreen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);    //描画スクリーン
+	GraphHandle outScreen_2 = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);    //描画スクリーン
 	/*map*/
 	auto mapparts = std::make_unique<Mapclass>(Drawparts->disp_x, Drawparts->disp_y);
 	//その他
@@ -61,12 +62,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 
 	VECTOR_ref rec_HMD;
-	bool oldv = true;
+	bool oldv = false;
 	bool start_c = true;
 	//ココから繰り返し読み込み//-------------------------------------------------------------------
 	bool ending = true;
 	do {
-		oldv = true;
+		oldv = false;
 		start_c = true;
 		//キャラ選択
 		chara.resize(1);
@@ -147,6 +148,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					l.obj.DrawModel();
 					//l.obj_far.DrawModel();
 				}
+				//
+
 			}
 			SetFogEnable(FALSE);
 			SetUseLighting(FALSE);
@@ -302,14 +305,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					//+視点取得
 					auto& ptr_ = (*Drawparts->get_device())[Drawparts->get_hmd_num()];
 					Drawparts->GetDevicePositionVR(Drawparts->get_hmd_num(), &HMDpos, &HMDmat);
-					if (start_c || (ptr_.turn && ptr_.now) != oldv) {
+					if (start_c && (ptr_.turn && ptr_.now) != oldv) {
 						rec_HMD = VGet(HMDpos.x(), 0.f, HMDpos.z());
 						start_c = false;
+					}
+					if (!start_c && (ptr_.turn && ptr_.now) ==false) {
+						start_c = true;
 					}
 					oldv = ptr_.turn && ptr_.now;
 					HMDpos = HMDpos - rec_HMD;
 					HMDmat = MATRIX_ref::Axis1(HMDmat.xvec()*-1.f, HMDmat.yvec(), HMDmat.zvec()*-1.f);
-					eye_pos_ads = HMDmat.yvec() * -0.5f + VGet(HMDpos.x()*-1.f, HMDpos.y(), HMDpos.z()*-1.f);
+					eye_pos_ads = HMDpos+VGet(0,-0.8f,0);
 					eye_pos_ads = VGet(
 						std::clamp(eye_pos_ads.x(), -0.18f, 0.18f),
 						std::clamp(eye_pos_ads.y(), 0.f, 0.8f),
@@ -785,6 +791,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								cams.campos.y(std::max(cams.campos.y(), 5.f));
 								if (Drawparts->use_vr) {
 									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
+									cams.camup = MATRIX_ref::Vtrans(HMDmat.yvec(), veh.mat);//veh.mat.yvec();
 								}
 								else {
 									if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
@@ -794,8 +801,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 										eyevec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
 										cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
 									}
+									cams.camup = veh.mat.yvec();
 								}
-								cams.camup = veh.mat.yvec();
 							}
 							else {
 								cams.camvec = veh.pos + veh.mat.yvec() * (6.f);
@@ -818,7 +825,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						//near,far
 						{
 							cams.far_ = 1.f;
-							cams.near_ = 1.f;
+							cams.near_ = 0.01f;
 							if (ads) {
 								VECTOR_ref aimingpos = cams.campos + (cams.camvec - cams.campos).Norm() * (3000.f);
 								mapparts->map_col_line_nearest(cams.campos, &aimingpos);
@@ -857,22 +864,25 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				}
 				//被写体深度描画
 				if (shadow_e) {
-					Hostpassparts->dof(&BufScreen, mapparts->sky_draw(cams.campos, cams.camvec, cams.camup, cams.fov), [&Drawparts, &draw_on_shadow] { Drawparts->Draw_by_Shadow(draw_on_shadow); }, cams.campos, cams.camvec, cams.camup, cams.fov, cams.far_, cams.near_);
+					Hostpassparts->dof(&BufScreen, mapparts->sky_draw(cams.campos, cams.camvec, cams.camup, cams.fov), [&Drawparts, &draw_on_shadow] { Drawparts->Draw_by_Shadow(draw_on_shadow); }, cams);
 				}
 				else {
-					Hostpassparts->dof(&BufScreen, mapparts->sky_draw(cams.campos, cams.camvec, cams.camup, cams.fov), draw_on_shadow, cams.campos, cams.camvec, cams.camup, cams.fov, cams.far_, cams.near_);
+					Hostpassparts->dof(&BufScreen, mapparts->sky_draw(cams.campos, cams.camvec, cams.camup, cams.fov), draw_on_shadow, cams);
 				}
+				//
+				outScreen_2.SetDraw_Screen();
+
+				BufScreen.DrawGraph(0, 0, false);
+				//ブルーム
+				Hostpassparts->bloom(BufScreen, 255);
+
 				//VRに移す
 				Drawparts->draw_VR(
 					[&] {
-						//
-						BufScreen.DrawGraph(0, 0, false);
-						//ブルーム
-						Hostpassparts->bloom(BufScreen, 255);
-						//
-						UIparts->draw_in_cockpit(mine, cams.campos, cams.camvec, cams.camup, eye_pos_ads);
+						outScreen_2.DrawGraph(0, 0, true);
 						if (ads) {
-							UIparts->cockpitScreen.DrawGraph(0, 0, true);
+							SetCameraNearFar(0.01f, 2.f);
+							UIparts->draw_in_cockpit(chara[0]);
 						}
 						//UI
 						outScreen.DrawGraph(0, 0, true);

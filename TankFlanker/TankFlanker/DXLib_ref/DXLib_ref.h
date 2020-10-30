@@ -713,8 +713,10 @@ public:
 	void draw_VR(T2 draw_doing,const cam_info& cams) {
 		if (this->use_vr) {
 			for (char i = 0; i < 2; i++) {
-				VECTOR_ref eyepos = VECTOR_ref(cams.campos) + this->GetEyePosition_minVR(i);
-				outScreen[i].SetDraw_Screen(eyepos, eyepos + cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_);
+				outScreen[i].SetDraw_Screen(
+					VECTOR_ref(cams.campos) + ((VECTOR_ref(cams.camvec) - cams.campos).cross(cams.camup))*this->GetEyePosition_minVR(i).x(),
+					VECTOR_ref(cams.camvec) + ((VECTOR_ref(cams.camvec) - cams.campos).cross(cams.camup))*this->GetEyePosition_minVR(i).x(),
+					cams.camup, cams.fov, cams.near_, cams.far_);
 				draw_doing();
 				GraphHandle::SetDraw_Screen((int)DX_SCREEN_BACK);
 				SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
@@ -723,7 +725,7 @@ public:
 			}
 		}
 		else {
-			outScreen[0].SetDraw_Screen(cams.campos, VECTOR_ref(cams.campos) + cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_);
+			outScreen[0].SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_);
 			draw_doing();
 		}
 		GraphHandle::SetDraw_Screen((int)DX_SCREEN_BACK);

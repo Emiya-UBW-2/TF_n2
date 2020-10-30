@@ -41,7 +41,6 @@ private:
 	int disp_y = 1080;
 	float ch_veh = 1.f;
 public:
-	GraphHandle cockpitScreen;
 	UI(const int& o_xd, const int& o_yd, const int& xd, const int& yd) {
 		out_disp_x = o_xd;
 		out_disp_y = o_yd;
@@ -55,7 +54,6 @@ public:
 		scope = GraphHandle::Load("data/UI/battle_scope.png");
 		HP_per = GraphHandle::Load("data/UI/battle_hp_bar_max.bmp");
 		HP_ber = GraphHandle::Load("data/UI/battle_hp_bar.bmp");
-		cockpitScreen = GraphHandle::Make(disp_x, disp_y, true);
 		CamScreen = GraphHandle::Make(240, 240, true);
 		bufScreen = GraphHandle::Make(disp_x, disp_y, true);
 
@@ -351,55 +349,43 @@ public:
 		}
 	}
 	void draw_in_cockpit(
-		const Mainclass::Chara& chara,
-		const VECTOR_ref& campos,
-		const VECTOR_ref& camvec,
-		const VECTOR_ref& camup,
-		const VECTOR_ref& eye_pos_ads
+		const Mainclass::Chara& chara
 
 	) {
 		//コックピット
 		{
-			auto scr = GetDrawScreen();
-			auto fov = GetCameraFov();
+			auto& veh = chara.vehicle;
+
+			float px = (chara.p_animes_rudder[1].second - chara.p_animes_rudder[0].second)*deg2rad(30);
+			float pz = (chara.p_animes_rudder[2].second - chara.p_animes_rudder[3].second)*deg2rad(30);
+			float py = (chara.p_animes_rudder[5].second - chara.p_animes_rudder[4].second)*deg2rad(20);
+
+			cockpit.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
+			cockpit.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
+			cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
+			cockpit.SetFrameLocalMatrix(compass_f.first, MATRIX_ref(veh.mat).Inverse() * MATRIX_ref::Mtrans(compass_f.second));
 			{
-				SetupCamera_Perspective(fov);
-				cockpitScreen.SetDraw_Screen(VGet(0.f, 0.f, 0.f), VECTOR_ref(camvec) - campos, camup, fov, 0.01f, 2.0f);
-
-				float px = (chara.p_animes_rudder[1].second - chara.p_animes_rudder[0].second)*deg2rad(30);
-				float pz = (chara.p_animes_rudder[2].second - chara.p_animes_rudder[3].second)*deg2rad(30);
-				float py = (chara.p_animes_rudder[5].second - chara.p_animes_rudder[4].second)*deg2rad(20);
-
-				cockpit.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
-				cockpit.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
-				cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
-				cockpit.SetFrameLocalMatrix(compass_f.first, MATRIX_ref(chara.vehicle.mat).Inverse() * MATRIX_ref::Mtrans(compass_f.second));
-				{
-					float spd_buf = chara.vehicle.speed*3.6f;
-					float spd = 0.f;
-					if (spd_buf <= 400.f) {
-						spd = 180.f*spd_buf / 440.f;
-					}
-					else {
-						spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
-					}
-					cockpit.frame_reset(speed_f.first);
-					cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(speed_f.first + 1) - cockpit.frame(speed_f.first), MATRIX_ref(chara.vehicle.mat).Inverse()), -deg2rad(spd)) *						MATRIX_ref::Mtrans(speed_f.second));
+				float spd_buf = veh.speed*3.6f;
+				float spd = 0.f;
+				if (spd_buf <= 400.f) {
+					spd = 180.f*spd_buf / 440.f;
 				}
-				{
-					float spd_buf = chara.vehicle.speed*3.6f / 1224.f;
-
-					cockpit.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*1.f)) * MATRIX_ref::Mtrans(spd3_f.second));
-					cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*10.f)) * MATRIX_ref::Mtrans(spd2_f.second));
-					cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*100.f)) * MATRIX_ref::Mtrans(spd1_f.second));
+				else {
+					spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
 				}
-
-
-				cockpit.SetMatrix(MATRIX_ref::Mtrans((cockpit_v + eye_pos_ads)*-1.f)*(chara.vehicle.mat));
-				cockpit.DrawModel();
+				cockpit.frame_reset(speed_f.first);
+				cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(speed_f.first + 1) - cockpit.frame(speed_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(spd)) *						MATRIX_ref::Mtrans(speed_f.second));
 			}
-			SetDrawScreen(scr);
-			SetupCamera_Perspective(fov);
+			{
+				float spd_buf = veh.speed*3.6f / 1224.f;
+
+				cockpit.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*1.f)) * MATRIX_ref::Mtrans(spd3_f.second));
+				cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*10.f)) * MATRIX_ref::Mtrans(spd2_f.second));
+				cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*100.f)) * MATRIX_ref::Mtrans(spd1_f.second));
+			}
+
+			cockpit.SetMatrix(MATRIX_ref(veh.mat)*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first)- MATRIX_ref::Vtrans(cockpit_v, veh.mat)));
+			cockpit.DrawModel();
 		}
 	}
 
