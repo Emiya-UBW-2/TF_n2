@@ -19,7 +19,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		FileRead_close(mdata);
 	}
 	//
-	auto Drawparts = std::make_unique<DXDraw>("TankFlanker", 90.f,useVR_e);		 /*汎用クラス*/
+	auto Drawparts = std::make_unique<DXDraw>("TankFlanker", 90.f,useVR_e,shadow_e);		 /*汎用クラス*/
 	auto UIparts = std::make_unique<UI>(Drawparts->out_disp_x, Drawparts->out_disp_y, Drawparts->disp_x, Drawparts->disp_y);		 /*UI*/
 	auto Debugparts = std::make_unique<DeBuG>(90);						 /*デバッグ*/
 	auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);	 /*ホストパスエフェクト*/
@@ -28,12 +28,20 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	VECTOR_ref aimpos;			    //機体の狙い
 	VECTOR_ref aimposout;					    //UIに出力
 	GraphHandle BufScreen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);    //描画スクリーン
-	GraphHandle outScreen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);    //描画スクリーン
-	GraphHandle outScreen_2 = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);    //描画スクリーン
+	GraphHandle UI_Screen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);    //描画スクリーン
+	GraphHandle MAIN_Screen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);    //描画スクリーン
 	/*map*/
 	auto mapparts = std::make_unique<Mapclass>(Drawparts->disp_x, Drawparts->disp_y);
-	//その他
+	GraphHandle SkyScreen;
+	SkyScreen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y);    //空描画
+//その他
 	MV1 hit_pic;      //弾痕
+	frames	stickx_f, sticky_f, stickz_f,
+		compass_f,
+		speed_f, spd3_f, spd2_f, spd1_f
+		;
+	VECTOR_ref cockpit_v;
+	MV1 cockpit;
 	//操作
 	cams.fov = deg2rad(Drawparts->use_vr ? 90 : 45);
 	bool ads = false;
@@ -50,13 +58,51 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	//データ
 	std::vector<Mainclass::Chara> chara;						//キャラ
 	std::vector<Mainclass::treePats> tree;					//壁をセット
-	MV1::Load("data/model/hit/model.mv1", &hit_pic, true);			//弾痕
+	
+	
 	std::vector<Mainclass::Ammos> Ammo;						//弾薬
 	std::vector<Mainclass::Vehcs> Vehicles;			/*車輛データ*/
+
+	MV1::Load("data/model/hit/model.mv1", &hit_pic, true);			//弾痕
+
 	Mainclass::Vehcs::set_vehicles_pre("data/plane/", &Vehicles, true);		/**/
+	MV1::Load("data/model/cockpit/model.mv1", &cockpit, false);/**/
+
 	UIparts->load_window("車両モデル");					//ロード画面
+
+	for (int i = 0; i < cockpit.frame_num(); i++) {
+		std::string p = cockpit.frame_name(i);
+		if (p.find("座席", 0) != std::string::npos) {
+			cockpit_v = cockpit.frame(i);
+		}
+		else if ((p.find("姿勢指示器", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+			compass_f = { i,cockpit.frame(i) - cockpit.frame(int(cockpit.frame_parent(i))) };
+			//ジャイロコンパス
+		}
+		else if (p.find("スティック縦", 0) != std::string::npos) {
+			stickx_f = { i,cockpit.frame(i) };
+			stickz_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
+		}
+		else if ((p.find("ペダル", 0) != std::string::npos) && (p.find("右", 0) == std::string::npos) && (p.find("左", 0) == std::string::npos)) {
+			sticky_f = { i,cockpit.frame(i) };
+		}
+		else if ((p.find("速度計", 0) != std::string::npos)) {
+			speed_f = { i,cockpit.frame(i) };
+		}
+		else if ((p.find("速度100", 0) != std::string::npos)) {
+			spd3_f = { i,cockpit.frame(i) };
+		}
+		else if ((p.find("速度010", 0) != std::string::npos)) {
+			spd2_f = { i,cockpit.frame(i) };
+		}
+		else if ((p.find("速度001", 0) != std::string::npos)) {
+			spd1_f = { i,cockpit.frame(i) };
+		}
+	}
+
 	Mainclass::Ammos::set_ammos(&Ammo);							//弾薬
 	Mainclass::Vehcs::set_vehicles(&Vehicles);					//車輛
+	
 	VECTOR_ref HMDpos;
 	MATRIX_ref HMDmat;
 
@@ -70,7 +116,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		oldv = false;
 		start_c = true;
 		//キャラ選択
-		chara.resize(1);
+		chara.resize(5);
 		if (!UIparts->select_window(&chara[0], &Vehicles)) {
 			break;
 		}
@@ -86,13 +132,27 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		//キャラ選択
 		{
 			//飛行機
-			chara.back().vehicle.pos = VGet(0.f, 10.f, 0.f);
-			chara.back().vehicle.mat = MGetIdent();
+			chara[0].vehicle.pos = VGet(0.f, 10.f, 0.f);
+			chara[0].vehicle.mat = MGetIdent();
+
+			//飛行機
+			chara[1].vehicle.pos = VGet(0.f, 10.f, 30.f);
+			chara[1].vehicle.mat = MGetIdent();
+			//飛行機
+			chara[2].vehicle.pos = VGet(0.f, 10.f, 60.f);
+			chara[2].vehicle.mat = MGetIdent();
+			//飛行機
+			chara[3].vehicle.pos = VGet(0.f, 10.f, 90.f);
+			chara[3].vehicle.mat = MGetIdent();
+
+			//飛行機
+			chara[4].vehicle.pos = VGet(0.f, 10.f, 120.f);
+			chara[4].vehicle.mat = MGetIdent();
 		}
 		//キャラ設定
 		fill_id(chara); //ID
 		for (auto& c : chara) {
-			c.set_human(Vehicles, Ammo, hit_pic);
+			c.set_human(Vehicles, Ammo, hit_pic, 9);//
 		}
 		//必要な時に当たり判定をリフレッシュする(仮)
 		auto ref_col = [&chara](const Mainclass::Chara& p, const VECTOR_ref& startpos, const VECTOR_ref& endpos) {
@@ -122,48 +182,52 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 		};
 		auto draw_on_shadow = [&]() {
-			//マップ
-			SetFogStartEnd(0.0f, 30000.f);
-			SetFogColor(128, 128, 128);
-			{
-				mapparts->map_get().DrawModel();
-			}
-			//海
-			mapparts->sea_draw(cams.campos);
-			//機体
-			SetFogStartEnd(0.0f, 3000.f);
-			SetFogColor(128, 128, 128);
-			{
-				for (auto& c : chara) {
-					//戦闘機
-					c.vehicle.obj.DrawModel();
-					//弾痕
-					for (auto& h : c.vehicle.hit_obj) {
-						if (h.flug) {
-							h.pic.DrawFrame(h.use);
-						}
+			Drawparts->Draw_by_Shadow(
+				[&]() {
+					//マップ
+					SetFogStartEnd(30000.0f, 60000.f);
+					SetFogColor(128, 128, 128);
+					{
+						mapparts->map_get().DrawModel();
 					}
-				}
-				for (auto& l : tree) {
-					l.obj.DrawModel();
-					//l.obj_far.DrawModel();
-				}
-				//
+					//海
+					mapparts->sea_draw(cams.campos);
+					//機体
+					SetFogStartEnd(0.0f, 3000.f);
+					SetFogColor(128, 128, 128);
+					{
+						for (auto& c : chara) {
+							//戦闘機
+							c.vehicle.obj.DrawModel();
+							//弾痕
+							for (auto& h : c.vehicle.hit_obj) {
+								if (h.flug) {
+									h.pic.DrawFrame(h.use);
+								}
+							}
+						}
+						for (auto& l : tree) {
+							l.obj.DrawModel();
+							//l.obj_far.DrawModel();
+						}
+						//
 
-			}
-			SetFogEnable(FALSE);
-			SetUseLighting(FALSE);
-			for (auto& c : chara) {
-				for (auto& g : c.vehicle.Gun_) {
-					for (auto& a : g.bullet) {
-						if (a.flug) {
-							DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - cams.campos).size() / 24.f))*8.5f, a.color, GetColor(255, 255, 255));
+					}
+					SetFogEnable(FALSE);
+					SetUseLighting(FALSE);
+					for (auto& c : chara) {
+						for (auto& g : c.vehicle.Gun_) {
+							for (auto& a : g.bullet) {
+								if (a.flug) {
+									DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - cams.campos).size() / 24.f))*8.5f, a.color, GetColor(255, 255, 255));
+								}
+							}
 						}
 					}
+					SetUseLighting(TRUE);
+					SetFogEnable(TRUE);
 				}
-			}
-			SetUseLighting(TRUE);
-			SetFogEnable(TRUE);
+			);
 		};
 		//通信開始
 		{
@@ -176,7 +240,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		cams.campos = mine.vehicle.pos + VGet(0.f, 3.f, 0.f) + eyevec * range;
 		for (auto& c : chara) {
 			for (auto& g : c.vehicle.use_veh.wheelframe) {
-				//g.gndsmkeffcs.handle = Drawparts->get_gndhitHandle().Play3D();
+				g.gndsmkeffcs.handle = Drawparts->get_effHandle(ef_gndsmoke).Play3D();
 				g.gndsmksize = 0.1f;
 			}
 		}
@@ -538,18 +602,18 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							u.yadd = 0.f;
 							u.repos = u.pos;
 							if (u.spec.type_a != 2) {
-								//set_effect(&c.effcs[ef_fire], veh.obj.frame(cg.gun_info.frame3.first), u.vec, u.spec.caliber_a / 0.1f);
-								if (u.spec.caliber_a >= 0.037f) {
-									//set_effect(&c.effcs_gun[c.gun_effcnt].first, veh.obj.frame(cg.gun_info.frame3.first), u.vec);
-									//set_pos_effect(&c.effcs_gun[c.gun_effcnt].first, Drawparts->get_effHandle(ef_smoke2));
+								c.effcs[ef_fire].set(veh.obj.frame(cg.gun_info.frame3.first), u.vec, u.spec.caliber_a / 0.1f);
+								if (u.spec.caliber_a >= 0.017f) {
+									c.effcs_gun[c.gun_effcnt].first.set(veh.obj.frame(cg.gun_info.frame3.first), u.vec);
+									c.effcs_gun[c.gun_effcnt].first.put(Drawparts->get_effHandle(ef_smoke2));
 									c.effcs_gun[c.gun_effcnt].second = &u;
 									c.effcs_gun[c.gun_effcnt].cnt = 0;
 									++c.gun_effcnt %= c.effcs_gun.size();
 								}
 							}
 							else {
-								//set_effect(&c.effcs_missile[c.missile_effcnt].first, veh.obj.frame(cg.gun_info.frame3.first), u.vec);
-								//set_pos_effect(&c.effcs_missile[c.missile_effcnt].first, Drawparts->get_effHandle(ef_smoke1));
+								c.effcs_missile[c.missile_effcnt].first.set(veh.obj.frame(cg.gun_info.frame3.first), u.vec);
+								c.effcs_missile[c.missile_effcnt].first.put(Drawparts->get_effHandle(ef_smoke1));
 								c.effcs_missile[c.missile_effcnt].second = &u;
 								c.effcs_missile[c.missile_effcnt].cnt = 0;
 								++c.missile_effcnt %= c.effcs_missile.size();
@@ -562,7 +626,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				{
 					for (auto& t : c.effcs) {
 						if (t.id != ef_smoke1 && t.id != ef_smoke2) {
-							//set_pos_effect(&t, Drawparts->get_effHandle(int(t.id)));
+							t.put(Drawparts->get_effHandle(int(t.id)));
 						}
 					}
 					for (auto& t : c.vehicle.use_veh.wheelframe) {
@@ -607,10 +671,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 											if (!hitplane) {
 												if (ground_hit) {
 													if (a.spec.caliber_a >= 0.020f) {
-														//set_effect(&c.effcs[ef_gndhit], a.pos + normal * (0.1f), normal);
+														c.effcs[ef_gndhit].set(a.pos + normal * (0.1f), normal);
 													}
 													else {
-														//set_effect(&c.effcs[ef_gndhit2], a.pos + normal * (0.1f), normal);
+														c.effcs[ef_gndhit2].set(a.pos + normal * (0.1f), normal);
 													}
 													if ((a.vec.Norm().dot(normal)) <= cos(deg2rad(60))) {
 														a.flug = false;
@@ -633,10 +697,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 											if (!hitplane) {
 												if (ground_hit) {
 													if (a.spec.caliber_a >= 0.020f) {
-														//set_effect(&c.effcs[ef_gndhit], a.pos + normal * (0.1f), normal);
+														c.effcs[ef_gndhit].set(a.pos + normal * (0.1f), normal);
 													}
 													else {
-														//set_effect(&c.effcs[ef_gndhit2], a.pos + normal * (0.1f), normal);
+														c.effcs[ef_gndhit2].set(a.pos + normal * (0.1f), normal);
 													}
 													a.flug = false;
 												}
@@ -650,10 +714,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 											if (!hitplane) {
 												if (ground_hit) {
 													if (a.spec.caliber_a >= 0.020f) {
-														//set_effect(&c.effcs[ef_gndhit], a.pos + normal * (0.1f), normal);
+														c.effcs[ef_gndhit].set(a.pos + normal * (0.1f), normal);
 													}
 													else {
-														//set_effect(&c.effcs[ef_gndhit2], a.pos + normal * (0.1f), normal);
+														c.effcs[ef_gndhit2].set(a.pos + normal * (0.1f), normal);
 													}
 													a.flug = false;
 												}
@@ -775,7 +839,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 			//影用意
 			if (shadow_e) {
-				Drawparts->Ready_Shadow(cams.campos, draw_in_shadow_sky, VGet(500.f, 500.f, 500.f));
+				Drawparts->Ready_Shadow(cams.campos, draw_in_shadow_sky, VGet(200.f, 200.f, 200.f), VGet(2000.f, 2000.f, 2000.f));
 			}
 			Drawparts->Move_Player();
 			//描画
@@ -854,7 +918,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 				//UI
-				outScreen.SetDraw_Screen();
+				UI_Screen.SetDraw_Screen();
 				{
 					UIparts->draw(aimposout, mine, lock_on.first, distance, aimposout_lockon, Drawparts->use_vr, false);
 					//VR用オプション
@@ -863,38 +927,66 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 				}
 				//被写体深度描画
-				if (shadow_e) {
-					Hostpassparts->dof(&BufScreen, mapparts->sky_draw(cams.campos, cams.camvec, cams.camup, cams.fov), [&Drawparts, &draw_on_shadow] { Drawparts->Draw_by_Shadow(draw_on_shadow); }, cams);
+				SkyScreen.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
+				{
+					mapparts->sky_draw();
 				}
-				else {
-					Hostpassparts->dof(&BufScreen, mapparts->sky_draw(cams.campos, cams.camvec, cams.camup, cams.fov), draw_on_shadow, cams);
-				}
+				Hostpassparts->dof(&BufScreen, SkyScreen, draw_on_shadow, cams);
 				//
-				outScreen_2.SetDraw_Screen();
-
-				BufScreen.DrawGraph(0, 0, false);
-				//ブルーム
-				Hostpassparts->bloom(BufScreen, 255);
-
+				MAIN_Screen.SetDraw_Screen();
+				{
+					BufScreen.DrawGraph(0, 0, false);
+					Hostpassparts->bloom(BufScreen, 255);//ブルーム
+				}
 				//VRに移す
 				Drawparts->draw_VR(
 					[&] {
-						outScreen_2.DrawGraph(0, 0, true);
+						MAIN_Screen.DrawGraph(0, 0, true);
+						//コックピット
 						if (ads) {
 							SetCameraNearFar(0.01f, 2.f);
-							UIparts->draw_in_cockpit(chara[0]);
+							auto& veh = chara[0].vehicle;
+
+							float px = (chara[0].p_animes_rudder[1].second - chara[0].p_animes_rudder[0].second)*deg2rad(30);
+							float pz = (chara[0].p_animes_rudder[2].second - chara[0].p_animes_rudder[3].second)*deg2rad(30);
+							float py = (chara[0].p_animes_rudder[5].second - chara[0].p_animes_rudder[4].second)*deg2rad(20);
+
+							cockpit.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
+							cockpit.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
+							cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
+							cockpit.SetFrameLocalMatrix(compass_f.first, MATRIX_ref(veh.mat).Inverse() * MATRIX_ref::Mtrans(compass_f.second));
+							{
+								float spd_buf = veh.speed*3.6f;
+								float spd = 0.f;
+								if (spd_buf <= 400.f) {
+									spd = 180.f*spd_buf / 440.f;
+								}
+								else {
+									spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
+								}
+								cockpit.frame_reset(speed_f.first);
+								cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(speed_f.first + 1) - cockpit.frame(speed_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(spd)) *						MATRIX_ref::Mtrans(speed_f.second));
+							}
+							{
+								float spd_buf = veh.speed*3.6f / 1224.f;
+
+								cockpit.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*1.f)) * MATRIX_ref::Mtrans(spd3_f.second));
+								cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*10.f)) * MATRIX_ref::Mtrans(spd2_f.second));
+								cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*100.f)) * MATRIX_ref::Mtrans(spd1_f.second));
+							}
+
+							cockpit.SetMatrix(MATRIX_ref(veh.mat)*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_v, veh.mat)));
+							cockpit.DrawModel();
 						}
 						//UI
-						outScreen.DrawGraph(0, 0, true);
+						UI_Screen.DrawGraph(0, 0, true);
 					},
 					cams);
 			}
 			//draw
 			GraphHandle::SetDraw_Screen(int(DX_SCREEN_BACK), false);
 			{
-				outScreen.DrawExtendGraph(0, 0, Drawparts->out_disp_x, Drawparts->out_disp_y, false);
 				Drawparts->outScreen[0].DrawExtendGraph(0, 0, Drawparts->out_disp_x, Drawparts->out_disp_y, false);
-
 				Debugparts->end_way();
 				Debugparts->debug(10, 10, float(GetNowHiPerformanceCount() - waits) / 1000.f);
 			}

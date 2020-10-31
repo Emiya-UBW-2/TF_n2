@@ -159,55 +159,44 @@ void createProcess(char* szCmd, DWORD flag, bool fWait) {
 	CloseHandle(pi.hProcess);
 	CloseHandle(pi.hThread);
 }
-//自信を多重起動
+//自身を多重起動
 void start_me(void) {
 	char Path[MAX_PATH];
 	// EXEのあるフォルダのパスを取得
 	::GetModuleFileName(NULL, Path, MAX_PATH);
 	createProcess(Path, SW_HIDE, false);
 }
-//
-enum Effect {
-	ef_fire = 0, //発砲炎
-	ef_reco = 1, //大口径跳弾
-	ef_reco2 = 2, //小口径跳弾
-	ef_gndhit = 3, //大口径着弾
-	ef_gndhit2 = 4, //小口径着弾
-	ef_bomb = 5, //撃破爆発
-	ef_smoke1 = 6, //ミサイル炎
-	ef_smoke2 = 7, //銃の軌跡
-	effects = 8, //読み込む
-	efs_user = 8  //
-}; 
 
-struct EffectS {
+//エフェクト
+class EffectS {
+public:
 	bool flug{ false };				 /**/
 	size_t id = 0;					 /**/
 	Effekseer3DPlayingHandle handle; /**/
 	VECTOR_ref pos;					 /**/
 	VECTOR_ref nor;					 /**/
 	float scale = 1.f;				 /**/
-};
-void set_effect(EffectS* efh, VECTOR_ref pos, VECTOR_ref nor, float scale = 1.f) {
-	efh->flug = true;
-	efh->pos = pos;
-	efh->nor = nor;
-	efh->scale = scale;
-}
-void set_pos_effect(EffectS* efh, const EffekseerEffectHandle& handle) {
-	if (efh->flug) {
-		if (efh->handle.IsPlaying()) {
-			efh->handle.Stop();
-		}
-		efh->handle = handle.Play3D();
-		efh->handle.SetPos(efh->pos);
-		efh->handle.SetRotation(atan2(efh->nor.y(), std::hypot(efh->nor.x(), efh->nor.z())), atan2(-efh->nor.x(), -efh->nor.z()), 0);
-		efh->handle.SetScale(efh->scale);
-		efh->flug = false;
+
+	void set(VECTOR_ref pos, VECTOR_ref nor, float scale = 1.f) {
+		this->flug = true;
+		this->pos = pos;
+		this->nor = nor;
+		this->scale = scale;
 	}
-}
-
-
+	void put(const EffekseerEffectHandle& handle) {
+		if (this->flug) {
+			if (this->handle.IsPlaying()) {
+				this->handle.Stop();
+			}
+			this->handle = handle.Play3D();
+			this->handle.SetPos(this->pos);
+			this->handle.SetRotation(atan2(this->nor.y(), std::hypot(this->nor.x(), this->nor.z())), atan2(-this->nor.x(), -this->nor.z()), 0);
+			this->handle.SetScale(this->scale);
+			this->flug = false;
+		}
+	}
+};
+//
 class DXDraw {
 public:
 	int disp_x = 1920;
@@ -232,6 +221,7 @@ public:
 private:
 	bool use_shadow = true;			/*影描画*/
 	int shadow_near = 0;			/*近影*/
+	int shadow_nearfar = 0;			/*近影*/
 	int shadow_far = 0;				/*遠影*/
 	size_t shadow_size = 10;		/*影サイズ*/
 	bool use_pixellighting = true;			     /**/
@@ -289,10 +279,16 @@ private:
 	char hand1_num = -1;
 	char hand2_num = -1;
 public:
+	std::vector<EffekseerEffectHandle> effHndle; /*エフェクトリソース*/
 	std::array<GraphHandle, 3> outScreen;	//スクリーンバッファ
 	std::vector<char> tracker_num;
 
-	DXDraw(const char* title, const float& fps = 60.f, const bool& use_VR = false) {
+	size_t get_eff_size() { return effHndle.size(); }
+	EffekseerEffectHandle& get_effHandle(int p1) noexcept { return effHndle[p1]; }
+	const EffekseerEffectHandle& get_effHandle(int p1) const noexcept { return effHndle[p1]; }
+
+
+	DXDraw(const char* title, const float& fps = 60.f, const bool& use_VR = false, const bool& use_SHADOW = true) {
 		use_vr = use_VR;
 		if (use_vr) {
 			eError = vr::VRInitError_None;
@@ -303,7 +299,7 @@ public:
 			}
 		}
 
-		this->use_shadow = true;
+		this->use_shadow = use_SHADOW;
 		this->shadow_size = 13;
 		if (use_vr) {
 			this->disp_x = 1080 * 2;
@@ -392,6 +388,25 @@ public:
 			}
 		}
 
+		//エフェクト
+		{
+			std::string p;
+			WIN32_FIND_DATA win32fdt;
+			HANDLE hFind;
+			hFind = FindFirstFile("data/effect/*", &win32fdt);
+			if (hFind != INVALID_HANDLE_VALUE) {
+				do {
+					{
+						p = win32fdt.cFileName;
+						if (p.find(".efk") != std::string::npos) {
+							effHndle.resize(effHndle.size() + 1);
+							effHndle.back() = EffekseerEffectHandle::load("data/effect/" + p);
+						}
+					}
+				} while (FindNextFile(hFind, &win32fdt));
+			} //else{ return false; }
+			FindClose(hFind);
+		}
 	}
 	~DXDraw(void) {
 		if (use_vr&&m_pHMD) {
@@ -407,9 +422,12 @@ public:
 		SetLightDirection(Light_dir.get());
 		if (this->use_shadow) {
 			shadow_near = MakeShadowMap(int(pow(2, this->shadow_size)), int(pow(2, this->shadow_size)));
+			shadow_nearfar = MakeShadowMap(int(pow(2, this->shadow_size)), int(pow(2, this->shadow_size)));
 			shadow_far = MakeShadowMap(int(pow(2, this->shadow_size)), int(pow(2, this->shadow_size)));
 			SetShadowMapAdjustDepth(shadow_near, 0.0005f);
 			SetShadowMapLightDirection(shadow_near, Light_dir.get());
+			SetShadowMapAdjustDepth(shadow_nearfar, 0.0005f);
+			SetShadowMapLightDirection(shadow_nearfar, Light_dir.get());
 			SetShadowMapLightDirection(shadow_far, Light_dir.get());
 			SetShadowMapDrawArea(shadow_far, nearsize.get(), farsize.get());
 			ShadowMap_DrawSetup(shadow_far);
@@ -426,10 +444,15 @@ public:
 		return true;
 	}
 	template <typename T>
-	bool Ready_Shadow(const VECTOR_ref& pos, T doing, const VECTOR_ref& nearsize) {
+	bool Ready_Shadow(const VECTOR_ref& pos, T doing, const VECTOR_ref& nearsize, const VECTOR_ref& nearfarsize) {
 		if (this->use_shadow) {
-			SetShadowMapDrawArea(shadow_near, (nearsize*(-1.f) + pos).get(), (VECTOR_ref(nearsize) + pos).get());
+			SetShadowMapDrawArea(shadow_near, (nearsize*-1.f + pos).get(), (VECTOR_ref(nearsize) + pos).get());
 			ShadowMap_DrawSetup(shadow_near);
+			doing();
+			ShadowMap_DrawEnd();
+
+			SetShadowMapDrawArea(shadow_nearfar, (nearfarsize*-1.f + pos).get(), (VECTOR_ref(nearfarsize) + pos).get());
+			ShadowMap_DrawSetup(shadow_nearfar);
 			doing();
 			ShadowMap_DrawEnd();
 			return true;
@@ -439,13 +462,15 @@ public:
 	template <typename T>
 	bool Draw_by_Shadow(T doing) {
 		if (this->use_shadow) {
-			SetUseShadowMap(0, shadow_near);
-			SetUseShadowMap(1, shadow_far);
+			SetUseShadowMap(0, shadow_far);
+			SetUseShadowMap(1, shadow_nearfar);
+			SetUseShadowMap(2, shadow_near);
 		}
 		doing();
 		if (this->use_shadow) {
 			SetUseShadowMap(0, -1);
 			SetUseShadowMap(1, -1);
+			SetUseShadowMap(2, -1);
 		}
 		return true;
 	}

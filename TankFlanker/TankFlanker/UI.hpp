@@ -25,13 +25,6 @@ private:
 	MV1 sky;
 	MV1 sea;
 	GraphHandle SkyScreen;
-	//コックピット
-	frames	stickx_f, sticky_f, stickz_f,
-		compass_f,
-		speed_f, spd3_f, spd2_f, spd1_f
-		;
-	VECTOR_ref cockpit_v;
-	MV1 cockpit;
 	//
 	float siz_autoaim = 0.f;
 	float siz_autoaim_pic = 0.f;
@@ -56,37 +49,6 @@ public:
 		HP_ber = GraphHandle::Load("data/UI/battle_hp_bar.bmp");
 		CamScreen = GraphHandle::Make(240, 240, true);
 		bufScreen = GraphHandle::Make(disp_x, disp_y, true);
-
-		MV1::Load("data/model/cockpit/model.mv1", &cockpit, false);
-		for (int i = 0; i < cockpit.frame_num(); i++) {
-			std::string p = cockpit.frame_name(i);
-			if (p.find("座席", 0) != std::string::npos) {
-				cockpit_v = cockpit.frame(i);
-			}
-			else if ((p.find("姿勢指示器", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
-				compass_f = { i,cockpit.frame(i) - cockpit.frame(int(cockpit.frame_parent(i))) };
-				//ジャイロコンパス
-			}
-			else if (p.find("スティック縦", 0) != std::string::npos) {
-				stickx_f = { i,cockpit.frame(i) };
-				stickz_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-			}
-			else if ((p.find("ペダル", 0) != std::string::npos) && (p.find("右", 0) == std::string::npos) && (p.find("左", 0) == std::string::npos)) {
-				sticky_f = { i,cockpit.frame(i) };
-			}
-			else if ((p.find("速度計", 0) != std::string::npos)) {
-				speed_f = { i,cockpit.frame(i) };
-			}
-			else if ((p.find("速度100", 0) != std::string::npos)) {
-				spd3_f = { i,cockpit.frame(i) };
-			}
-			else if ((p.find("速度010", 0) != std::string::npos)) {
-				spd2_f = { i,cockpit.frame(i) };
-			}
-			else if ((p.find("速度001", 0) != std::string::npos)) {
-				spd1_f = { i,cockpit.frame(i) };
-			}
-		}
 
 		font18 = FontHandle::Create(y_r(18, out_disp_y), DX_FONTTYPE_EDGE);
 		font12 = FontHandle::Create(y_r(12, out_disp_y), DX_FONTTYPE_EDGE);
@@ -346,46 +308,6 @@ public:
 					break;
 				}
 			}
-		}
-	}
-	void draw_in_cockpit(
-		const Mainclass::Chara& chara
-
-	) {
-		//コックピット
-		{
-			auto& veh = chara.vehicle;
-
-			float px = (chara.p_animes_rudder[1].second - chara.p_animes_rudder[0].second)*deg2rad(30);
-			float pz = (chara.p_animes_rudder[2].second - chara.p_animes_rudder[3].second)*deg2rad(30);
-			float py = (chara.p_animes_rudder[5].second - chara.p_animes_rudder[4].second)*deg2rad(20);
-
-			cockpit.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
-			cockpit.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
-			cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
-			cockpit.SetFrameLocalMatrix(compass_f.first, MATRIX_ref(veh.mat).Inverse() * MATRIX_ref::Mtrans(compass_f.second));
-			{
-				float spd_buf = veh.speed*3.6f;
-				float spd = 0.f;
-				if (spd_buf <= 400.f) {
-					spd = 180.f*spd_buf / 440.f;
-				}
-				else {
-					spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
-				}
-				cockpit.frame_reset(speed_f.first);
-				cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(speed_f.first + 1) - cockpit.frame(speed_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(spd)) *						MATRIX_ref::Mtrans(speed_f.second));
-			}
-			{
-				float spd_buf = veh.speed*3.6f / 1224.f;
-
-				cockpit.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*1.f)) * MATRIX_ref::Mtrans(spd3_f.second));
-				cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*10.f)) * MATRIX_ref::Mtrans(spd2_f.second));
-				cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*100.f)) * MATRIX_ref::Mtrans(spd1_f.second));
-			}
-
-			cockpit.SetMatrix(MATRIX_ref(veh.mat)*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first)- MATRIX_ref::Vtrans(cockpit_v, veh.mat)));
-			cockpit.DrawModel();
 		}
 	}
 

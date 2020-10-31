@@ -9,6 +9,18 @@
 #include <vector>
 #include "DXLib_ref/DXLib_ref.h"
 
+enum Effect {
+	ef_fire = 0, //発砲炎
+	ef_reco = 1, //大口径跳弾
+	ef_reco2 = 2, //小口径跳弾
+	ef_gndhit = 3, //大口径着弾
+	ef_gndhit2 = 4, //小口径着弾
+	ef_bomb = 5, //撃破爆発
+	ef_smoke1 = 6, //ミサイル炎
+	ef_smoke2 = 7, //銃の軌跡
+	ef_gndsmoke = 8//地面の軌跡
+};
+
 //要改善
 class Mainclass {
 private:
@@ -451,7 +463,7 @@ public:
 	public:
 		//====================================================
 		size_t id = 0;			     /**/
-		std::array<EffectS, efs_user> effcs; /*effect*/
+		std::vector<EffectS> effcs; /*effect*/
 		std::array<ef_guns, 8> effcs_missile; /*effect*/
 		std::array<ef_guns, 12> effcs_gun;    /*effect*/
 		size_t missile_effcnt = 0;
@@ -473,10 +485,12 @@ public:
 		vehicles vehicle;
 
 		//セット
-		void set_human(const std::vector<Mainclass::Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
+		void set_human(const std::vector<Mainclass::Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic, const size_t&eff_size) {
 			auto& c = *this;
 			{
 				std::fill(c.key.begin(), c.key.end(), false); //操作
+
+				c.effcs.resize(eff_size);
 				fill_id(c.effcs);			      //エフェクト
 				//共通
 				{
@@ -625,284 +639,142 @@ public:
 							if (tt.second == (std::numeric_limits<float>::max)()) {
 								break;
 							}
-							switch (c.spec.type_a) {
-							case 0: //AP
-								//装甲面に当たったのでhitnearに代入して終了
-								for (auto& a : veh.use_veh.armer_mesh) {
-									if (tt.first == a.first) {
-										hitnear = tt.first;
-										//ダメージ面に当たった時に装甲値に勝てるかどうか
-										{
-											VECTOR_ref normal = veh.hitres[hitnear.value()].Normal;
-											VECTOR_ref position = veh.hitres[hitnear.value()].HitPosition;
-											if (c.spec.pene_a > a.second * (1.0f / std::abs(c.vec.Norm().dot(normal)))) {
-												//貫通
-												//t.id;
-												veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
+							//当たったら判定
+							for (auto& a : veh.use_veh.armer_mesh) {
+								if (tt.first == a.first) {
+									hitnear = tt.first;
+									//ダメージ面に当たった時に装甲値に勝てるかどうか
+									{
+										VECTOR_ref normal = veh.hitres[hitnear.value()].Normal;
+										VECTOR_ref position = veh.hitres[hitnear.value()].HitPosition;
+										if (c.spec.pene_a > a.second * (1.0f / std::abs(c.vec.Norm().dot(normal)))) {
+											//貫通
+											//t.id;
+											veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
 
-												veh.HP = std::max<int16_t>(veh.HP - c.spec.damage_a, 0); //
-												//撃破時エフェクト
-												if (veh.HP == 0) {
-													set_effect(&t.effcs[ef_bomb], veh.obj.frame(veh.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
-												}
-												//弾処理
-												c.flug = false;
-												c.vec += normal * ((c.vec.dot(normal)) * -2.0f);
-												c.vec = c.vec.Norm();
-												c.pos = c.vec * (0.1f) + position;
-												//弾痕
-												veh.hit_obj[t.hitbuf].use = 0;
+											veh.HP = std::max<int16_t>(veh.HP - c.spec.damage_a, 0); //
+											//撃破時エフェクト
+											if (veh.HP == 0) {
+												t.effcs[ef_bomb].set(veh.obj.frame(veh.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
 											}
-											else {
+											//弾処理
+											c.flug = false;
+											c.vec += normal * ((c.vec.dot(normal)) * -2.0f);
+											c.vec = c.vec.Norm();
+											c.pos = c.vec * (0.1f) + position;
+											//弾痕
+											veh.hit_obj[t.hitbuf].use = 0;
+										}
+										else {
+											//弾処理
+											c.vec += normal * ((c.vec.dot(normal)) * -2.0f);
+											c.vec = c.vec.Norm();
+											c.pos = c.vec * (0.1f) + position;
+											//
+											switch (c.spec.type_a) {
+											case 0: //AP
 												//はじく
-												//弾処理
-												c.vec += normal * ((c.vec.dot(normal)) * -2.0f);
-												c.vec = c.vec.Norm();
-												c.pos = c.vec * (0.1f) + position;
 												c.spec.pene_a /= 2.0f;
-												//弾痕
-												veh.hit_obj[t.hitbuf].use = 1;
+												break;
+											case 1: //HE
+												//爆発する
+												c.flug = false;
+												break;
+											case 2: //ミサイル
+												//爆発する
+												c.flug = false;
+												break;
+											default:
+												break;
 											}
-											if (c.spec.caliber_a >= 0.020f) {
-												set_effect(&this->effcs[ef_reco], c.pos, normal);
-											}
-											else {
-												set_effect(&this->effcs[ef_reco2], c.pos, normal);
-											}
-
-											//弾痕のセット
-											{
-												float asize = c.spec.caliber_a * 100.f;
-												auto scale = VGet(asize / std::abs(c.vec.Norm().dot(normal)), asize, asize);
-												auto y_vec = MATRIX_ref::Vtrans(normal, veh.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
-												auto z_vec = MATRIX_ref::Vtrans(normal.cross(c.vec), veh.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
-
-												veh.hit_obj[t.hitbuf].mat = MATRIX_ref::Scale(scale)* MATRIX_ref::Axis1(y_vec.cross(z_vec), y_vec, z_vec);
-												veh.hit_obj[t.hitbuf].pos = MATRIX_ref::Vtrans(position - veh.pos, veh.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180))) + y_vec * 0.02f;
-												veh.hit_obj[t.hitbuf].flug = true;
-												++t.hitbuf %= veh.hit_obj.size();
-											}
+											//弾痕
+											veh.hit_obj[t.hitbuf].use = 1;
 										}
-										break;
-									}
-								}
-								if (hitnear.has_value()) {
-									break;
-								}
-								//空間装甲、モジュールに当たったのでモジュールに30ダメ、貫徹力を1/2に
-								for (auto& a : veh.use_veh.space_mesh) {
-									if (tt.first == a) {
 										if (c.spec.caliber_a >= 0.020f) {
-											set_effect(&this->effcs[ef_reco], VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
+											this->effcs[ef_reco].set(c.pos, normal);
 										}
 										else {
-											set_effect(&this->effcs[ef_reco2], VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
+											this->effcs[ef_reco2].set(c.pos, normal);
 										}
+
+										//弾痕のセット
+										{
+											float asize = c.spec.caliber_a * 100.f;
+											auto scale = VGet(asize / std::abs(c.vec.Norm().dot(normal)), asize, asize);
+											auto y_vec = MATRIX_ref::Vtrans(normal, veh.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
+											auto z_vec = MATRIX_ref::Vtrans(normal.cross(c.vec), veh.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
+
+											veh.hit_obj[t.hitbuf].mat = MATRIX_ref::Scale(scale)* MATRIX_ref::Axis1(y_vec.cross(z_vec), y_vec, z_vec);
+											veh.hit_obj[t.hitbuf].pos = MATRIX_ref::Vtrans(position - veh.pos, veh.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180))) + y_vec * 0.02f;
+											veh.hit_obj[t.hitbuf].flug = true;
+											++t.hitbuf %= veh.hit_obj.size();
+										}
+									}
+									continue;
+								}
+							}
+							//はじかれた
+							if (hitnear.has_value()) {
+								continue;
+							}
+							//空間装甲、モジュールに当たったのでモジュールに30ダメ、貫徹力を1/2に
+							for (auto& a : veh.use_veh.space_mesh) {
+								if (tt.first == a) {
+									if (c.spec.caliber_a >= 0.020f) {
+										this->effcs[ef_reco].set(VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
+									}
+									else {
+										this->effcs[ef_reco2].set(VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
+									}
+									switch (c.spec.type_a) {
+									case 0: //AP
 										veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
 										c.spec.pene_a /= 2.0f;
+										break;
+									case 1: //HE
+										veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
+										c.flug = false;//爆発する
+										break;
+									case 2: //ミサイル
+										veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
+										c.flug = false;//爆発する
+										break;
+									default:
+										break;
 									}
 								}
-								for (auto& a : veh.use_veh.module_mesh) {
-									if (tt.first == a) {
-										if (c.spec.caliber_a >= 0.020f) {
-											set_effect(&this->effcs[ef_reco], VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
-										}
-										else {
-											set_effect(&this->effcs[ef_reco2], VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
-										}
+							}
+							for (auto& a : veh.use_veh.module_mesh) {
+								if (tt.first == a) {
+									if (c.spec.caliber_a >= 0.020f) {
+										this->effcs[ef_reco].set(VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
+									}
+									else {
+										this->effcs[ef_reco2].set(VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
+									}
+									switch (c.spec.type_a) {
+									case 0: //AP
 										veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
 										c.spec.pene_a /= 2.0f;
-									}
-								}
-
-								break;
-							case 1: //HE
-								//装甲面に当たったのでhitnearに代入して終了
-								for (auto& a : veh.use_veh.armer_mesh) {
-									if (tt.first == a.first) {
-										hitnear = tt.first;
-										//ダメージ面に当たった時に装甲値に勝てるかどうか
-										{
-											VECTOR_ref normal = veh.hitres[hitnear.value()].Normal;
-											VECTOR_ref position = veh.hitres[hitnear.value()].HitPosition;
-											if (c.spec.pene_a > a.second * (1.0f / std::abs(c.vec.Norm().dot(normal)))) {
-												//貫通
-												veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
-
-												veh.HP = std::max<int16_t>(veh.HP - c.spec.damage_a, 0); //
-												//撃破時エフェクト
-												if (veh.HP == 0) {
-													set_effect(&t.effcs[ef_bomb], veh.obj.frame(veh.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
-												}
-												//弾処理
-												c.flug = false;
-												c.vec += normal * ((c.vec.dot(normal)) * -2.0f);
-												c.vec = c.vec.Norm();
-												c.pos = c.vec * (0.1f) + position;
-												//弾痕
-												veh.hit_obj[t.hitbuf].use = 0;
-											}
-											else {
-												//爆発する
-												//弾処理
-												c.flug = false;
-												c.vec += normal * ((c.vec.dot(normal)) * -2.0f);
-												c.vec = c.vec.Norm();
-												c.pos = c.vec * (0.1f) + position;
-												//弾痕
-												veh.hit_obj[t.hitbuf].use = 1;
-											}
-											if (c.spec.caliber_a >= 0.020f) {
-												set_effect(&this->effcs[ef_reco], c.pos, normal);
-											}
-											else {
-												set_effect(&this->effcs[ef_reco2], c.pos, normal);
-											}
-
-											//弾痕のセット
-											{
-												float asize = c.spec.caliber_a * 100.f;
-												auto scale = VGet(asize / std::abs(c.vec.Norm().dot(normal)), asize, asize);
-												auto y_vec = MATRIX_ref::Vtrans(normal, veh.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
-												auto z_vec = MATRIX_ref::Vtrans(normal.cross(c.vec), veh.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
-
-												veh.hit_obj[t.hitbuf].mat = MATRIX_ref::Scale(scale)* MATRIX_ref::Axis1(y_vec.cross(z_vec), y_vec, z_vec);
-												veh.hit_obj[t.hitbuf].pos = MATRIX_ref::Vtrans(position - veh.pos, veh.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180))) + y_vec * 0.02f;
-												veh.hit_obj[t.hitbuf].flug = true;
-												++t.hitbuf %= veh.hit_obj.size();
-											}
-										}
+										break;
+									case 1: //HE
+										veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
+										c.flug = false;//爆発する
+										break;
+									case 2: //ミサイル
+										veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
+										c.flug = false;//爆発する
+										break;
+									default:
 										break;
 									}
 								}
-								if (hitnear.has_value()) {
-									break;
-								}
-								//空間装甲、モジュールに当たったのでモジュールに30ダメ、弾なし
-								for (auto& a : veh.use_veh.space_mesh) {
-									if (tt.first == a) {
-										if (c.spec.caliber_a >= 0.020f) {
-											set_effect(&this->effcs[ef_reco], VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
-										}
-										else {
-											set_effect(&this->effcs[ef_reco2], VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
-										}
-										veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
-										//爆発する
-										c.flug = false;
-									}
-								}
-								for (auto& a : veh.use_veh.module_mesh) {
-									if (tt.first == a) {
-										if (c.spec.caliber_a >= 0.020f) {
-											set_effect(&this->effcs[ef_reco], VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
-										}
-										else {
-											set_effect(&this->effcs[ef_reco2], VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
-										}
-										veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
-										//爆発する
-										c.flug = false;
-									}
-								}
-								break;
-							case 2: //ミサイル
-								//装甲面に当たったのでhitnearに代入して終了
-								for (auto& a : veh.use_veh.armer_mesh) {
-									if (tt.first == a.first) {
-										hitnear = tt.first;
-										//ダメージ面に当たった時に装甲値に勝てるかどうか
-										{
-											VECTOR_ref normal = veh.hitres[hitnear.value()].Normal;
-											VECTOR_ref position = veh.hitres[hitnear.value()].HitPosition;
-											if (c.spec.pene_a > a.second * (1.0f / std::abs(c.vec.Norm().dot(normal)))) {
-												//貫通
-												veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
-
-												veh.HP = std::max<int16_t>(veh.HP - c.spec.damage_a, 0); //
-												//撃破時エフェクト
-												if (veh.HP == 0) {
-													set_effect(&t.effcs[ef_bomb], veh.obj.frame(veh.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
-												}
-												//弾処理
-												c.flug = false;
-												c.vec += normal * ((c.vec.dot(normal)) * -2.0f);
-												c.vec = c.vec.Norm();
-												c.pos = c.vec * (0.1f) + position;
-												//弾痕
-												veh.hit_obj[t.hitbuf].use = 0;
-											}
-											else {
-												//爆発する
-												//弾処理
-												c.flug = false;
-												c.vec += normal * ((c.vec.dot(normal)) * -2.0f);
-												c.vec = c.vec.Norm();
-												c.pos = c.vec * (0.1f) + position;
-												//弾痕
-												veh.hit_obj[t.hitbuf].use = 1;
-											}
-											if (c.spec.caliber_a >= 0.020f) {
-												set_effect(&this->effcs[ef_reco], c.pos, normal);
-											}
-											else {
-												set_effect(&this->effcs[ef_reco2], c.pos, normal);
-											}
-
-											//弾痕のセット
-											{
-												float asize = c.spec.caliber_a * 100.f;
-												auto scale = VGet(asize / std::abs(c.vec.Norm().dot(normal)), asize, asize);
-												auto y_vec = MATRIX_ref::Vtrans(normal, veh.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
-												auto z_vec = MATRIX_ref::Vtrans(normal.cross(c.vec), veh.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
-
-												veh.hit_obj[t.hitbuf].mat = MATRIX_ref::Scale(scale)* MATRIX_ref::Axis1(y_vec.cross(z_vec), y_vec, z_vec);
-												veh.hit_obj[t.hitbuf].pos = MATRIX_ref::Vtrans(position - veh.pos, veh.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180))) + y_vec * 0.02f;
-												veh.hit_obj[t.hitbuf].flug = true;
-												++t.hitbuf %= veh.hit_obj.size();
-											}
-										}
-										break;
-									}
-								}
-								if (hitnear.has_value()) {
-									break;
-								}
-								//空間装甲、モジュールに当たったのでモジュールに30ダメ、弾なし
-								for (auto& a : veh.use_veh.space_mesh) {
-									if (tt.first == a) {
-										if (c.spec.caliber_a >= 0.020f) {
-											set_effect(&this->effcs[ef_reco], VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
-										}
-										else {
-											set_effect(&this->effcs[ef_reco2], VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
-										}
-										veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
-										//爆発する
-										c.flug = false;
-									}
-								}
-								for (auto& a : veh.use_veh.module_mesh) {
-									if (tt.first == a) {
-										if (c.spec.caliber_a >= 0.020f) {
-											set_effect(&this->effcs[ef_reco], VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
-										}
-										else {
-											set_effect(&this->effcs[ef_reco2], VECTOR_ref(veh.hitres[tt.first].HitPosition) + VECTOR_ref(veh.hitres[tt.first].Normal) * (0.1f), veh.hitres[tt.first].Normal);
-										}
-										veh.HP_m[tt.first] = std::max<int16_t>(veh.HP_m[tt.first] - 30, 0); //
-										//爆発する
-										c.flug = false;
-									}
-								}
-								break;
-							default:
-								break;
 							}
 						}
 					}
-					if (hitnear.has_value())
+					if (hitnear.has_value()) {
 						break;
+					}
 				}
 				return (hitnear.has_value());
 			}

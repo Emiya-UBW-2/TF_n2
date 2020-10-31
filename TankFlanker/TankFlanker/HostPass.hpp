@@ -32,7 +32,7 @@ public:
 		DXDraw::cam_info& cams) {
 		if (dof_flag) {
 			//
-			FarScreen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.far_, 100000.f);
+			FarScreen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.far_, 1000000.f);
 			skyhandle.DrawGraph(0, 0, FALSE);
 			doing();
 			//
@@ -44,7 +44,7 @@ public:
 			doing();
 			DrawEffekseer3D();
 			//
-			NearScreen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, cams.near_ + 1.f);
+			NearScreen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.5f, cams.near_ + 1.f);
 			MainScreen.DrawGraph(0, 0, false);
 			doing();
 		}
