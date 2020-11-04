@@ -219,7 +219,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						for (auto& g : c.vehicle.Gun_) {
 							for (auto& a : g.bullet) {
 								if (a.flug) {
-									DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - cams.campos).size() / 24.f))*8.5f, a.color, GetColor(255, 255, 255));
+									DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - cams.campos).size() / 24.f))*4.5f, a.color, GetColor(255, 255, 255));
 								}
 							}
 						}
@@ -820,11 +820,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 			//木セット
 			for (auto& l : tree) {
-				if (l.fall_flag) {
-					l.fall_rad = std::clamp(l.fall_rad + deg2rad(30.f / fps), deg2rad(0.f), deg2rad(90.f));
-				}
-				l.obj.SetMatrix(MATRIX_ref::RotAxis(l.fall_vec, l.fall_rad) * l.mat * MATRIX_ref::Mtrans(l.pos));
-				l.obj_far.SetMatrix(MATRIX_ref::RotAxis(l.fall_vec, l.fall_rad) * l.mat * MATRIX_ref::Mtrans(l.pos));
+				l.obj.SetMatrix(l.mat * MATRIX_ref::Mtrans(l.pos));
+				l.obj_far.SetMatrix(l.mat * MATRIX_ref::Mtrans(l.pos));
 			}
 			{
 				//他の座標をここで出力(ホスト)
@@ -925,6 +922,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					if (Drawparts->use_vr) {
 						UIparts->draw_in_vr(*Drawparts->get_device_hand1());
 					}
+					UIparts->draw_in_vr(mine);
 				}
 				//被写体深度描画
 				SkyScreen.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);

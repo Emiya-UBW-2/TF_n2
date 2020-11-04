@@ -177,18 +177,18 @@ public:
 	VECTOR_ref nor;					 /**/
 	float scale = 1.f;				 /**/
 
-	void set(VECTOR_ref pos, VECTOR_ref nor, float scale = 1.f) {
+	void set(VECTOR_ref pos_, VECTOR_ref nor_, float scale_ = 1.f) {
 		this->flug = true;
-		this->pos = pos;
-		this->nor = nor;
-		this->scale = scale;
+		this->pos = pos_;
+		this->nor = nor_;
+		this->scale = scale_;
 	}
-	void put(const EffekseerEffectHandle& handle) {
+	void put(const EffekseerEffectHandle& handle_) {
 		if (this->flug) {
 			if (this->handle.IsPlaying()) {
 				this->handle.Stop();
 			}
-			this->handle = handle.Play3D();
+			this->handle = handle_.Play3D();
 			this->handle.SetPos(this->pos);
 			this->handle.SetRotation(atan2(this->nor.y(), std::hypot(this->nor.x(), this->nor.z())), atan2(-this->nor.x(), -this->nor.z()), 0);
 			this->handle.SetScale(this->scale);
@@ -491,6 +491,7 @@ public:
 	static bool Line2D(const int& p1x, const int& p1y, const int& p2x, const int& p2y, const unsigned int& color, const int& thickness=1) {
 		return DxLib::DrawLine(p1x,p1y,p2x,p2y,color,thickness) == TRUE;
 	}
+
 	//‹¾
 	VECTOR_ref Mirrorcampos, Mirrorcamtgt;
 	auto& get_Mirror_obj() {

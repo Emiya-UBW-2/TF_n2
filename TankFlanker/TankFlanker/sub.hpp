@@ -453,9 +453,6 @@ public:
 		MV1 obj, obj_far;
 		MATRIX_ref mat;
 		VECTOR_ref pos;
-		bool fall_flag = false;
-		VECTOR_ref fall_vec;
-		float fall_rad = 0.f;
 	};
 	//player
 	typedef std::pair<int, float> p_animes;

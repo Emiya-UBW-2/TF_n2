@@ -60,9 +60,6 @@ public:
 					tree->resize(tree->size() + 1);
 					tree->back().mat = MATRIX_ref::Scale(VGet(15.f / 10.f, 15.f / 10.f, 15.f / 10.f));
 					tree->back().pos = (VECTOR_ref(p.Vertexs[p.Polygons[i].VIndex[0]].Position) + p.Vertexs[p.Polygons[i].VIndex[1]].Position + p.Vertexs[p.Polygons[i].VIndex[2]].Position) * (1.f / 3.f);
-					tree->back().fall_flag = false;
-					tree->back().fall_vec = VGet(0.f, 0.f, 1.f);
-					tree->back().fall_rad = 0.f;
 
 					tree->back().obj = tree_model.Duplicate();
 					tree->back().obj.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
