@@ -498,7 +498,7 @@ public:
 		{
 			//ピッチ、ロール
 			{
-				int size = y_r(10, out_disp_y);
+				int size = y_r(10, disp_y);
 				int ys = disp_y / 3 - y_r(240, out_disp_y);
 				int xp = disp_x / 2 + ys / 2;
 				int yp = disp_y / 2 + ys / 2;
@@ -622,7 +622,7 @@ public:
 		{
 			//ピッチ、ロール
 			{
-				int size = y_r(10, out_disp_y);
+				int size = y_r(120, disp_y);
 				int ys = disp_y / 3 - y_r(240, out_disp_y);
 				int xp = disp_x / 2 + ys / 2;
 				int yp = disp_y / 2 + ys / 2;

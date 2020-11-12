@@ -922,7 +922,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					if (Drawparts->use_vr) {
 						UIparts->draw_in_vr(*Drawparts->get_device_hand1(), mine);
 					}
-					UIparts->draw_in_vr(mine);
+					//UIparts->draw_in_vr(mine);
 				}
 				//”íÊ‘Ì[“x•`‰æ
 				SkyScreen.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
