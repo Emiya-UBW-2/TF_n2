@@ -101,11 +101,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HostPass.hpp" />
-    <ClInclude Include="make_thread.hpp" />
     <ClInclude Include="map.hpp" />
     <ClInclude Include="sub.hpp" />
     <ClInclude Include="UI.hpp" />
-    <ClInclude Include="useful.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

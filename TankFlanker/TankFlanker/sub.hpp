@@ -38,7 +38,6 @@ private:
 	struct foot_frame {
 		frames frame;
 		EffectS gndsmkeffcs;
-		float gndsmksize = 1.f;
 	};
 	struct Hit {		      /**/
 		bool flug{ false };   /*’e­ƒtƒ‰ƒO*/

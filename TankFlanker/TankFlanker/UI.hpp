@@ -32,13 +32,14 @@ private:
 	int out_disp_y = 1080;
 	int disp_x = 1920;
 	int disp_y = 1080;
-	float ch_veh = 1.f;
+	bool use_vr = false;
 public:
-	UI(const int& o_xd, const int& o_yd, const int& xd, const int& yd) {
+	UI(const int& o_xd, const int& o_yd, const int& xd, const int& yd,const bool& use_vr_) {
 		out_disp_x = o_xd;
 		out_disp_y = o_yd;
 		disp_x = xd;
 		disp_y = yd;
+		use_vr = use_vr_;
 
 		lock = GraphHandle::Load("data/UI/battle_lock.bmp");
 		hit = GraphHandle::Load("data/UI/battle_hit.bmp");
@@ -313,27 +314,11 @@ public:
 
 	void draw(
 		const VECTOR_ref& aimpos,
-		const Mainclass::Chara& chara,
-		const bool& auto_aim,
-		const float& auto_aim_dist,
-		const VECTOR_ref& auto_aim_pos,
-		const bool& vr = false,
-		const bool& chveh = false
+		const DXDraw::system_VR& vr_sys,
+		const Mainclass::Chara& chara
 	) {
 		//オートエイム
-		if (auto_aim) {
-			int siz = int(siz_autoaim);
-
-			if (auto_aim_pos.z() >= 0.f && auto_aim_pos.z() <= 1.f) {
-				DrawRotaGraph(int(auto_aim_pos.x()) - y_r(siz, out_disp_y), int(auto_aim_pos.y()) - y_r(siz, out_disp_y), siz_autoaim_pic, deg2rad(0), lock.get(), TRUE);
-				DrawRotaGraph(int(auto_aim_pos.x()) + y_r(siz, out_disp_y), int(auto_aim_pos.y()) - y_r(siz, out_disp_y), siz_autoaim_pic, deg2rad(90), lock.get(), TRUE);
-				DrawRotaGraph(int(auto_aim_pos.x()) + y_r(siz, out_disp_y), int(auto_aim_pos.y()) + y_r(siz, out_disp_y), siz_autoaim_pic, deg2rad(180), lock.get(), TRUE);
-				DrawRotaGraph(int(auto_aim_pos.x()) - y_r(siz, out_disp_y), int(auto_aim_pos.y()) + y_r(siz, out_disp_y), siz_autoaim_pic, deg2rad(270), lock.get(), TRUE);
-			}
-			easing_set(&siz_autoaim, 32.f * 100.f / auto_aim_dist, 0.8f);
-			easing_set(&siz_autoaim_pic, 1.f, 0.8f);
-		}
-		else {
+		{
 			siz_autoaim = float(disp_x);
 			siz_autoaim_pic = 100.f;
 		}
@@ -347,12 +332,12 @@ public:
 		}
 		//
 		{
-			FontHandle* font = (!vr) ? &font18 : &font12;
+			FontHandle* font = (!use_vr) ? &font18 : &font12;
 			{
 				//弾薬
 				{
 					int xp = 0, xs = 0, yp = 0, ys = 0;
-					if (!vr) {
+					if (!use_vr) {
 						xs = x_r(200, out_disp_x);
 						xp = x_r(20, out_disp_x);
 						ys = y_r(18, out_disp_y);
@@ -404,7 +389,7 @@ public:
 				{
 					auto& veh = chara.vehicle;
 					int xp1, xp2, yp3;
-					if (!vr) {
+					if (!use_vr) {
 						xp1 = disp_x / 3;
 						xp2 = disp_x * 2 / 3;
 						yp3 = disp_y / 3;
@@ -429,7 +414,7 @@ public:
 				//HP
 				{
 					int xs = 0, xp = 0, ys = 0, yp = 0;
-					if (!vr) {
+					if (!use_vr) {
 						xs = x_r(200, out_disp_x);
 						xp = disp_x - x_r(20, out_disp_x)-xs;
 
@@ -446,22 +431,6 @@ public:
 					}
 
 					//
-					if (!vr) {
-						if (chveh) {
-							ch_veh = 2.f;
-						}
-
-						SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(int(255.f*ch_veh), 0, 255));
-						DrawRotaGraph(xp, yp - y_r(60, out_disp_y), y_r(100.f*xs / float(chara.vehicle.use_veh.pic_x), out_disp_x) / 100.f, 0., chara.vehicle.use_veh.ui_pic.get(), TRUE);
-						SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
-
-						if (ch_veh > 1.f) {
-							ch_veh -= 1.f / GetFPS();
-						}
-						else {
-							easing_set(&ch_veh, 0.f, 0.95f);
-						}
-					}
 					{
 						auto& veh = chara.vehicle;
 						auto per = 255;
@@ -488,252 +457,128 @@ public:
 				//
 			}
 		}
-	}
-	void draw_in_vr(const DXDraw::system_VR& vr_sys, const Mainclass::Chara& chara) {
-		const float vr_sys_yvec_y = vr_sys.yvec.y();
-		const float vr_sys_yvec_x = vr_sys.yvec.x();
-		const float vr_sys_touch_y = ((vr_sys.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_SteamVR_Touchpad)) != 0) ? vr_sys.touch.y() : 0.f;
-		const float vr_sys_touch_x = ((vr_sys.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_SteamVR_Touchpad)) != 0) ? vr_sys.touch.x() : 0.f;
-		//
-		{
-			//ピッチ、ロール
+		//VR用オプション
+		if (use_vr) {
+			const float vr_sys_yvec_y = vr_sys.yvec.y();
+			const float vr_sys_yvec_x = vr_sys.yvec.x();
+			const float vr_sys_touch_y = ((vr_sys.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_SteamVR_Touchpad)) != 0) ? vr_sys.touch.y() : 0.f;
+			const float vr_sys_touch_x = ((vr_sys.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_SteamVR_Touchpad)) != 0) ? vr_sys.touch.x() : 0.f;
+			//
 			{
-				int size = y_r(10, disp_y);
+				//ピッチ、ロール
+				{
+					int size = y_r(10, disp_y);
+					int ys = disp_y / 3 - y_r(240, out_disp_y);
+					int xp = disp_x / 2 + ys / 2;
+					int yp = disp_y / 2 + ys / 2;
+
+					int y_pos = int(float(size) * std::clamp(vr_sys_yvec_y / sin(deg2rad(20)), -2.f, 2.f));//ピッチ
+					int x_pos = int(float(size) * std::clamp(vr_sys_yvec_x / sin(deg2rad(20)), -2.f, 2.f));//ロール
+
+					for (int i = 0; i < 2; i++) {
+						DrawCircle(xp, yp, size * 2, i ? GetColor(0, 255, 100) : GetColor(0, 0, 0), FALSE, 1 + i);
+						DrawCircle(xp, yp, size, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), FALSE, 1 + i);
+						DrawLine(xp - size / 2, yp, xp - size / 4, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+						DrawLine(xp, yp - size / 2, xp, yp - size / 4, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+						DrawLine(xp + size / 2, yp, xp + size / 4, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+						DrawLine(xp, yp + size / 2, xp, yp + size / 4, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+					}
+
+					DrawCircle(xp + x_pos, yp + y_pos, size / 5, GetColor(255, 100, 50), FALSE, 2);
+				}
+				//ヨー
+				{
+					int xs = disp_y / 5 - y_r(144, out_disp_y);
+					int xp = disp_x / 2 - xs / 2;
+					int yp = disp_y / 2 + disp_y / 6 - y_r(220 / 2, out_disp_y);
+					int z_pos = int(float(xs / 4) * std::clamp(vr_sys_touch_x / 0.5f, -1.5f, 1.5f));//ヨー
+
+					for (int i = 0; i < 2; i++) {
+						DXDraw::Line2D(xp + xs / 2 - xs / 3, yp, xp + xs / 2 + xs / 3, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+						DXDraw::Line2D(xp + xs / 4, yp - 5, xp + xs / 4, yp + 5, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+						DXDraw::Line2D(xp + xs * 3 / 4, yp - 5, xp + xs * 3 / 4, yp + 5, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+					}
+					DXDraw::Line2D(xp + xs / 2 + z_pos, yp - 5, xp + xs / 2 + z_pos, yp + 5, GetColor(255, 100, 50), 2);
+				}
+			}
+
+
+			//ピッチ
+			/*
+			{
+				int ys = disp_y / 3 - y_r(240, out_disp_y);
+				int xp = disp_x / 2 - ys / 2;
+				int yp = disp_y / 2 - ys / 2;
+				int y_pos = int(float(ys / 4) * std::clamp(vr_sys_touch_y / 0.5f, -2.f, 2.f));
+
+				DXDraw::Line2D(xp, yp, xp, yp + ys, GetColor(0, 0, 0), 5);
+				DXDraw::Line2D(xp, yp + ys / 2 - (ys / 4), xp, yp + ys / 2 + (ys / 4), GetColor(255, 255, 255), 2);
+				DXDraw::Line2D(xp, yp, xp, yp + ys / 2 - (ys / 4), GetColor(255, 0, 0), 2);
+				DXDraw::Line2D(xp, yp + ys / 2 + (ys / 4), xp, yp + ys, GetColor(255, 0, 0), 2);
+
+				DXDraw::Line2D(xp - 5, yp + ys / 2 + y_pos, xp + 5, yp + ys / 2 + y_pos, GetColor(255, 255, 0), 2);
+				DXDraw::Line2D(xp - 5, yp + ys / 2 - (ys / 4), xp + 5, yp + ys / 2 - (ys / 4), GetColor(0, 255, 0), 2);
+				DXDraw::Line2D(xp - 5, yp + ys / 2 + (ys / 4), xp + 5, yp + ys / 2 + (ys / 4), GetColor(0, 255, 0), 2);
+			}
+			*/
+			//速度計
+			{
+				int ys = disp_y / 3 - y_r(240, out_disp_y);
+				int xp = disp_x / 2 - ys / 2;
+				int yp = disp_y / 2;
+
+				DXDraw::Line2D(xp, yp - ys / 3, xp, yp + ys / 3, GetColor(0, 0, 0), 2);
+				DXDraw::Line2D(xp, yp - ys / 3, xp, yp + ys / 3, GetColor(0, 255, 0), 1);
+
+				for (int i = -(ys / 3); i < (ys / 3); i += y_r(10, out_disp_y)) {
+					int p = i + int(chara.vehicle.speed * 3.6f + (ys / 3)) % y_r(10, out_disp_y);
+					if (p <= (ys / 3)) {
+						DXDraw::Line2D(xp, yp + p, xp + 10, yp + p, GetColor(0, 255, 0), 1);
+					}
+					else {
+						break;
+					}
+				}
+
+				for (int i = -(ys / 3); i < (ys / 3); i += y_r(100, out_disp_y)) {
+					int p = i + int(chara.vehicle.speed * 3.6f + (ys / 3)) % y_r(100, out_disp_y);
+					if (p <= (ys / 3)) {
+						DXDraw::Line2D(xp, yp + p, xp + 15, yp + p, GetColor(0, 255, 0), 2);
+					}
+					else {
+						break;
+					}
+				}
+			}
+			//高度計
+			{
 				int ys = disp_y / 3 - y_r(240, out_disp_y);
 				int xp = disp_x / 2 + ys / 2;
-				int yp = disp_y / 2 + ys / 2;
+				int yp = disp_y / 2;
 
-				int y_pos = int(float(size) * std::clamp(vr_sys_yvec_y / sin(deg2rad(20)), -2.f, 2.f));//ピッチ
-				int x_pos = int(float(size) * std::clamp(vr_sys_yvec_x / sin(deg2rad(20)), -2.f, 2.f));//ロール
+				DXDraw::Line2D(xp, yp - ys / 4, xp, yp + ys / 4, GetColor(0, 0, 0), 2);
+				DXDraw::Line2D(xp, yp - ys / 4, xp, yp + ys / 4, GetColor(0, 255, 0), 1);
 
-				for (int i = 0; i < 2; i++) {
-					DrawCircle(xp, yp, size * 2, i ? GetColor(0, 255, 100) : GetColor(0, 0, 0), FALSE, 1 + i);
-					DrawCircle(xp, yp, size, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), FALSE, 1 + i);
-					DrawLine(xp - size / 2, yp, xp - size / 4, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-					DrawLine(xp, yp - size / 2, xp, yp - size / 4, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-					DrawLine(xp + size / 2, yp, xp + size / 4, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-					DrawLine(xp, yp + size / 2, xp, yp + size / 4, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+				for (int i = -(ys / 4); i < (ys / 4); i += y_r(5, out_disp_y)) {
+					int p = i + int(chara.vehicle.pos.y() + (ys / 4)) % y_r(5, out_disp_y);
+					if (p <= (ys / 4)) {
+						DXDraw::Line2D(xp, yp + p, xp - 10, yp + p, GetColor(0, 255, 0), 1);
+					}
+					else {
+						break;
+					}
 				}
 
-				DrawCircle(xp + x_pos, yp + y_pos, size / 5, GetColor(255, 100, 50), FALSE, 2);
-			}
-			//ヨー
-			{
-				int xs = disp_y / 5 - y_r(144, out_disp_y);
-				int xp = disp_x / 2 - xs / 2;
-				int yp = disp_y / 2 + disp_y / 6 - y_r(220 / 2, out_disp_y);
-				int z_pos = int(float(xs / 4) * std::clamp(vr_sys_touch_x / 0.5f, -1.5f, 1.5f));//ヨー
-
-				for (int i = 0; i < 2; i++) {
-					DXDraw::Line2D(xp + xs / 2 - xs / 3, yp, xp + xs / 2 + xs / 3, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-					DXDraw::Line2D(xp + xs / 4, yp - 5, xp + xs / 4, yp + 5, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-					DXDraw::Line2D(xp + xs * 3 / 4, yp - 5, xp + xs * 3 / 4, yp + 5, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-				}
-				DXDraw::Line2D(xp + xs / 2 + z_pos, yp - 5, xp + xs / 2 + z_pos, yp + 5, GetColor(255, 100, 50), 2);
-			}
-		}
-
-
-		//ピッチ
-		/*
-		{
-			int ys = disp_y / 3 - y_r(240, out_disp_y);
-			int xp = disp_x / 2 - ys / 2;
-			int yp = disp_y / 2 - ys / 2;
-			int y_pos = int(float(ys / 4) * std::clamp(vr_sys_touch_y / 0.5f, -2.f, 2.f));
-
-			DXDraw::Line2D(xp, yp, xp, yp + ys, GetColor(0, 0, 0), 5);
-			DXDraw::Line2D(xp, yp + ys / 2 - (ys / 4), xp, yp + ys / 2 + (ys / 4), GetColor(255, 255, 255), 2);
-			DXDraw::Line2D(xp, yp, xp, yp + ys / 2 - (ys / 4), GetColor(255, 0, 0), 2);
-			DXDraw::Line2D(xp, yp + ys / 2 + (ys / 4), xp, yp + ys, GetColor(255, 0, 0), 2);
-
-			DXDraw::Line2D(xp - 5, yp + ys / 2 + y_pos, xp + 5, yp + ys / 2 + y_pos, GetColor(255, 255, 0), 2);
-			DXDraw::Line2D(xp - 5, yp + ys / 2 - (ys / 4), xp + 5, yp + ys / 2 - (ys / 4), GetColor(0, 255, 0), 2);
-			DXDraw::Line2D(xp - 5, yp + ys / 2 + (ys / 4), xp + 5, yp + ys / 2 + (ys / 4), GetColor(0, 255, 0), 2);
-		}
-		*/
-		//速度計
-		{
-			int ys = disp_y / 3 - y_r(240, out_disp_y);
-			int xp = disp_x / 2 - ys / 2;
-			int yp = disp_y / 2;
-
-			DXDraw::Line2D(xp, yp - ys / 3, xp, yp + ys / 3, GetColor(0, 0, 0), 2);
-			DXDraw::Line2D(xp, yp - ys / 3, xp, yp + ys / 3, GetColor(0, 255, 0), 1);
-
-			for (int i = -(ys / 3); i < (ys / 3); i += y_r(10, out_disp_y)) {
-				int p = i + int(chara.vehicle.speed * 3.6f + (ys / 3)) % y_r(10, out_disp_y);
-				if (p <= (ys / 3)) {
-					DXDraw::Line2D(xp, yp + p, xp + 10, yp + p, GetColor(0, 255, 0), 1);
-				}
-				else {
-					break;
-				}
-			}
-
-			for (int i = -(ys / 3); i < (ys / 3); i += y_r(100, out_disp_y)) {
-				int p = i + int(chara.vehicle.speed * 3.6f + (ys / 3)) % y_r(100, out_disp_y);
-				if (p <= (ys / 3)) {
-					DXDraw::Line2D(xp, yp + p, xp + 15, yp + p, GetColor(0, 255, 0), 2);
-				}
-				else {
-					break;
+				for (int i = -(ys / 4); i < (ys / 4); i += y_r(50, out_disp_y)) {
+					int p = i + int(chara.vehicle.pos.y() + (ys / 4)) % y_r(50, out_disp_y);
+					if (p <= (ys / 4)) {
+						DXDraw::Line2D(xp, yp + p, xp - 15, yp + p, GetColor(0, 255, 0), 2);
+					}
+					else {
+						break;
+					}
 				}
 			}
 		}
-		//高度計
-		{
-			int ys = disp_y / 3 - y_r(240, out_disp_y);
-			int xp = disp_x / 2 + ys / 2;
-			int yp = disp_y / 2;
-
-			DXDraw::Line2D(xp, yp - ys / 4, xp, yp + ys / 4, GetColor(0, 0, 0), 2);
-			DXDraw::Line2D(xp, yp - ys / 4, xp, yp + ys / 4, GetColor(0, 255, 0), 1);
-
-			for (int i = -(ys / 4); i < (ys / 4); i += y_r(5, out_disp_y)) {
-				int p = i + int(chara.vehicle.pos.y() + (ys / 4)) % y_r(5, out_disp_y);
-				if (p <= (ys / 4)) {
-					DXDraw::Line2D(xp, yp + p, xp - 10, yp + p, GetColor(0, 255, 0), 1);
-				}
-				else {
-					break;
-				}
-			}
-
-			for (int i = -(ys / 4); i < (ys / 4); i += y_r(50, out_disp_y)) {
-				int p = i + int(chara.vehicle.pos.y() + (ys / 4)) % y_r(50, out_disp_y);
-				if (p <= (ys / 4)) {
-					DXDraw::Line2D(xp, yp + p, xp - 15, yp + p, GetColor(0, 255, 0), 2);
-				}
-				else {
-					break;
-				}
-			}
-		}
-
-	}
-
-	void draw_in_vr(const Mainclass::Chara& chara) {
-		const float vr_sys_yvec_y = 0.f;
-		const float vr_sys_yvec_x = 0.f;
-		const float vr_sys_touch_y = 0.f;
-		const float vr_sys_touch_x = 0.f;
-		//
-		{
-			//ピッチ、ロール
-			{
-				int size = y_r(120, disp_y);
-				int ys = disp_y / 3 - y_r(240, out_disp_y);
-				int xp = disp_x / 2 + ys / 2;
-				int yp = disp_y / 2 + ys / 2;
-
-				int y_pos = int(float(size) * std::clamp(vr_sys_yvec_y / sin(deg2rad(20)), -2.f, 2.f));//ピッチ
-				int x_pos = int(float(size) * std::clamp(vr_sys_yvec_x / sin(deg2rad(20)), -2.f, 2.f));//ロール
-
-				for (int i = 0; i < 2; i++) {
-					DrawCircle(xp, yp, size * 2, i ? GetColor(0, 255, 100) : GetColor(0, 0, 0), FALSE, 1 + i);
-					DrawCircle(xp, yp, size, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), FALSE, 1 + i);
-					DrawLine(xp - size / 2, yp, xp - size / 4, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-					DrawLine(xp, yp - size / 2, xp, yp - size / 4, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-					DrawLine(xp + size / 2, yp, xp + size / 4, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-					DrawLine(xp, yp + size / 2, xp, yp + size / 4, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-				}
-
-				DrawCircle(xp + x_pos, yp + y_pos, size / 5, GetColor(255, 100, 50), FALSE, 2);
-			}
-			//ヨー
-			{
-				int xs = disp_y / 5 - y_r(144, out_disp_y);
-				int xp = disp_x / 2 - xs / 2;
-				int yp = disp_y / 2 + disp_y / 6 - y_r(220 / 2, out_disp_y);
-				int z_pos = int(float(xs / 4) * std::clamp(vr_sys_touch_x / 0.5f, -1.5f, 1.5f));//ヨー
-
-				for (int i = 0; i < 2; i++) {
-					DXDraw::Line2D(xp + xs / 2 - xs / 3, yp, xp + xs / 2 + xs / 3, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-					DXDraw::Line2D(xp + xs / 4, yp - 5, xp + xs / 4, yp + 5, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-					DXDraw::Line2D(xp + xs * 3 / 4, yp - 5, xp + xs * 3 / 4, yp + 5, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-				}
-				DXDraw::Line2D(xp + xs / 2 + z_pos, yp - 5, xp + xs / 2 + z_pos, yp + 5, GetColor(255, 100, 50), 2);
-			}
-		}
-
-
-		//ピッチ
-		/*
-		{
-			int ys = disp_y / 3 - y_r(240, out_disp_y);
-			int xp = disp_x / 2 - ys / 2;
-			int yp = disp_y / 2 - ys / 2;
-			int y_pos = int(float(ys / 4) * std::clamp(vr_sys_touch_y / 0.5f, -2.f, 2.f));
-
-			DXDraw::Line2D(xp, yp, xp, yp + ys, GetColor(0, 0, 0), 5);
-			DXDraw::Line2D(xp, yp + ys / 2 - (ys / 4), xp, yp + ys / 2 + (ys / 4), GetColor(255, 255, 255), 2);
-			DXDraw::Line2D(xp, yp, xp, yp + ys / 2 - (ys / 4), GetColor(255, 0, 0), 2);
-			DXDraw::Line2D(xp, yp + ys / 2 + (ys / 4), xp, yp + ys, GetColor(255, 0, 0), 2);
-
-			DXDraw::Line2D(xp - 5, yp + ys / 2 + y_pos, xp + 5, yp + ys / 2 + y_pos, GetColor(255, 255, 0), 2);
-			DXDraw::Line2D(xp - 5, yp + ys / 2 - (ys / 4), xp + 5, yp + ys / 2 - (ys / 4), GetColor(0, 255, 0), 2);
-			DXDraw::Line2D(xp - 5, yp + ys / 2 + (ys / 4), xp + 5, yp + ys / 2 + (ys / 4), GetColor(0, 255, 0), 2);
-		}
-		*/
-		//速度計
-		{
-			int ys = disp_y / 3 - y_r(240, out_disp_y);
-			int xp = disp_x / 2 - ys / 2;
-			int yp = disp_y / 2;
-
-			DXDraw::Line2D(xp, yp - ys / 3, xp, yp + ys / 3, GetColor(0, 0, 0), 2);
-			DXDraw::Line2D(xp, yp - ys / 3, xp, yp + ys / 3, GetColor(0, 255, 0), 1);
-
-			for (int i = -(ys / 3); i < (ys / 3); i += y_r(10, out_disp_y)) {
-				int p = i + int(chara.vehicle.speed * 3.6f + (ys / 3)) % y_r(10, out_disp_y);
-				if (p <= (ys / 3)) {
-					DXDraw::Line2D(xp, yp + p, xp + 10, yp + p, GetColor(0, 255, 0), 1);
-				}
-				else {
-					break;
-				}
-			}
-
-			for (int i = -(ys / 3); i < (ys / 3); i += y_r(100, out_disp_y)) {
-				int p = i + int(chara.vehicle.speed * 3.6f + (ys / 3)) % y_r(100, out_disp_y);
-				if (p <= (ys / 3)) {
-					DXDraw::Line2D(xp, yp + p, xp + 15, yp + p, GetColor(0, 255, 0), 2);
-				}
-				else {
-					break;
-				}
-			}
-		}
-		//高度計
-		{
-			int ys = disp_y / 3 - y_r(240, out_disp_y);
-			int xp = disp_x / 2 + ys / 2;
-			int yp = disp_y / 2;
-
-			DXDraw::Line2D(xp, yp - ys / 4, xp, yp + ys / 4, GetColor(0, 0, 0), 2);
-			DXDraw::Line2D(xp, yp - ys / 4, xp, yp + ys / 4, GetColor(0, 255, 0), 1);
-
-			for (int i = -(ys / 4); i < (ys / 4); i += y_r(5, out_disp_y)) {
-				int p = i + int(chara.vehicle.pos.y() + (ys / 4)) % y_r(5, out_disp_y);
-				if (p <= (ys / 4)) {
-					DXDraw::Line2D(xp, yp + p, xp - 10, yp + p, GetColor(0, 255, 0), 1);
-				}
-				else {
-					break;
-				}
-			}
-
-			for (int i = -(ys / 4); i < (ys / 4); i += y_r(50, out_disp_y)) {
-				int p = i + int(chara.vehicle.pos.y() + (ys / 4)) % y_r(50, out_disp_y);
-				if (p <= (ys / 4)) {
-					DXDraw::Line2D(xp, yp + p, xp - 15, yp + p, GetColor(0, 255, 0), 2);
-				}
-				else {
-					break;
-				}
-			}
-		}
-
 	}
 };
