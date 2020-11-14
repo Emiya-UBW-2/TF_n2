@@ -461,8 +461,8 @@ public:
 		if (use_vr) {
 			const float vr_sys_yvec_y = vr_sys.yvec.y();
 			const float vr_sys_yvec_x = vr_sys.yvec.x();
-			const float vr_sys_touch_y = ((vr_sys.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_SteamVR_Touchpad)) != 0) ? vr_sys.touch.y() : 0.f;
-			const float vr_sys_touch_x = ((vr_sys.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_SteamVR_Touchpad)) != 0) ? vr_sys.touch.x() : 0.f;
+			const float vr_sys_touch_y = ((vr_sys.on[1] & BUTTON_TOUCHPAD) != 0) ? vr_sys.touch.y() : 0.f;
+			const float vr_sys_touch_x = ((vr_sys.on[1] & BUTTON_TOUCHPAD) != 0) ? vr_sys.touch.x() : 0.f;
 			//
 			{
 				//ピッチ、ロール

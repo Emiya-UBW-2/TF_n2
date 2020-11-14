@@ -466,14 +466,13 @@ public:
 		size_t gun_effcnt = 0;
 
 		//操作関連//==================================================
-		std::array<bool, 15> key{ false };    //キー
+		std::array<bool, 18> key{ false };    //キー
 		float view_xrad = 0.f, view_yrad = 0.f; //砲塔操作用ベクトル
 		//戦車//==================================================
 		int hitbuf = 0;		       /*使用弾痕*/
 		//飛行機//==================================================
 		p_animes p_anime_geardown;		    //車輪アニメーション
 		switchs changegear; //ギアアップスイッチ
-		switchs landing; //着艦フックスイッチ
 		float p_landing_per = 0.f;		    //着艦フック
 		std::array<p_animes, 6> p_animes_rudder;      //ラダーアニメーション
 		std::vector<frames> p_burner;		    //バーナー
@@ -571,8 +570,6 @@ public:
 					}
 					c.changegear.first = true;
 					c.changegear.second = 2;
-					c.landing.first = false;
-					c.landing.second = 2;
 				}
 			}
 		}
