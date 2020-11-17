@@ -842,14 +842,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					//near取得
 					cams.near_ = (Rot == ADS) ? (5.f + 25.f * (cams.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
 					//far取得
-					if (Rot == ADS) {
-						VECTOR_ref aimingpos = cams.campos + (cams.camvec - cams.campos).Norm() * (3000.f);
-						mapparts->map_col_line_nearest(cams.campos, &aimingpos);
-						cams.far_ = std::clamp((cams.campos - aimingpos).size(), 300.f, 3000.f);
-					}
-					else {
-						cams.far_ = 6000.f;
-					}
+					cams.far_ = 4000.f;
 					//照準座標取得
 					GraphHandle::SetDraw_Screen(DX_SCREEN_BACK, cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
 					{
@@ -1013,9 +1006,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						cams.near_ = 5.f + 25.f * (cams.far_ - 300.f) / (3000.f - 300.f);
 						//far取得
 						{
-							VECTOR_ref aimingpos = cams.campos + (cams.camvec - cams.campos).Norm() * (3000.f);
-							mapparts->map_col_line_nearest(cams.campos, &aimingpos);
-							cams.far_ = std::clamp((cams.campos - aimingpos).size(), 300.f, 3000.f);
+							cams.far_ = 4000.f;
 						}
 						//照準座標取得
 						MAIN_Screen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
@@ -1143,7 +1134,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					{
 						MAIN_Screen2.DrawGraph(0, 0, true);
 						//コックピット
-						if (Rot == ADS) {
+						{
 							SetCameraNearFar(0.01f, 2.f);
 							cockpit.DrawModel();
 						}
