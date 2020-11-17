@@ -495,7 +495,7 @@ public:
 		std::vector<frames> p_burner;		    //バーナー
 		//共通項//==================================================
 		vehicles vehicle;
-
+		VECTOR_ref winpos;
 		//セット
 		void set_human(const std::vector<Mainclass::Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic, const size_t&eff_size) {
 			auto& c = *this;

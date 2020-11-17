@@ -313,11 +313,20 @@ public:
 	}
 
 	void draw(
+		const std::vector<Mainclass::Chara>& charas,
 		const VECTOR_ref& aimpos,
 		const DXDraw::system_VR& vr_sys,
-		const Mainclass::Chara& chara
+		const Mainclass::Chara& chara,
+		const char& overrider=-1
 	) {
 		//オートエイム
+		int xxx=0, yyy=0;
+		if (overrider != -1) {
+			xxx = disp_x;
+			yyy = disp_y;
+			disp_x = out_disp_x;
+			disp_y = out_disp_y;
+		}
 		{
 			siz_autoaim = float(disp_x);
 			siz_autoaim_pic = 100.f;
@@ -332,12 +341,12 @@ public:
 		}
 		//
 		{
-			FontHandle* font = (!use_vr) ? &font18 : &font12;
+			FontHandle* font = (!(use_vr && overrider == -1)) ? &font18 : &font12;
 			{
 				//弾薬
 				{
 					int xp = 0, xs = 0, yp = 0, ys = 0;
-					if (!use_vr) {
+					if (!(use_vr && overrider == -1)) {
 						xs = x_r(200, out_disp_x);
 						xp = x_r(20, out_disp_x);
 						ys = y_r(18, out_disp_y);
@@ -389,7 +398,7 @@ public:
 				{
 					auto& veh = chara.vehicle;
 					int xp1;
-					if (!use_vr) {
+					if (!(use_vr && overrider == -1)) {
 						xp1 = disp_x / 3;
 					}
 					else {
@@ -400,7 +409,7 @@ public:
 				{
 					auto& veh = chara.vehicle;
 					int xp2, yp3;
-					if (!use_vr) {
+					if (!(use_vr && overrider == -1)) {
 						xp2 = disp_x * 2 / 3;
 						yp3 = disp_y / 3;
 					}
@@ -422,7 +431,7 @@ public:
 				//HP
 				{
 					int xs = 0, xp = 0, ys = 0, yp = 0;
-					if (!use_vr) {
+					if (!(use_vr && overrider == -1)) {
 						xs = x_r(200, out_disp_x);
 						xp = disp_x - x_r(20, out_disp_x)-xs;
 
@@ -466,7 +475,7 @@ public:
 			}
 		}
 		//VR用オプション
-		if (use_vr) {
+		if ((use_vr && overrider == -1)) {
 			const float vr_sys_yvec_y = vr_sys.yvec.y();
 			const float vr_sys_yvec_x = vr_sys.yvec.x();
 			const float vr_sys_touch_y = ((vr_sys.on[1] & BUTTON_TOUCHPAD) != 0) ? vr_sys.touch.y() : 0.f;
@@ -533,7 +542,7 @@ public:
 			//速度計
 			{
 				int xp = 0, xs = 0, yp = 0, ys = 0;
-				if (!use_vr) {
+				if (!(use_vr && overrider == -1)) {
 					xs = x_r(200, out_disp_x);
 					xp = disp_x / 3;
 					ys = disp_y / 4/3;
@@ -572,7 +581,7 @@ public:
 			//高度計
 			{
 				int xp = 0, xs = 0, yp = 0, ys = 0;
-				if (!use_vr) {
+				if (!(use_vr && overrider == -1)) {
 					xs = x_r(200, out_disp_x);
 					xp = disp_x * 2 / 3;
 					ys = (disp_y / 4)/3;
@@ -609,5 +618,23 @@ public:
 				}
 			}
 		}
+
+		for (auto&c : charas) {
+			if (c.id != chara.id) {
+				int siz = int(32.f);
+				if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
+					siz = int(32.f);
+					DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), GetColor(255, 0, 0), FALSE);
+					siz = int(42.f);
+					DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), GetColor(255, 0, 0), FALSE);
+					DrawLine(int(c.winpos.x()), int(c.winpos.y()), disp_x / 2, disp_y / 2, GetColor(255, 0, 0));
+				}
+			}
+		}
+		if (overrider != -1) {
+			disp_x = xxx;
+			disp_y = yyy;
+		}
+
 	}
 };

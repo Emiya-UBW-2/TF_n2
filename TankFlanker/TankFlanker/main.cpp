@@ -27,15 +27,21 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);																		/*デバッグ*/
 	auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);				/*ホストパスエフェクト*/
 	DXDraw::cam_info cams;
-	VECTOR_ref eyevec;																			//視点
+	VECTOR_ref eyevec, eyevec2;																	//視点
 	VECTOR_ref aimpos;																			//機体の狙い
 	VECTOR_ref aimposout;																		//UIに出力
 	GraphHandle BufScreen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);		//描画スクリーン
 	GraphHandle UI_Screen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);		//描画スクリーン
 	GraphHandle MAIN_Screen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);	//描画スクリーン
+
+	GraphHandle BufScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);		//描画スクリーン
+	GraphHandle UI_Screen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);		//描画スクリーン
+	GraphHandle MAIN_Screen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//描画スクリーン
+	GraphHandle outScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//描画スクリーン
 	/*map*/
 	auto mapparts = std::make_unique<Mapclass>(Drawparts->disp_x, Drawparts->disp_y);
 	GraphHandle SkyScreen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y);			//空描画
+	GraphHandle SkyScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y);			//空描画
 //その他
 	MV1 hit_pic;      //弾痕
 	//コックピット
@@ -104,7 +110,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		start_c = true;
 		start_c2 = true;
 		//
-		chara.resize(5);
+		chara.resize(2);
 		//キャラ選択
 		if (!UIparts->select_window(&chara[0], &Vehicles)) {
 			break;
@@ -139,6 +145,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		Rot = 0;
 		eyevec = mine.vehicle.mat.zvec() * -1.f;
 		cams.campos = mine.vehicle.pos + VGet(0.f, 3.f, 0.f) + eyevec * range;
+		eyevec2 = chara[1].vehicle.mat.zvec() * -1.f;
 		for (auto& c : chara) {
 			auto& veh = c.vehicle;
 			for (auto& t : veh.use_veh.wheelframe) {
@@ -184,9 +191,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					easing_set(&range, range_p, 0.9f);
 				}
 				//見回し
-				if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-					mine.view_yrad = 0.f;
-					mine.view_xrad = 0.f;
+				if (Drawparts->use_vr) {
+					if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+						chara[1].view_yrad = 0.f;
+						chara[1].view_xrad = 0.f;
+					}
+				}
+				else {
+					if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+						mine.view_yrad = 0.f;
+						mine.view_xrad = 0.f;
+					}
 				}
 				//キー
 				{
@@ -243,6 +258,30 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 					//VR専用
 					if (Drawparts->use_vr) {
+						mine.key[0] = false;   //射撃
+						mine.key[1] = false; //マシンガン
+						mine.key[2] = false;
+						mine.key[3] = false;
+						mine.key[4] = false;
+						mine.key[5] = false;
+						//ヨー
+						mine.key[6] = false;
+						mine.key[7] = false;
+						//スロットル
+						mine.key[8] = false;
+						mine.key[9] = false;
+						//脚
+						mine.key[10] = false;
+						//ブレーキ
+						mine.key[11] = false;
+						//精密操作
+						mine.key[12] = false;
+						mine.key[13] = false;
+						mine.key[14] = false;
+						mine.key[15] = false;
+						mine.key[16] = false;
+						mine.key[17] = false;
+
 						auto& ptr_LEFTHAND = *Drawparts->get_device_hand1();
 						if (&ptr_LEFTHAND != nullptr) {
 							if (ptr_LEFTHAND.turn && ptr_LEFTHAND.now) {
@@ -273,15 +312,15 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								//精密操作
 								{
 									//ピッチ
-									mine.key[12] = mine.key[12] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(10)));
-									mine.key[13] = mine.key[13] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-10)));
+									mine.key[12] = mine.key[12] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(16)));
+									mine.key[13] = mine.key[13] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-16)));
 									//ロール
-									mine.key[14] = mine.key[14] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(10)));
-									mine.key[15] = mine.key[15] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-10)));
+									mine.key[14] = mine.key[14] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(16)));
+									mine.key[15] = mine.key[15] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-16)));
 									if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
 										//ヨー
-										mine.key[16] = mine.key[16] || (ptr_LEFTHAND.touch.x() > 0.25f);
-										mine.key[17] = mine.key[17] || (ptr_LEFTHAND.touch.x() < -0.25f);
+										mine.key[16] = mine.key[16] || (ptr_LEFTHAND.touch.x() > 0.45f);
+										mine.key[17] = mine.key[17] || (ptr_LEFTHAND.touch.x() < -0.45f);
 									}
 								}
 								//
@@ -660,7 +699,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 													float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cos取得2D
 													float view_xrad = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
 													{
-														float limit = deg2rad(30.f) / fps;
+														float limit = deg2rad(25.f) / fps;
 														float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad, -limit, limit);
 														float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad, -limit, limit);
 														a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
@@ -821,12 +860,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						//
 						easing_set(&aimpos, endpos, 0.9f);
 						aimposout = ConvWorldPosToScreenPos(aimpos.get());
+						for (auto& c : chara) {
+							auto& veh = c.vehicle;
+							c.winpos = ConvWorldPosToScreenPos(veh.pos.get());
+						}
 					}
 				}
 				//UI
 				UI_Screen.SetDraw_Screen();
 				{
-					UIparts->draw(aimposout, *Drawparts->get_device_hand1(), mine);
+					UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), mine);
+
 				}
 				//sky
 				SkyScreen.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
@@ -938,26 +982,32 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					cams);
 				if (Drawparts->use_vr) {
 					auto& ct = chara[1];
+					cams.fov = deg2rad(60);
 					{
 						//campos,camvec,camup取得
 						auto& veh = ct.vehicle;
 						{
-							cams.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
+							int mousex, mousey;
+							GetMousePoint(&mousex, &mousey);
+							SetMousePoint(Drawparts->out_disp_x / 2, Drawparts->out_disp_y / 2);
+
+							float y = atan2f(eyevec2.x(), eyevec2.z()) + deg2rad(float(mousex - Drawparts->out_disp_x / 2) * 0.1f);
+							float x = atan2f(eyevec2.y(), std::hypotf(eyevec2.x(), eyevec2.z())) + deg2rad(float(mousey - Drawparts->out_disp_y / 2) * 0.1f);
+							x = std::clamp(x, deg2rad(-45), deg2rad(45));
+							eyevec2 = VGet(cos(x) * std::sin(y), std::sin(x), std::cos(x) * std::cos(y));
+
+						}
+						{
+							cams.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(/*eye_pos_ads*/ VGet(0, 0.58f, 0), veh.mat);
 							cams.campos.y(std::max(cams.campos.y(), 5.f));
-							if (Drawparts->use_vr) {
-								cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
-								cams.camup = MATRIX_ref::Vtrans(HMDmat.yvec(), veh.mat);//veh.mat.yvec();
+							if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+								cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
 							}
 							else {
-								if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
-								}
-								else {
-									eyevec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
-									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
-								}
-								cams.camup = veh.mat.yvec();
+								eyevec2 = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
+								cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
 							}
+							cams.camup = veh.mat.yvec();
 						}
 						//near取得
 						cams.near_ = 5.f + 25.f * (cams.far_ - 300.f) / (3000.f - 300.f);
@@ -968,7 +1018,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							cams.far_ = std::clamp((cams.campos - aimingpos).size(), 300.f, 3000.f);
 						}
 						//照準座標取得
-						GraphHandle::SetDraw_Screen(DX_SCREEN_BACK, cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
+						MAIN_Screen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
 						{
 							VECTOR_ref startpos = ct.vehicle.pos;
 							VECTOR_ref endpos = startpos + ct.vehicle.mat.zvec() * (-1000.f);
@@ -977,74 +1027,83 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							//
 							easing_set(&aimpos, endpos, 0.9f);
 							aimposout = ConvWorldPosToScreenPos(aimpos.get());
+							for (auto& c : chara) {
+								auto& veh = c.vehicle;
+								c.winpos = ConvWorldPosToScreenPos(veh.pos.get());
+							}
 						}
 					}
 					//UI
-					UI_Screen.SetDraw_Screen();
+					UI_Screen2.SetDraw_Screen();
 					{
-						UIparts->draw(aimposout, *Drawparts->get_device_hand1(), ct);
+						UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), ct,0);
 					}
 					//sky
-					SkyScreen.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
+					SkyScreen2.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
 					{
 						mapparts->sky_draw();
 					}
 					//被写体深度描画
-					Hostpassparts->dof(&BufScreen, SkyScreen, [&]() {
-						Drawparts->Draw_by_Shadow(
-							[&]() {
-							//マップ
-							SetFogStartEnd(30000.0f, 60000.f);
-							SetFogColor(128, 128, 128);
-							{
-								mapparts->map_get().DrawModel();
-							}
-							//海
-							mapparts->sea_draw(cams.campos);
-							//機体
-							SetFogStartEnd(0.0f, 3000.f);
-							SetFogColor(128, 128, 128);
-							{
-								for (auto& c : chara) {
-									auto& veh = c.vehicle;
-									//戦闘機
-									veh.obj.DrawModel();
-									//弾痕
-									for (auto& h : veh.hit_obj) {
-										if (h.flug) {
-											h.pic.DrawFrame(h.use);
-										}
-									}
-								}
-								for (auto& l : tree) {
-									l.obj.DrawModel();
-									//l.obj_far.DrawModel();
-								}
-								//
+					BufScreen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.5f, 500000.f);
 
-							}
-							SetFogEnable(FALSE);
-							SetUseLighting(FALSE);
+					Effekseer_Sync3DSetting();
+					SkyScreen2.DrawGraph(0, 0, FALSE);
+					UpdateEffekseer3D(); //2.0ms
+					Drawparts->Draw_by_Shadow(
+						[&]() {
+						//マップ
+						SetFogStartEnd(30000.0f, 60000.f);
+						SetFogColor(128, 128, 128);
+						{
+							mapparts->map_get().DrawModel();
+						}
+						//海
+						mapparts->sea_draw(cams.campos);
+						//機体
+						SetFogStartEnd(0.0f, 3000.f);
+						SetFogColor(128, 128, 128);
+						{
 							for (auto& c : chara) {
 								auto& veh = c.vehicle;
-								for (auto& cg : veh.Gun_) {
-									for (auto& a : cg.bullet) {
-										if (a.flug) {
-											DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - cams.campos).size() / 24.f))*4.5f, a.color, GetColor(255, 255, 255));
-										}
+								//戦闘機
+								veh.obj.DrawModel();
+								//弾痕
+								for (auto& h : veh.hit_obj) {
+									if (h.flug) {
+										h.pic.DrawFrame(h.use);
 									}
 								}
 							}
-							SetUseLighting(TRUE);
-							SetFogEnable(TRUE);
+							for (auto& l : tree) {
+								l.obj.DrawModel();
+								//l.obj_far.DrawModel();
+							}
+							//
+
 						}
-						);
-					}, cams);
+						SetFogEnable(FALSE);
+						SetUseLighting(FALSE);
+						for (auto& c : chara) {
+							auto& veh = c.vehicle;
+							for (auto& cg : veh.Gun_) {
+								for (auto& a : cg.bullet) {
+									if (a.flug) {
+										DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - cams.campos).size() / 24.f))*4.5f, a.color, GetColor(255, 255, 255));
+									}
+								}
+							}
+						}
+						SetUseLighting(TRUE);
+						SetFogEnable(TRUE);
+					}
+					);
+					DrawEffekseer3D();
+
 					//最終描画
-					MAIN_Screen.SetDraw_Screen();
+					MAIN_Screen2.SetDraw_Screen();
 					{
-						BufScreen.DrawGraph(0, 0, false);
-						Hostpassparts->bloom(BufScreen, 255);//ブルーム
+						BufScreen2.DrawGraph(0, 0, false);
+						Hostpassparts->bloom(BufScreen2, 255);//ブルーム
 					}
 					//コックピット演算
 					{
@@ -1080,23 +1139,29 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						cockpit.SetMatrix(MATRIX_ref(veh.mat)*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, veh.mat)));
 					}
 					//VRに移す
-					Drawparts->outScreen[0].SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_);
+					outScreen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_);
 					{
-						MAIN_Screen.DrawGraph(0, 0, true);
+						MAIN_Screen2.DrawGraph(0, 0, true);
 						//コックピット
 						if (Rot == ADS) {
 							SetCameraNearFar(0.01f, 2.f);
 							cockpit.DrawModel();
 						}
 						//UI
-						UI_Screen.DrawGraph(0, 0, true);
+						UI_Screen2.DrawGraph(0, 0, true);
 					}
+					cams.fov = deg2rad(90);
 				}
 			}
 			//draw
 			GraphHandle::SetDraw_Screen(int(DX_SCREEN_BACK), false);
 			{
-				Drawparts->outScreen[0].DrawExtendGraph(0, 0, Drawparts->out_disp_x, Drawparts->out_disp_y, false);
+				if (Drawparts->use_vr) {
+					outScreen2.DrawExtendGraph(0, 0, Drawparts->out_disp_x, Drawparts->out_disp_y, false);
+				}
+				else {
+					Drawparts->outScreen[0].DrawExtendGraph(0, 0, Drawparts->out_disp_x, Drawparts->out_disp_y, false);
+				}
 				Debugparts->end_way();
 				Debugparts->debug(10, 10, float(GetNowHiPerformanceCount() - waits) / 1000.f);
 			}
