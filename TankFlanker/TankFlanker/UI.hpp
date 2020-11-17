@@ -388,18 +388,26 @@ public:
 				//飛行機モード用
 				{
 					auto& veh = chara.vehicle;
-					int xp1, xp2, yp3;
+					int xp1;
 					if (!use_vr) {
 						xp1 = disp_x / 3;
+					}
+					else {
+						xp1 = disp_x / 2 - disp_y / 6 + y_r(240 / 2, out_disp_y);
+					}
+					font->DrawStringFormat_RIGHT(xp1, disp_y / 2, GetColor(255, 255, 255), "%4.0f km/h", veh.speed * 3.6f);
+				}
+				{
+					auto& veh = chara.vehicle;
+					int xp2, yp3;
+					if (!use_vr) {
 						xp2 = disp_x * 2 / 3;
 						yp3 = disp_y / 3;
 					}
 					else {
-						xp1 = disp_x / 2 - disp_y / 6 + y_r(240 / 2, out_disp_y);
 						xp2 = disp_x / 2 + disp_y / 6 - y_r(240 / 2, out_disp_y);
 						yp3 = disp_y / 2 - disp_y / 6 + y_r(60, out_disp_y);
 					}
-					font->DrawStringFormat(xp1 - font->GetDrawWidthFormat("%4.0f km/h ", veh.speed * 3.6f), disp_y / 2, GetColor(255, 255, 255), "%4.0f km/h", veh.speed * 3.6f);
 					font->DrawStringFormat(xp2, disp_y / 2, GetColor(255, 255, 255), " %4d m", int(veh.pos.y()));
 					if (veh.speed < veh.use_veh.min_speed_limit) {
 						font->DrawString(disp_x / 2 - font->GetDrawWidth("STALL") / 2, yp3 - y_r(36, out_disp_y), "STALL", GetColor(255, 0, 0));
@@ -502,7 +510,8 @@ public:
 				}
 			}
 
-
+		}
+		{
 			//ピッチ
 			/*
 			{
@@ -523,16 +532,26 @@ public:
 			*/
 			//速度計
 			{
-				int ys = disp_y / 3 - y_r(240, out_disp_y);
-				int xp = disp_x / 2 - ys / 2;
-				int yp = disp_y / 2;
+				int xp = 0, xs = 0, yp = 0, ys = 0;
+				if (!use_vr) {
+					xs = x_r(200, out_disp_x);
+					xp = disp_x / 3;
+					ys = disp_y / 4/3;
+					yp = disp_y / 2;
+				}
+				else {
+					xs = 0;
+					xp = disp_x / 2 - (disp_y / 3 - y_r(240, out_disp_y)) / 2;
+					ys = (disp_y / 3 - y_r(240, out_disp_y))/3;
+					yp = disp_y / 2;
+				}
 
-				DXDraw::Line2D(xp, yp - ys / 3, xp, yp + ys / 3, GetColor(0, 0, 0), 2);
-				DXDraw::Line2D(xp, yp - ys / 3, xp, yp + ys / 3, GetColor(0, 255, 0), 1);
+				DXDraw::Line2D(xp, yp - ys, xp, yp + ys, GetColor(0, 0, 0), 2);
+				DXDraw::Line2D(xp, yp - ys, xp, yp + ys, GetColor(0, 255, 0), 1);
 
-				for (int i = -(ys / 3); i < (ys / 3); i += y_r(10, out_disp_y)) {
-					int p = i + int(chara.vehicle.speed * 3.6f + (ys / 3)) % y_r(10, out_disp_y);
-					if (p <= (ys / 3)) {
+				for (int i = -ys; i < ys; i += (y_r(10, out_disp_y))) {
+					int p = i + int(chara.vehicle.speed * 3.6f + ys) % (y_r(10, out_disp_y));
+					if (p <= ys) {
 						DXDraw::Line2D(xp, yp + p, xp + 10, yp + p, GetColor(0, 255, 0), 1);
 					}
 					else {
@@ -540,9 +559,9 @@ public:
 					}
 				}
 
-				for (int i = -(ys / 3); i < (ys / 3); i += y_r(100, out_disp_y)) {
-					int p = i + int(chara.vehicle.speed * 3.6f + (ys / 3)) % y_r(100, out_disp_y);
-					if (p <= (ys / 3)) {
+				for (int i = -ys; i < ys; i += (y_r(100, out_disp_y))) {
+					int p = i + int(chara.vehicle.speed * 3.6f + ys) % (y_r(100, out_disp_y));
+					if (p <= ys) {
 						DXDraw::Line2D(xp, yp + p, xp + 15, yp + p, GetColor(0, 255, 0), 2);
 					}
 					else {
@@ -552,16 +571,26 @@ public:
 			}
 			//高度計
 			{
-				int ys = disp_y / 3 - y_r(240, out_disp_y);
-				int xp = disp_x / 2 + ys / 2;
-				int yp = disp_y / 2;
+				int xp = 0, xs = 0, yp = 0, ys = 0;
+				if (!use_vr) {
+					xs = x_r(200, out_disp_x);
+					xp = disp_x * 2 / 3;
+					ys = (disp_y / 4)/3;
+					yp = disp_y / 2;
+				}
+				else {
+					xs = 0;
+					xp = disp_x / 2 + (disp_y / 3 - y_r(240, out_disp_y)) / 2;
+					ys = (disp_y / 3 - y_r(240, out_disp_y))/3;
+					yp = disp_y / 2;
+				}
 
-				DXDraw::Line2D(xp, yp - ys / 4, xp, yp + ys / 4, GetColor(0, 0, 0), 2);
-				DXDraw::Line2D(xp, yp - ys / 4, xp, yp + ys / 4, GetColor(0, 255, 0), 1);
+				DXDraw::Line2D(xp, yp - ys, xp, yp + ys, GetColor(0, 0, 0), 2);
+				DXDraw::Line2D(xp, yp - ys, xp, yp + ys, GetColor(0, 255, 0), 1);
 
-				for (int i = -(ys / 4); i < (ys / 4); i += y_r(5, out_disp_y)) {
-					int p = i + int(chara.vehicle.pos.y() + (ys / 4)) % y_r(5, out_disp_y);
-					if (p <= (ys / 4)) {
+				for (int i = -ys; i < ys; i += y_r(5, out_disp_y)) {
+					int p = i + int(chara.vehicle.pos.y() + ys) % y_r(5, out_disp_y);
+					if (p <= ys) {
 						DXDraw::Line2D(xp, yp + p, xp - 10, yp + p, GetColor(0, 255, 0), 1);
 					}
 					else {
@@ -569,9 +598,9 @@ public:
 					}
 				}
 
-				for (int i = -(ys / 4); i < (ys / 4); i += y_r(50, out_disp_y)) {
-					int p = i + int(chara.vehicle.pos.y() + (ys / 4)) % y_r(50, out_disp_y);
-					if (p <= (ys / 4)) {
+				for (int i = -ys; i < ys; i += y_r(50, out_disp_y)) {
+					int p = i + int(chara.vehicle.pos.y() + ys) % y_r(50, out_disp_y);
+					if (p <= ys) {
 						DXDraw::Line2D(xp, yp + p, xp - 15, yp + p, GetColor(0, 255, 0), 2);
 					}
 					else {

@@ -45,6 +45,13 @@ private:
 		MV1 pic;	      /*’e­ƒ‚ƒfƒ‹*/
 		VECTOR_ref pos;	      /*À•W*/
 		MATRIX_ref mat;	      /**/
+		void clear() {
+			this->flug = false;
+			this->use = 0;
+			this->pic.Dispose();
+			this->pos = VGet(0, 0, 0);
+			this->mat.clear();
+		}
 	};								      /**/
 public:
 	//’e–ò
@@ -351,7 +358,9 @@ private:
 		float yadd = 0.f;
 		VECTOR_ref pos, repos, vec;
 	};
-	struct Guns {							      /**/
+	class Guns {							      /**/
+	public:
+		size_t id = 0;
 		size_t usebullet{};					      /*g—p’e*/
 		std::array<ammos, 64> bullet;				      /*Šm•Û‚·‚é’e*/
 		float loadcnt{ 0 };					      /*‘•‚Ä‚ñƒJƒEƒ“ƒ^[*/
@@ -359,13 +368,28 @@ private:
 		int16_t rounds{ 0 };					      /*’e”*/
 		gun_frame gun_info;						      /**/
 		std::vector<Mainclass::Ammos> Spec;				      /**/
+		void clear() {
+			this->usebullet = 0;
+			this->loadcnt = 0.f;
+			this->fired = 0.f;
+			this->rounds = 0;
+			this->Spec.clear();
+		}
 	};								      /**/
 	struct ef_guns {
 		EffectS first;
 		ammos* second = nullptr;
 		int cnt = -1;
 	};
-	typedef std::pair<size_t, float> pair_hit;
+	class pair_hit {							      /**/
+	public:
+		size_t first = 0;
+		float second = 0.f;
+		void clear() {
+			this->first = 0;
+			this->second = 0.f;
+		}
+	};
 	class vehicles {
 	public:
 		Vehcs use_veh;							      /*ŒÅ—L’l*/
@@ -391,7 +415,6 @@ private:
 		std::vector<pair_hit> hitssort;					      /*ƒtƒŒ[ƒ€‚É“–‚½‚Á‚½‡”Ô*/
 	public:
 		void reset() {
-			//*
 			this->obj.Dispose();
 			this->col.Dispose();
 			this->hit_check = false;
@@ -399,7 +422,7 @@ private:
 			this->speed_add = 0.f;
 			this->speed_sub = 0.f;
 			this->speed = 0.f;
-			this->add = VGet(0.f, 0.f, 0.f);
+			this->add.clear();
 			this->hitres.clear();
 			this->HP_m.clear();
 			this->wheel_Left = 0.f;
@@ -418,32 +441,26 @@ private:
 			this->zradadd = 0.f;
 			this->zradadd_left = 0.f;
 			this->zradadd_right = 0.f;
-			for (auto& h : this->hit_obj) {
-				h.flug = false;
-				h.use = 0;
-				h.pic.Dispose();
-				h.pos = VGet(0, 0, 0);
-				h.mat = MGetIdent();
-			}
-			//this->use_veh;
-			for (auto& g : this->Gun_) {
-				g.fired = 0.f;
-				g.loadcnt = 0.f;
-				g.rounds = 0;
-				g.usebullet = 0;
-				//for (auto& a : g.bullet) {
-				//}
-				//g.gun_info;
-				g.Spec.clear();
-			}
+			for (auto& h : this->hit_obj) { h.clear(); }
+			for (auto& cg : this->Gun_) { cg.clear(); }
 			this->Gun_.clear();
-
-			for (auto& h : this->hitssort) {
-				h.first = 0;
-				h.second = 0.f;
-			}
-			this->hitssort.clear();					      //ƒtƒŒ[ƒ€‚É“–‚½‚Á‚½‡”Ô
-			//*/
+			for (auto& h : this->hitssort) { h.clear(); }
+			this->hitssort.clear();
+		}
+		void spawn(const VECTOR_ref& pos_, const MATRIX_ref& mat_) {
+			this->HP = this->use_veh.HP;
+			this->pos = pos_;
+			this->mat = mat_;
+			this->xradadd_right = 0.f;
+			this->xradadd_left = 0.f;
+			this->yradadd_left = 0.f;
+			this->yradadd_right = 0.f;
+			this->zradadd_right = 0.f;
+			this->zradadd_left = 0.f;
+			this->speed_add = 0.f;
+			this->speed_sub = 0.f;
+			this->speed = 0.f;
+			this->add.clear();
 		}
 	};
 public:
@@ -507,32 +524,30 @@ public:
 							h.flug = false;
 							h.pic = hit_pic.Duplicate();
 							h.use = 0;
-							h.mat = MGetIdent();
-							h.pos = VGet(0.f, 0.f, 0.f);
+							h.mat.clear();
+							h.pos.clear();
 						}
 						for (int j = 0; j < veh.obj.material_num(); ++j) {
 							MV1SetMaterialSpcColor(veh.obj.get(), j, GetColorF(0.85f, 0.82f, 0.78f, 0.1f));
 							MV1SetMaterialSpcPower(veh.obj.get(), j, 50.0f);
 						}
 						//–C
-						{
-							veh.Gun_.resize(veh.use_veh.gunframe.size());
-							for (int j = 0; j < veh.Gun_.size(); j++) {
-								auto& g = veh.Gun_[j];
-								g.gun_info = veh.use_veh.gunframe[j];
-								g.rounds = g.gun_info.rounds;
-								//g—p–C’e
-								g.Spec.resize(g.Spec.size() + 1);
-								for (auto& pa : Ammo_) {
-									if (pa.name_a.find(g.gun_info.useammo[0]) != std::string::npos) {
-										g.Spec.back() = pa;
-										break;
-									}
+						veh.Gun_.resize(veh.use_veh.gunframe.size());
+						fill_id(veh.Gun_);
+						for (auto& cg : veh.Gun_) {
+							cg.gun_info = veh.use_veh.gunframe[cg.id];
+							cg.rounds = cg.gun_info.rounds;
+							//g—p–C’e
+							cg.Spec.resize(cg.Spec.size() + 1);
+							for (auto& pa : Ammo_) {
+								if (pa.name_a.find(cg.gun_info.useammo[0]) != std::string::npos) {
+									cg.Spec.back() = pa;
+									break;
 								}
-								for (auto& p : g.bullet) {
-									p.color = GetColor(255, 255, 172);
-									p.spec = g.Spec[0];
-								}
+							}
+							for (auto& p : cg.bullet) {
+								p.color = GetColor(255, 255, 172);
+								p.spec = cg.Spec[0];
 							}
 						}
 						//ƒqƒbƒgƒ|ƒCƒ“ƒg
@@ -591,33 +606,33 @@ public:
 						for (auto& m : veh.use_veh.module_mesh) {
 							veh.hitres[m] = veh.col.CollCheck_Line(c.repos, (c.pos + (c.pos - c.repos) * (0.1f)), -1, int(m));
 							if (veh.hitres[m].HitFlag) {
-								veh.hitssort[m] = pair_hit(m, (c.repos - veh.hitres[m].HitPosition).size());
+								veh.hitssort[m] = { m, (c.repos - veh.hitres[m].HitPosition).size() };
 								is_hit = true;
 							}
 							else {
-								veh.hitssort[m] = pair_hit(m, (std::numeric_limits<float>::max)());
+								veh.hitssort[m] = { m, (std::numeric_limits<float>::max)() };
 							}
 						}
 						//‹óŠÔ‘•b
 						for (auto& m : veh.use_veh.space_mesh) {
 							veh.hitres[m] = veh.col.CollCheck_Line(c.repos, (c.pos + (c.pos - c.repos) * (0.1f)), -1, int(m));
 							if (veh.hitres[m].HitFlag) {
-								veh.hitssort[m] = pair_hit(m, (c.repos - veh.hitres[m].HitPosition).size());
+								veh.hitssort[m] = { m, (c.repos - veh.hitres[m].HitPosition).size() };
 								is_hit = true;
 							}
 							else {
-								veh.hitssort[m] = pair_hit(m, (std::numeric_limits<float>::max)());
+								veh.hitssort[m] = { m, (std::numeric_limits<float>::max)() };
 							}
 						}
 						//‘•b
 						for (auto& m : veh.use_veh.armer_mesh) {
 							veh.hitres[m.first] = veh.col.CollCheck_Line(c.repos, c.pos, -1, int(m.first));
 							if (veh.hitres[m.first].HitFlag) {
-								veh.hitssort[m.first] = pair_hit(m.first, (c.repos - veh.hitres[m.first].HitPosition).size());
+								veh.hitssort[m.first] = { m.first, (c.repos - veh.hitres[m.first].HitPosition).size() };
 								is_hit = true;
 							}
 							else {
-								veh.hitssort[m.first] = pair_hit(m.first, (std::numeric_limits<float>::max)());
+								veh.hitssort[m.first] = { m.first, (std::numeric_limits<float>::max)() };
 							}
 						}
 						//“–‚½‚Á‚Ä‚È‚¢
