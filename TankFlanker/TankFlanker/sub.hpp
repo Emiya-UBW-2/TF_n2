@@ -414,7 +414,7 @@ private:
 		float wheel_Leftadd = 0.f, wheel_Rightadd = 0.f;		      //“]—Ö‰ñ“]
 		std::vector<pair_hit> hitssort;					      /*ƒtƒŒ[ƒ€‚É“–‚½‚Á‚½‡”Ô*/
 	public:
-		void reset() {
+		void init() {
 			this->obj.Dispose();
 			this->col.Dispose();
 			this->hit_check = false;
@@ -508,7 +508,7 @@ public:
 				{
 					auto& veh = c.vehicle;
 					{
-						veh.reset();
+						veh.init();
 						veh.use_id = std::min<size_t>(veh.use_id, vehcs.size() - 1);
 						veh.use_veh.into(vehcs[veh.use_id]);
 						veh.obj = vehcs[veh.use_id].obj.Duplicate();

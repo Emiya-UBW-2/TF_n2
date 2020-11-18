@@ -627,6 +627,16 @@ public:
 					DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), GetColor(255, 0, 0), FALSE);
 					siz = int(42.f);
 					DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), GetColor(255, 0, 0), FALSE);
+
+					int xp = int(c.winpos.x()) - y_r(siz, out_disp_y);
+					int yp = int(c.winpos.y()) + y_r(siz, out_disp_y);
+					int xs = y_r(siz * 2, out_disp_y);
+					int ys = y_r(8, out_disp_y);
+					DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + int(ber), yp + ys / 2 + ys * 2 / 3, GetColor(255, 0, 0), TRUE);
+					easing_set(&ber, float(xs * int(c.vehicle.HP) / int(c.vehicle.use_veh.HP)), 0.975f);
+					DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + xs * int(c.vehicle.HP) / int(c.vehicle.use_veh.HP), yp + ys / 2 + ys * 2 / 3, GetColor(0, 255, 0), TRUE);
+
+
 					DrawLine(int(c.winpos.x()), int(c.winpos.y()), disp_x / 2, disp_y / 2, GetColor(255, 0, 0));
 				}
 			}
