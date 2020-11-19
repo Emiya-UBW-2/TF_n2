@@ -342,7 +342,7 @@ public:
 			aim.DrawExtendGraph(disp_x / 2 - y_r(siz, out_disp_y), disp_y / 2 - y_r(siz, out_disp_y), disp_x / 2 + y_r(siz, out_disp_y), disp_y / 2 + y_r(siz, out_disp_y), TRUE);
 		}
 		//
-		FontHandle* font = (!(use_vr && overrider == -1)) ? &font36 : &font12;
+		FontHandle* font = (!(use_vr && overrider == -1)) ? &font18 : &font36;
 		{
 			{
 				//’e–ò

@@ -197,21 +197,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		}
 			); 
 		};
-		auto ram_draw2= [&] {
-			MAIN_Screen.DrawGraph(0, 0, true);
-			//コックピット
-			SetCameraNearFar(0.01f, 2.f);
-			if (Rot == ADS) {
-				cockpit.DrawModel();
-			}
-			//UI
-			SetUseZBuffer3D(FALSE);												/*zbufuse*/
-			SetWriteZBuffer3D(FALSE);											/*zbufwrite*/
-			DrawBillboard3D((cams.campos + (cams.camvec- cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.475f, 0.f, UI_Screen.get(), TRUE);
-			SetUseZBuffer3D(TRUE);												/*zbufuse*/
-			SetWriteZBuffer3D(TRUE);											/*zbufwrite*/
-			//UI_Screen.DrawGraph(0, 0, true);
-		};
 		//通信開始
 		{
 		}
@@ -450,15 +435,14 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						rad_spec = deg2rad(veh.use_veh.body_rad_limit * (std::clamp(veh.speed, 0.f, veh.use_veh.min_speed_limit) / veh.use_veh.min_speed_limit));
 					}
 					//ピッチ
-					easing_set(&veh.xradadd_right, (c.key[2] ? -rad_spec / 4.f : c.key[12] ? -rad_spec / 12.f : 0.f), 0.95f);
-					easing_set(&veh.xradadd_left, (c.key[3] ? rad_spec / 4.f : c.key[13] ? rad_spec / 12.f : 0.f), 0.95f);
+					easing_set(&veh.xradadd_right, (c.key[2] ? -rad_spec / 3.f : c.key[12] ? -rad_spec / 9.f : 0.f), 0.95f);
+					easing_set(&veh.xradadd_left, (c.key[3] ? rad_spec / 3.f : c.key[13] ? rad_spec / 9.f : 0.f), 0.95f);
 					//ロール
 					easing_set(&veh.zradadd_right, (c.key[4] ? rad_spec : (c.key[14] ? rad_spec / 3.f : 0.f)), 0.95f);
 					easing_set(&veh.zradadd_left, (c.key[5] ? -rad_spec : (c.key[15] ? -rad_spec / 3.f : 0.f)), 0.95f);
 					//ヨー
 					easing_set(&veh.yradadd_left, (c.key[6] ? -rad_spec / 8.f : (c.key[16] ? -rad_spec / 24.f : 0.f)), 0.95f);
 					easing_set(&veh.yradadd_right, (c.key[7] ? rad_spec / 8.f : (c.key[17] ? rad_spec / 24.f : 0.f)), 0.95f);
-
 					//スロットル
 					easing_set(&veh.speed_add, ((c.key[8] && veh.speed < veh.use_veh.max_speed_limit) ? (0.5f / 3.6f) : 0.f), 0.95f);
 					easing_set(&veh.speed_sub, c.key[9] ? ((veh.speed > veh.use_veh.min_speed_limit) ? (-0.5f / 3.6f) : ((veh.speed > 0.f) ? (-0.2f / 3.6f) : 0.f)) : 0.f, 0.95f);
@@ -788,7 +772,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 									}
 
 									//消す(2秒たった、スピードが100以下、貫通が0以下)
-									if (a.cnt >= 2.f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
+									if (a.cnt >= 2.5f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
 										a.flug = false;
 									}
 									if (!a.flug) {
