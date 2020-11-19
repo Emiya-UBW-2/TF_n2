@@ -53,6 +53,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	GraphHandle MAIN_Screen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//描画スクリーン
 	GraphHandle outScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//描画スクリーン
 //その他
+	//
+	SetCreate3DSoundFlag(TRUE);
+	SoundHandle se_cockpit = SoundHandle::Load("data/audio/fighter-cockpit1.wav");
+	SoundHandle se_gun = SoundHandle::Load("data/audio/hit.wav");
+	SoundHandle se_hit = SoundHandle::Load("data/audio/hit.wav");
+	SetCreate3DSoundFlag(FALSE);
 	MV1 hit_pic;      //弾痕
 	//コックピット
 	frames	stickx_f, sticky_f, stickz_f, compass_f, speed_f, spd3_f, spd2_f, spd1_f, cockpit_f;
@@ -120,6 +126,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		start_c2 = true;
 		//
 		chara.resize(2);
+		//
+		for (auto& c : chara) {
+			c.se_cockpit = se_cockpit.Duplicate();
+			c.se_gun = se_gun.Duplicate();
+			c.se_hit = se_hit.Duplicate();
+		}
 		//キャラ選択
 		if (!UIparts->select_window(&chara[0], &Vehicles)) {
 			break;
@@ -212,6 +224,15 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				t.gndsmkeffcs.scale = 0.1f;
 			}
 		}
+		for (auto& c : chara) {
+			Set3DRadiusSoundMem(600.0f, c.se_cockpit.get()); //gun
+			Set3DRadiusSoundMem(300.0f, c.se_gun.get()); //gun
+			Set3DRadiusSoundMem(900.0f, c.se_hit.get()); //gun
+			c.se_cockpit.play(DX_PLAYTYPE_LOOP, TRUE);
+			c.se_cockpit.vol(64);
+		}
+		//se_gun.play(DX_PLAYTYPE_LOOP, TRUE);
+
 		SetMouseDispFlag(FALSE);
 		SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 		while (ProcessMessage() == 0) {
@@ -350,11 +371,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								//サブ武器
 								mine.key[1] = mine.key[1] || ((ptr_LEFTHAND.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_IndexController_B)) != 0);
 								//ピッチ
-								mine.key[2] = mine.key[2] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(20)));
-								mine.key[3] = mine.key[3] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-20)));
+								mine.key[2] = mine.key[2] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(28)));
+								mine.key[3] = mine.key[3] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-28)));
 								//ロール
-								mine.key[4] = mine.key[4] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(20)));
-								mine.key[5] = mine.key[5] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-20)));
+								mine.key[4] = mine.key[4] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(24)));
+								mine.key[5] = mine.key[5] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-24)));
 								if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
 									//ヨー
 									mine.key[6] = mine.key[6] || (ptr_LEFTHAND.touch.x() > 0.5f);
@@ -372,11 +393,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								//精密操作
 								{
 									//ピッチ
-									mine.key[12] = mine.key[12] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(16)));
-									mine.key[13] = mine.key[13] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-16)));
+									mine.key[12] = mine.key[12] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(22)));
+									mine.key[13] = mine.key[13] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-22)));
 									//ロール
-									mine.key[14] = mine.key[14] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(16)));
-									mine.key[15] = mine.key[15] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-16)));
+									mine.key[14] = mine.key[14] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(14)));
+									mine.key[15] = mine.key[15] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-14)));
 									if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
 										//ヨー
 										mine.key[16] = mine.key[16] || (ptr_LEFTHAND.touch.x() > 0.45f);
@@ -586,6 +607,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						auto& u = cg.bullet[cg.usebullet];
 						++cg.usebullet %= cg.bullet.size();
 						//ココだけ変化
+						c.se_gun.play(DX_PLAYTYPE_BACK, TRUE);
 						u.spec = cg.Spec[0];
 						u.spec.speed_a *= float(75 + GetRand(50)) / 100.f;
 						u.pos = veh.obj.frame(cg.gun_info.frame2.first);
@@ -844,6 +866,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				auto& veh = c.vehicle;
 				veh.obj.SetMatrix(veh.mat * MATRIX_ref::Mtrans(veh.pos));
 			}
+			for (auto& c : chara) {
+				c.se_cockpit.SetPosition(c.vehicle.pos);
+				c.se_hit.SetPosition(c.vehicle.pos);
+				c.se_gun.SetPosition(c.vehicle.pos);
+			}
 			//影用意
 			Drawparts->Ready_Shadow(cams.campos, 
 				[&] {
@@ -914,7 +941,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							//地形
 							mapparts->map_col_line_nearest(startpos, &endpos);
 							//
-							easing_set(&aimpos, endpos, 0.9f);
+							easing_set(&aimpos, endpos, 0.f);
 							aimposout = ConvWorldPosToScreenPos(aimpos.get());
 							for (auto& c : chara) {
 								auto& veht = c.vehicle;
@@ -922,6 +949,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							}
 						}
 					}
+					Set3DSoundListenerPosAndFrontPosAndUpVec(cams.campos.get(), cams.camvec.get(), cams.camup.get());
 					//UI
 					UI_Screen.SetDraw_Screen();
 					{
@@ -974,7 +1002,18 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					//VRに移す
 					Drawparts->draw_VR(
 						[&] {
-						MAIN_Screen.DrawGraph(0, 0, true);
+						SetCameraNearFar(0.01f, 2.f);
+						SetUseZBuffer3D(FALSE);												/*zbufuse*/
+						SetWriteZBuffer3D(FALSE);											/*zbufwrite*/
+						if (Drawparts->use_vr) {
+							DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.8f, 0.f, MAIN_Screen.get(), TRUE);
+						}
+						else {
+							DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.475f, 0.f, MAIN_Screen.get(), TRUE);
+						}
+						SetUseZBuffer3D(TRUE);												/*zbufuse*/
+						SetWriteZBuffer3D(TRUE);											/*zbufwrite*/
+						//MAIN_Screen.DrawGraph(0, 0, true);
 						//コックピット
 						SetCameraNearFar(0.01f, 2.f);
 						if (Rot == ADS) {
@@ -983,7 +1022,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						//UI
 						SetUseZBuffer3D(FALSE);												/*zbufuse*/
 						SetWriteZBuffer3D(FALSE);											/*zbufwrite*/
-						DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.475f, 0.f, UI_Screen.get(), TRUE);
+						if (Drawparts->use_vr) {
+							DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.8f, 0.f, UI_Screen.get(), TRUE);
+						}
+						else {
+							DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.475f, 0.f, UI_Screen.get(), TRUE);
+						}
 						SetUseZBuffer3D(TRUE);												/*zbufuse*/
 						SetWriteZBuffer3D(TRUE);											/*zbufwrite*/
 						//UI_Screen.DrawGraph(0, 0, true);
@@ -1030,7 +1074,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							//地形
 							mapparts->map_col_line_nearest(ct.vehicle.pos, &endpos);
 							//
-							easing_set(&aimpos2, endpos, 0.9f);
+							easing_set(&aimpos2, endpos, 0.0f);
 							aimposout = ConvWorldPosToScreenPos(aimpos2.get());
 							for (auto& c : chara) {
 								auto& veht = c.vehicle;
@@ -1110,10 +1154,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			{
 				if (Drawparts->use_vr) {
 					outScreen2.DrawGraph(0, 0, false);
+					//Drawparts->outScreen[0].DrawExtendGraph(0, 0, Drawparts->out_disp_x, Drawparts->out_disp_y, false);
 				}
 				else {
 					Drawparts->outScreen[0].DrawGraph(0, 0, false);
 				}
+
 				Debugparts->end_way();
 				Debugparts->debug(10, 10, float(GetNowHiPerformanceCount() - waits) / 1000.f);
 			}

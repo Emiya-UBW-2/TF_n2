@@ -496,6 +496,9 @@ public:
 		//共通項//==================================================
 		vehicles vehicle;
 		VECTOR_ref winpos;
+		SoundHandle se_cockpit;
+		SoundHandle se_gun;
+		SoundHandle se_hit;
 		//セット
 		void set_human(const std::vector<Mainclass::Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic, const size_t&eff_size) {
 			auto& c = *this;
@@ -639,6 +642,7 @@ public:
 						if (!is_hit) {
 							continue;
 						}
+						t.se_hit.play(DX_PLAYTYPE_BACK,TRUE);
 						//当たり判定を近い順にソート
 						std::sort(veh.hitssort.begin(), veh.hitssort.end(), [](const pair_hit& x, const pair_hit& y) { return x.second < y.second; });
 						//ダメージ面に届くまで判定

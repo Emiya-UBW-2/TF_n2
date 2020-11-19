@@ -357,8 +357,9 @@ public:
 					else {
 						xs = x_r(200, out_disp_x);
 						xp = disp_x / 2 - x_r(20, out_disp_x)-xs;
-						ys = y_r(12, out_disp_y);
-						yp = disp_y / 2 + disp_y / 6 + y_r(20, out_disp_y) - int(chara.vehicle.Gun_.size()) * (ys * 2 + y_r(3, out_disp_y));
+						ys = y_r(36, out_disp_y);
+						yp = disp_y / 2 + disp_y / 6 + y_r(20, out_disp_y)// - int(chara.vehicle.Gun_.size()) * (ys * 2 + y_r(3, out_disp_y))
+							;
 					}
 					int i = 0;
 					for (auto& veh : chara.vehicle.Gun_) {
@@ -445,7 +446,7 @@ public:
 					else {
 						xs = x_r(200, out_disp_x);
 						xp = disp_x/2 + x_r(20, out_disp_x);
-						ys = y_r(24, out_disp_y);
+						ys = y_r(36, out_disp_y);
 						yp = disp_y / 2 + disp_y / 6 + y_r(20, out_disp_y) - ys;
 					}
 
@@ -458,15 +459,14 @@ public:
 						DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + xs * int(veh.HP) / int(veh.use_veh.HP), yp + ys / 2 + ys * 2 / 3, GetColor(0, per, 0), TRUE);
 						SetDrawBright(per, per, per);
 						font->DrawStringFormat(
-							xp, yp + ys / 2 + (ys * 2 / 3 - y_r(12, out_disp_y)) / 2,
-							GetColor(255, 255, 255),
-							"%d / %d", int(veh.HP), int(veh.use_veh.HP));
+							xp,
+							yp + ys + (ys * 2 / 3 - y_r(12, out_disp_y)) / 2,
+							GetColor(255, 255, 255), "%d / %d", int(veh.HP), int(veh.use_veh.HP));
 
 						font->DrawStringFormat(
 							xp + (xs - font->GetDrawWidthFormat("%s", veh.use_veh.name.c_str())),
-							yp + (ys * 2 / 3 - y_r(12, out_disp_y)) / 2,
-							GetColor(255, 255, 255),
-							"%s", veh.use_veh.name.c_str());
+							yp          + (ys * 2 / 3 - y_r(12, out_disp_y)) / 2,
+							GetColor(255, 255, 255), "%s", veh.use_veh.name.c_str());
 
 						SetDrawBright(255, 255, 255);
 						yp += ys;
