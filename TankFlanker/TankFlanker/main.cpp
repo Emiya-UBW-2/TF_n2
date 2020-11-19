@@ -29,6 +29,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	DXDraw::cam_info cams;
 	VECTOR_ref eyevec, eyevec2;																	//視点
 	VECTOR_ref aimpos;																			//機体の狙い
+	VECTOR_ref aimpos2;																			//機体の狙い
 	VECTOR_ref aimposout;																		//UIに出力
 	/*map*/
 	auto mapparts = std::make_unique<Mapclass>(Drawparts->disp_x, Drawparts->disp_y);
@@ -199,12 +200,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		auto ram_draw2= [&] {
 			MAIN_Screen.DrawGraph(0, 0, true);
 			//コックピット
+			SetCameraNearFar(0.01f, 2.f);
 			if (Rot == ADS) {
-				SetCameraNearFar(0.01f, 2.f);
 				cockpit.DrawModel();
 			}
 			//UI
-			UI_Screen.DrawGraph(0, 0, true);
+			SetUseZBuffer3D(FALSE);												/*zbufuse*/
+			SetWriteZBuffer3D(FALSE);											/*zbufwrite*/
+			DrawBillboard3D((cams.campos + (cams.camvec- cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.475f, 0.f, UI_Screen.get(), TRUE);
+			SetUseZBuffer3D(TRUE);												/*zbufuse*/
+			SetWriteZBuffer3D(TRUE);											/*zbufwrite*/
+			//UI_Screen.DrawGraph(0, 0, true);
 		};
 		//通信開始
 		{
@@ -982,7 +988,22 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						cockpit.SetMatrix(MATRIX_ref(veh.mat)*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, veh.mat)));
 					}
 					//VRに移す
-					Drawparts->draw_VR(ram_draw2, cams);
+					Drawparts->draw_VR(
+						[&] {
+						MAIN_Screen.DrawGraph(0, 0, true);
+						//コックピット
+						SetCameraNearFar(0.01f, 2.f);
+						if (Rot == ADS) {
+							cockpit.DrawModel();
+						}
+						//UI
+						SetUseZBuffer3D(FALSE);												/*zbufuse*/
+						SetWriteZBuffer3D(FALSE);											/*zbufwrite*/
+						DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.475f, 0.f, UI_Screen.get(), TRUE);
+						SetUseZBuffer3D(TRUE);												/*zbufuse*/
+						SetWriteZBuffer3D(TRUE);											/*zbufwrite*/
+						//UI_Screen.DrawGraph(0, 0, true);
+					}, cams);
 				}
 				if (Drawparts->use_vr) {
 					auto& ct = chara[1];
@@ -1021,13 +1042,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						//照準座標取得
 						MAIN_Screen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
 						{
-							VECTOR_ref startpos = ct.vehicle.pos;
-							VECTOR_ref endpos = startpos + ct.vehicle.mat.zvec() * (-1000.f);
+							VECTOR_ref endpos = ct.vehicle.pos + ct.vehicle.mat.zvec() * (-1000.f);
 							//地形
-							mapparts->map_col_line_nearest(startpos, &endpos);
+							mapparts->map_col_line_nearest(ct.vehicle.pos, &endpos);
 							//
-							easing_set(&aimpos, endpos, 0.9f);
-							aimposout = ConvWorldPosToScreenPos(aimpos.get());
+							easing_set(&aimpos2, endpos, 0.9f);
+							aimposout = ConvWorldPosToScreenPos(aimpos2.get());
 							for (auto& c : chara) {
 								auto& veht = c.vehicle;
 								c.winpos = ConvWorldPosToScreenPos(veht.pos.get());
@@ -1087,11 +1107,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					outScreen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_);
 					{
 						MAIN_Screen2.DrawGraph(0, 0, true);
+						SetCameraNearFar(0.01f, 2.f);
 						//コックピット
-							SetCameraNearFar(0.01f, 2.f);
-							cockpit.DrawModel();
+						cockpit.DrawModel();
 						//UI
-						UI_Screen2.DrawGraph(0, 0, true);
+						SetUseZBuffer3D(FALSE);												/*zbufuse*/
+						SetWriteZBuffer3D(FALSE);											/*zbufwrite*/
+						DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.475f, 0.f, UI_Screen2.get(), TRUE);
+						SetUseZBuffer3D(TRUE);												/*zbufuse*/
+						SetWriteZBuffer3D(TRUE);											/*zbufwrite*/
+
+					//UI_Screen2.DrawGraph(0, 0, true);
 					}
 				}
 			}
