@@ -1086,7 +1086,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					//Screen2に移す
 					outScreen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_);
 					{
-						ram_draw2;
+						MAIN_Screen2.DrawGraph(0, 0, true);
+						//コックピット
+							SetCameraNearFar(0.01f, 2.f);
+							cockpit.DrawModel();
+						//UI
+						UI_Screen2.DrawGraph(0, 0, true);
 					}
 				}
 			}

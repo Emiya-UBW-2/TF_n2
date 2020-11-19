@@ -18,6 +18,7 @@ private:
 
 	GraphHandle bufScreen;
 	//font
+	FontHandle font36;
 	FontHandle font18;
 	FontHandle font12;
 	//‹ó•`‰æ
@@ -51,6 +52,7 @@ public:
 		CamScreen = GraphHandle::Make(240, 240, true);
 		bufScreen = GraphHandle::Make(disp_x, disp_y, true);
 
+		font36 = FontHandle::Create(y_r(36, out_disp_y), DX_FONTTYPE_EDGE);
 		font18 = FontHandle::Create(y_r(18, out_disp_y), DX_FONTTYPE_EDGE);
 		font12 = FontHandle::Create(y_r(12, out_disp_y), DX_FONTTYPE_EDGE);
 		MV1::Load("data/model/garage/model.mv1", &garage, false);
@@ -340,8 +342,8 @@ public:
 			aim.DrawExtendGraph(disp_x / 2 - y_r(siz, out_disp_y), disp_y / 2 - y_r(siz, out_disp_y), disp_x / 2 + y_r(siz, out_disp_y), disp_y / 2 + y_r(siz, out_disp_y), TRUE);
 		}
 		//
+		FontHandle* font = (!(use_vr && overrider == -1)) ? &font36 : &font12;
 		{
-			FontHandle* font = (!(use_vr && overrider == -1)) ? &font18 : &font12;
 			{
 				//’e–ò
 				{
@@ -632,11 +634,10 @@ public:
 					int yp = int(c.winpos.y()) + y_r(siz, out_disp_y);
 					int xs = y_r(siz * 2, out_disp_y);
 					int ys = y_r(8, out_disp_y);
-					DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + int(ber), yp + ys / 2 + ys * 2 / 3, GetColor(255, 0, 0), TRUE);
-					easing_set(&ber, float(xs * int(c.vehicle.HP) / int(c.vehicle.use_veh.HP)), 0.975f);
+					DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + xs, yp + ys / 2 + ys * 2 / 3, GetColor(255, 0, 0), TRUE);
 					DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + xs * int(c.vehicle.HP) / int(c.vehicle.use_veh.HP), yp + ys / 2 + ys * 2 / 3, GetColor(0, 255, 0), TRUE);
 
-
+					font->DrawStringFormat(xp, yp + 18, GetColor(255, 0, 0), "%d m", int((VECTOR_ref(c.vehicle.pos) - chara.vehicle.pos).size()));
 					DrawLine(int(c.winpos.x()), int(c.winpos.y()), disp_x / 2, disp_y / 2, GetColor(255, 0, 0));
 				}
 			}
