@@ -1198,10 +1198,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				//プレイヤー操作
 				{
 					//スコープ
-					if (Drawparts->use_vr) {
-						Rot = ADS;
-					}
-					else {
+					{
 						Rot = std::clamp(Rot + GetMouseWheelRotVol(), 0, ADS);
 						switch (Rot) {
 						case 1:
@@ -1217,42 +1214,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						easing_set(&range, range_p, 0.9f);
 					}
 					//見回し
-					if (Drawparts->use_vr) {
-						if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-							chara[1].view_yrad = 0.f;
-							chara[1].view_xrad = 0.f;
-						}
-					}
-					else {
-						if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-							mine.view_yrad = 0.f;
-							mine.view_xrad = 0.f;
-						}
+					if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+						mine.view_yrad = 0.f;
+						mine.view_xrad = 0.f;
 					}
 					//マウスと視点角度をリンク
-					if (Drawparts->use_vr) {
-						//+視点取得
-						auto& ptr_ = *Drawparts->get_device_hmd();
-						Drawparts->GetDevicePositionVR(Drawparts->get_hmd_num(), &HMDpos, &HMDmat);
-						if (start_c && (ptr_.turn && ptr_.now) != oldv) {
-							rec_HMD = VGet(HMDpos.x(), 0.f, HMDpos.z());
-							start_c = false;
-						}
-						if (!start_c && !(ptr_.turn && ptr_.now)) {
-							start_c = true;
-						}
-						oldv = ptr_.turn && ptr_.now;
-						HMDpos = HMDpos - rec_HMD;
-						HMDmat = MATRIX_ref::Axis1(HMDmat.xvec()*-1.f, HMDmat.yvec(), HMDmat.zvec()*-1.f);
-						eye_pos_ads = HMDpos + VGet(0, -0.8f, 0);
-						eye_pos_ads = VGet(
-							std::clamp(eye_pos_ads.x(), -0.18f, 0.18f),
-							std::clamp(eye_pos_ads.y(), 0.f, 0.8f),
-							std::clamp(eye_pos_ads.z(), -0.18f, 0.1f)
-						);
-						eyevec = HMDmat.zvec();
-					}
-					else {
+					{
 						int mousex, mousey;
 						GetMousePoint(&mousex, &mousey);
 						SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
@@ -1263,9 +1230,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						eyevec = VGet(cos(x) * std::sin(y), std::sin(x), std::cos(x) * std::cos(y));
 					}
 				}
-				//描画
+				//
 				{
-					//
 					tt->put_data(mine);
 					tt++;
 					if (tt == mine.rep.end()) {
@@ -1276,7 +1242,28 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					if (tt2 == chara[1].rep.end()) {
 						break;
 					}
-					//
+				}
+				//
+				{
+					for (auto& c : chara) {
+						auto& veh = c.vehicle;
+
+						c.se_cockpit.SetPosition(c.vehicle.pos);
+						c.se_hit.SetPosition(c.vehicle.pos);
+						c.se_gun.SetPosition(c.vehicle.pos);
+						for (auto& t : c.effcs) {
+							if (t.id != ef_smoke1 && t.id != ef_smoke2) {
+								t.put(Drawparts->get_effHandle(int(t.id)));
+							}
+						}
+						for (auto& t : veh.use_veh.wheelframe) {
+							t.gndsmkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), t.gndsmkeffcs.scale);
+						}
+					}
+				}
+				//描画
+				{
+
 					Drawparts->Ready_Shadow(cams.campos,
 						[&] {
 						for (auto& c : chara) {
@@ -1335,7 +1322,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						//fov
 						cams.fov = deg2rad(Drawparts->use_vr ? 90 : 45);
 						//照準座標取得
-						MAIN_Screen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
+						MAIN_Screen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
 						{
 							VECTOR_ref startpos = mine.vehicle.pos;
 							VECTOR_ref endpos = startpos + mine.vehicle.mat.zvec() * (-1000.f);
@@ -1352,22 +1339,22 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 					Set3DSoundListenerPosAndFrontPosAndUpVec(cams.campos.get(), cams.camvec.get(), cams.camup.get());
 					//UI
-					UI_Screen.SetDraw_Screen();
+					UI_Screen2.SetDraw_Screen();
 					{
 						UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), mine);
 					}
 					//sky
-					SkyScreen.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
+					SkyScreen2.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
 					{
 						mapparts->sky_draw();
 					}
 					//被写体深度描画
-					Hostpassparts->dof(BufScreen, SkyScreen, ram_draw, cams, FarScreen_, NearFarScreen_, NearScreen_);
+					Hostpassparts->dof(BufScreen2, SkyScreen2, ram_draw, cams, FarScreen_2, NearFarScreen_2, NearScreen_2);
 					//最終描画
-					MAIN_Screen.SetDraw_Screen();
+					MAIN_Screen2.SetDraw_Screen();
 					{
-						BufScreen.DrawGraph(0, 0, false);
-						Hostpassparts->bloom(BufScreen, GaussScreen_, 4, 255);//ブルーム
+						BufScreen2.DrawGraph(0, 0, false);
+						Hostpassparts->bloom(BufScreen2, GaussScreen_2, 4, 255);//ブルーム
 					}
 					//コックピット演算
 					if (Rot == ADS) {
@@ -1403,14 +1390,14 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					//VRに移す
 					outScreen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_);
 					{
-						MAIN_Screen.DrawGraph(0, 0, true);
+						MAIN_Screen2.DrawGraph(0, 0, true);
 						//コックピット
 						if (Rot == ADS) {
 							SetCameraNearFar(0.01f, 2.f);
 							cockpit.DrawModel();
 						}
 						//UI
-						UI_Screen.DrawGraph(0, 0, true);
+						UI_Screen2.DrawGraph(0, 0, true);
 					}
 					//draw
 					GraphHandle::SetDraw_Screen(int(DX_SCREEN_BACK), false);

@@ -482,16 +482,24 @@ public:
 			MATRIX_ref mat;
 			std::vector<Guns> Gun_;						      /**/
 			void get_data(Chara& data) {
-				this->v_mat = data.vehicle.obj.GetMatrix();
-				this->mat = data.vehicle.mat;
-				this->pos = data.vehicle.pos;
-				this->Gun_ = data.vehicle.Gun_;
+				auto& veh = data.vehicle;
+
+				this->v_mat = veh.obj.GetMatrix();
+				this->mat = veh.mat;
+				this->pos = veh.pos;
+				this->Gun_ = veh.Gun_;
+
+				for (auto& t : veh.use_veh.wheelframe) {
+					t.gndsmkeffcs.scale;
+				}
 			}
 			void put_data(Chara& data) {
-				data.vehicle.obj.SetMatrix(this->v_mat);
-				data.vehicle.mat = this->mat;
-				data.vehicle.pos = this->pos;
-				data.vehicle.Gun_ = this->Gun_;
+				auto& veh = data.vehicle;
+
+				veh.obj.SetMatrix(this->v_mat);
+				veh.mat = this->mat;
+				veh.pos = this->pos;
+				veh.Gun_ = this->Gun_;
 			}
 		};
 		std::list<sendstat> rep;
