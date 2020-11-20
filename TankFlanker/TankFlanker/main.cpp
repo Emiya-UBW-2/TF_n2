@@ -31,6 +31,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	VECTOR_ref aimpos;																			//機体の狙い
 	VECTOR_ref aimpos2;																			//機体の狙い
 	VECTOR_ref aimposout;																		//UIに出力
+	FontHandle font12 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 	/*map*/
 	auto mapparts = std::make_unique<Mapclass>(Drawparts->disp_x, Drawparts->disp_y);
 	//disp
@@ -159,56 +160,56 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			c.set_human(Vehicles, Ammo, hit_pic, 9);//
 		}
 		//ラムダ
-		auto ram_draw = 
-			[&]() { Drawparts->Draw_by_Shadow(
-				[&]() {
-			//マップ
-			SetFogStartEnd(30000.0f, 60000.f);
-			SetFogColor(128, 128, 128);
-			{
-				mapparts->map_get().DrawModel();
-			}
-			//海
-			mapparts->sea_draw(cams.campos);
-			//機体
-			SetFogStartEnd(0.0f, 3000.f);
-			SetFogColor(128, 128, 128);
-			{
-				for (auto& c : chara) {
-					auto& veh = c.vehicle;
-					//戦闘機
-					veh.obj.DrawModel();
-					//弾痕
-					for (auto& h : veh.hit_obj) {
-						if (h.flug) {
-							h.pic.DrawFrame(h.use);
+		auto ram_draw = [&]() { 
+				Drawparts->Draw_by_Shadow(
+					[&]() {
+						//マップ
+						SetFogStartEnd(30000.0f, 60000.f);
+						SetFogColor(128, 128, 128);
+						{
+							mapparts->map_get().DrawModel();
 						}
-					}
-				}
-				for (auto& l : tree) {
-					l.obj.DrawModel();
-					//l.obj_far.DrawModel();
-				}
-				//
+						//海
+						mapparts->sea_draw(cams.campos);
+						//機体
+						SetFogStartEnd(0.0f, 3000.f);
+						SetFogColor(128, 128, 128);
+						{
+							for (auto& c : chara) {
+								auto& veh = c.vehicle;
+								//戦闘機
+								veh.obj.DrawModel();
+								//弾痕
+								for (auto& h : veh.hit_obj) {
+									if (h.flug) {
+										h.pic.DrawFrame(h.use);
+									}
+								}
+							}
+							for (auto& l : tree) {
+								l.obj.DrawModel();
+								//l.obj_far.DrawModel();
+							}
+							//
 
-			}
-			SetFogEnable(FALSE);
-			SetUseLighting(FALSE);
-			for (auto& c : chara) {
-				auto& veh = c.vehicle;
-				for (auto& cg : veh.Gun_) {
-					for (auto& a : cg.bullet) {
-						if (a.flug) {
-							DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - cams.campos).size() / 24.f))*4.5f, a.color, GetColor(255, 255, 255));
 						}
+						SetFogEnable(FALSE);
+						SetUseLighting(FALSE);
+						for (auto& c : chara) {
+							auto& veh = c.vehicle;
+							for (auto& cg : veh.Gun_) {
+								for (auto& a : cg.bullet) {
+									if (a.flug) {
+										DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - cams.campos).size() / 24.f))*4.5f, a.color, GetColor(255, 255, 255));
+									}
+								}
+							}
+						}
+						SetUseLighting(TRUE);
+						SetFogEnable(TRUE);
 					}
-				}
-			}
-			SetUseLighting(TRUE);
-			SetFogEnable(TRUE);
-		}
-			); 
-		};
+				); 
+			};
 		//通信開始
 		{
 		}
@@ -887,6 +888,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			Drawparts->Move_Player();
 			//描画
 			{
+				//自機描画
 				{
 					auto& veh = mine.vehicle;
 					//cams
@@ -1033,6 +1035,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						//UI_Screen.DrawGraph(0, 0, true);
 					}, cams);
 				}
+				//2P描画
 				if (Drawparts->use_vr) {
 					auto& ct = chara[1];
 					auto& veh = ct.vehicle;
@@ -1145,7 +1148,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						SetUseZBuffer3D(TRUE);												/*zbufuse*/
 						SetWriteZBuffer3D(TRUE);											/*zbufwrite*/
 
-					//UI_Screen2.DrawGraph(0, 0, true);
+						//UI_Screen2.DrawGraph(0, 0, true);
 					}
 				}
 			}
@@ -1159,7 +1162,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				else {
 					Drawparts->outScreen[0].DrawGraph(0, 0, false);
 				}
-
 				Debugparts->end_way();
 				Debugparts->debug(10, 10, float(GetNowHiPerformanceCount() - waits) / 1000.f);
 			}
@@ -1172,12 +1174,262 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			if (CheckHitKey(KEY_INPUT_O) != 0) {
 				break;
 			}
+			//リプレイ
+			{
+				for (auto& c : chara) {
+					Mainclass::Chara::sendstat tmp;
+					tmp.get_data(c);
+					c.rep.push_back(tmp);
+				}
+			}
 		}
 		SetMouseDispFlag(TRUE);
 		SetMousePoint(deskx / 2, desky / 2);
+
+		//リプレイ
+		SetMouseDispFlag(FALSE);
+		SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
+		{
+			auto tt = mine.rep.begin();
+			auto tt2 = chara[1].rep.begin();
+			while (ProcessMessage() == 0) {
+				const auto fps = GetFPS();
+				const auto waits = GetNowHiPerformanceCount();
+				//プレイヤー操作
+				{
+					//スコープ
+					if (Drawparts->use_vr) {
+						Rot = ADS;
+					}
+					else {
+						Rot = std::clamp(Rot + GetMouseWheelRotVol(), 0, ADS);
+						switch (Rot) {
+						case 1:
+							range_p = 15.f;
+							break;
+						case 0:
+							range_p = 30.f;
+							break;
+						default:
+							Rot = ADS;
+							break;
+						}
+						easing_set(&range, range_p, 0.9f);
+					}
+					//見回し
+					if (Drawparts->use_vr) {
+						if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+							chara[1].view_yrad = 0.f;
+							chara[1].view_xrad = 0.f;
+						}
+					}
+					else {
+						if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+							mine.view_yrad = 0.f;
+							mine.view_xrad = 0.f;
+						}
+					}
+					//マウスと視点角度をリンク
+					if (Drawparts->use_vr) {
+						//+視点取得
+						auto& ptr_ = *Drawparts->get_device_hmd();
+						Drawparts->GetDevicePositionVR(Drawparts->get_hmd_num(), &HMDpos, &HMDmat);
+						if (start_c && (ptr_.turn && ptr_.now) != oldv) {
+							rec_HMD = VGet(HMDpos.x(), 0.f, HMDpos.z());
+							start_c = false;
+						}
+						if (!start_c && !(ptr_.turn && ptr_.now)) {
+							start_c = true;
+						}
+						oldv = ptr_.turn && ptr_.now;
+						HMDpos = HMDpos - rec_HMD;
+						HMDmat = MATRIX_ref::Axis1(HMDmat.xvec()*-1.f, HMDmat.yvec(), HMDmat.zvec()*-1.f);
+						eye_pos_ads = HMDpos + VGet(0, -0.8f, 0);
+						eye_pos_ads = VGet(
+							std::clamp(eye_pos_ads.x(), -0.18f, 0.18f),
+							std::clamp(eye_pos_ads.y(), 0.f, 0.8f),
+							std::clamp(eye_pos_ads.z(), -0.18f, 0.1f)
+						);
+						eyevec = HMDmat.zvec();
+					}
+					else {
+						int mousex, mousey;
+						GetMousePoint(&mousex, &mousey);
+						SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
+
+						float y = atan2f(eyevec.x(), eyevec.z()) + deg2rad(float(mousex - Drawparts->disp_x / 2) * 0.1f);
+						float x = atan2f(eyevec.y(), std::hypotf(eyevec.x(), eyevec.z())) + deg2rad(float(mousey - Drawparts->disp_y / 2) * 0.1f);
+						x = std::clamp(x, deg2rad(-45), deg2rad(45));
+						eyevec = VGet(cos(x) * std::sin(y), std::sin(x), std::cos(x) * std::cos(y));
+					}
+				}
+				//描画
+				{
+					//
+					tt->put_data(mine);
+					tt++;
+					if (tt == mine.rep.end()) {
+						break;
+					}
+					tt2->put_data(chara[1]);
+					tt2++;
+					if (tt2 == chara[1].rep.end()) {
+						break;
+					}
+					//
+					Drawparts->Ready_Shadow(cams.campos,
+						[&] {
+						for (auto& c : chara) {
+							auto& veh = c.vehicle;
+							veh.obj.DrawModel();
+						}
+						for (auto& l : tree) {
+							l.obj.DrawModel();
+						}
+					}
+					, VGet(200.f, 200.f, 200.f), VGet(2000.f, 2000.f, 2000.f));
+
+					auto& veh = mine.vehicle;
+					//cams
+					{
+						//campos,camvec,camup取得
+						if (Rot == ADS) {
+							cams.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
+							cams.campos.y(std::max(cams.campos.y(), 5.f));
+							if (Drawparts->use_vr) {
+								cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
+								cams.camup = MATRIX_ref::Vtrans(HMDmat.yvec(), veh.mat);//veh.mat.yvec();
+							}
+							else {
+								if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
+								}
+								else {
+									eyevec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
+									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
+								}
+								cams.camup = veh.mat.yvec();
+							}
+						}
+						else {
+							cams.camvec = veh.pos + veh.mat.yvec() * (6.f);
+							cams.camvec.y(std::max(cams.camvec.y(), 5.f));
+							if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+								cams.campos = cams.camvec + eyevec * range;
+								cams.campos.y(std::max(cams.campos.y(), 0.f));
+								if (mapparts->map_col_line_nearest(cams.camvec, &cams.campos)) {
+									cams.campos = cams.camvec + (cams.campos - cams.camvec) * (0.9f);
+								}
+								cams.camup = VGet(0.f, 1.f, 0.f);
+							}
+							else {
+								eyevec = (cams.camvec - aimpos).Norm();
+								cams.campos = cams.camvec + eyevec * range;
+								cams.camup = veh.mat.yvec();
+							}
+						}
+						//near取得
+						cams.near_ = (Rot == ADS) ? (5.f + 25.f * (cams.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
+						//far取得
+						cams.far_ = 4000.f;
+						//fov
+						cams.fov = deg2rad(Drawparts->use_vr ? 90 : 45);
+						//照準座標取得
+						MAIN_Screen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
+						{
+							VECTOR_ref startpos = mine.vehicle.pos;
+							VECTOR_ref endpos = startpos + mine.vehicle.mat.zvec() * (-1000.f);
+							//地形
+							mapparts->map_col_line_nearest(startpos, &endpos);
+							//
+							easing_set(&aimpos, endpos, 0.f);
+							aimposout = ConvWorldPosToScreenPos(aimpos.get());
+							for (auto& c : chara) {
+								auto& veht = c.vehicle;
+								c.winpos = ConvWorldPosToScreenPos(veht.pos.get());
+							}
+						}
+					}
+					Set3DSoundListenerPosAndFrontPosAndUpVec(cams.campos.get(), cams.camvec.get(), cams.camup.get());
+					//UI
+					UI_Screen.SetDraw_Screen();
+					{
+						UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), mine);
+					}
+					//sky
+					SkyScreen.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
+					{
+						mapparts->sky_draw();
+					}
+					//被写体深度描画
+					Hostpassparts->dof(BufScreen, SkyScreen, ram_draw, cams, FarScreen_, NearFarScreen_, NearScreen_);
+					//最終描画
+					MAIN_Screen.SetDraw_Screen();
+					{
+						BufScreen.DrawGraph(0, 0, false);
+						Hostpassparts->bloom(BufScreen, GaussScreen_, 4, 255);//ブルーム
+					}
+					//コックピット演算
+					if (Rot == ADS) {
+						float px = (mine.p_animes_rudder[1].second - mine.p_animes_rudder[0].second)*deg2rad(30);
+						float pz = (mine.p_animes_rudder[2].second - mine.p_animes_rudder[3].second)*deg2rad(30);
+						float py = (mine.p_animes_rudder[5].second - mine.p_animes_rudder[4].second)*deg2rad(20);
+
+						cockpit.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
+						cockpit.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
+						cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
+						cockpit.SetFrameLocalMatrix(compass_f.first, MATRIX_ref(veh.mat).Inverse() * MATRIX_ref::Mtrans(compass_f.second));
+						{
+							float spd_buf = veh.speed*3.6f;
+							float spd = 0.f;
+							if (spd_buf <= 400.f) {
+								spd = 180.f*spd_buf / 440.f;
+							}
+							else {
+								spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
+							}
+							cockpit.frame_reset(speed_f.first);
+							cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(speed_f.first + 1) - cockpit.frame(speed_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(spd)) *						MATRIX_ref::Mtrans(speed_f.second));
+						}
+						{
+							float spd_buf = veh.speed*3.6f / 1224.f;
+
+							cockpit.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*1.f)) * MATRIX_ref::Mtrans(spd3_f.second));
+							cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*10.f)) * MATRIX_ref::Mtrans(spd2_f.second));
+							cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*100.f)) * MATRIX_ref::Mtrans(spd1_f.second));
+						}
+						cockpit.SetMatrix(MATRIX_ref(veh.mat)*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, veh.mat)));
+					}
+					//VRに移す
+					outScreen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_);
+					{
+						MAIN_Screen.DrawGraph(0, 0, true);
+						//コックピット
+						if (Rot == ADS) {
+							SetCameraNearFar(0.01f, 2.f);
+							cockpit.DrawModel();
+						}
+						//UI
+						UI_Screen.DrawGraph(0, 0, true);
+					}
+					//draw
+					GraphHandle::SetDraw_Screen(int(DX_SCREEN_BACK), false);
+					{
+						outScreen2.DrawGraph(0, 0, false);
+						font12.DrawString(10, 10, "REPLAY", GetColor(255, 0, 0));
+					}
+				}
+
+				Drawparts->Screen_Flip(waits);
+				if (CheckHitKey(KEY_INPUT_O) != 0) {
+					break;
+				}
+			}
+		}
 		//解放
 		{
 			for (auto& c : chara) {
+				c.rep.clear();
 				auto& veh = c.vehicle;
 				/*エフェクト*/
 				for (auto& t : c.effcs_gun) {

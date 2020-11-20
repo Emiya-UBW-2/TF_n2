@@ -474,6 +474,27 @@ public:
 	typedef std::pair<int, float> p_animes;
 	class Chara {
 	public:
+		class sendstat {
+
+		public:
+			MATRIX_ref v_mat;
+			VECTOR_ref pos;
+			MATRIX_ref mat;
+			std::vector<Guns> Gun_;						      /**/
+			void get_data(Chara& data) {
+				this->v_mat = data.vehicle.obj.GetMatrix();
+				this->mat = data.vehicle.mat;
+				this->pos = data.vehicle.pos;
+				this->Gun_ = data.vehicle.Gun_;
+			}
+			void put_data(Chara& data) {
+				data.vehicle.obj.SetMatrix(this->v_mat);
+				data.vehicle.mat = this->mat;
+				data.vehicle.pos = this->pos;
+				data.vehicle.Gun_ = this->Gun_;
+			}
+		};
+		std::list<sendstat> rep;
 		//====================================================
 		size_t id = 0;			     /**/
 		std::vector<EffectS> effcs; /*effect*/
