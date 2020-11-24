@@ -18,7 +18,8 @@ enum Effect {
 	ef_bomb = 5, //撃破爆発
 	ef_smoke1 = 6, //ミサイル炎
 	ef_smoke2 = 7, //銃の軌跡
-	ef_gndsmoke = 8//地面の軌跡
+	ef_gndsmoke = 8,//地面の軌跡
+	ef_size = 9
 };
 
 //要改善
@@ -398,6 +399,10 @@ private:
 		bool hit_check = false;						      //当たり判定を取るかチェック
 		size_t use_id = 0;						      //使用する車両(機材)
 		uint16_t HP = 0;						      /*体力*/
+		uint16_t KILL = 0;						      /*体力*/
+		int KILL_ID = -1;						      /*体力*/
+		uint16_t DEATH = 0;						      /*体力*/
+		int DEATH_ID = -1;						      /*体力*/
 		VECTOR_ref pos;							      //車体座標
 		MATRIX_ref mat;							      //車体回転行列
 		VECTOR_ref add;							      //車体加速度
@@ -419,6 +424,10 @@ private:
 			this->col.Dispose();
 			this->hit_check = false;
 			this->HP = 0;
+			this->KILL = 0;						      /*体力*/
+			this->KILL_ID = -1;						      /*体力*/
+			this->DEATH = 0;						      /*体力*/
+			this->DEATH_ID = -1;						      /*体力*/
 			this->speed_add = 0.f;
 			this->speed_sub = 0.f;
 			this->speed = 0.f;
@@ -481,6 +490,26 @@ public:
 			VECTOR_ref pos;
 			MATRIX_ref mat;
 			std::vector<Guns> Gun_;						      /**/
+
+			struct eff_buf {
+				size_t id = 0;
+				bool flug{ false };				 /**/
+				VECTOR_ref pos;					 /**/
+				VECTOR_ref nor;					 /**/
+				float scale = 1.f;				 /**/
+			};
+			struct eff_guns_buf {
+				eff_buf first;
+				ammos* second = nullptr;
+				int cnt = -1;
+			};
+			std::array<eff_buf, ef_size> effcs_; /*effect*/
+			std::array<eff_guns_buf, 8> effcs_missile_; /*effect*/
+			std::array<eff_guns_buf, 12> effcs_gun_;    /*effect*/
+
+			std::array<float, 3> gndsmkeffcs_; /*effect*/
+
+
 			void get_data(Chara& data) {
 				auto& veh = data.vehicle;
 
@@ -488,9 +517,34 @@ public:
 				this->mat = veh.mat;
 				this->pos = veh.pos;
 				this->Gun_ = veh.Gun_;
-
-				for (auto& t : veh.use_veh.wheelframe) {
-					t.gndsmkeffcs.scale;
+				for (int i = 0; i < ef_size; i++) {
+					this->effcs_[i].flug = data.effcs[i].flug;
+					this->effcs_[i].pos = data.effcs[i].pos;
+					this->effcs_[i].nor = data.effcs[i].nor;
+					this->effcs_[i].scale = data.effcs[i].scale;
+				}
+				for (int i = 0; i < 8; i++) {
+					effcs_missile_[i].first.flug = data.effcs_missile[i].first.flug;
+					effcs_missile_[i].first.pos = data.effcs_missile[i].first.pos;
+					effcs_missile_[i].first.nor = data.effcs_missile[i].first.nor;
+					effcs_missile_[i].first.scale = data.effcs_missile[i].first.scale;
+					effcs_missile_[i].second = data.effcs_missile[i].second;
+					effcs_missile_[i].cnt = data.effcs_missile[i].cnt;
+				}
+				for (int i = 0; i < 12; i++) {
+					effcs_gun_[i].first.flug = data.effcs_gun[i].first.flug;
+					effcs_gun_[i].first.pos = data.effcs_gun[i].first.pos;
+					effcs_gun_[i].first.nor = data.effcs_gun[i].first.nor;
+					effcs_gun_[i].first.scale = data.effcs_gun[i].first.scale;
+					effcs_gun_[i].second = data.effcs_gun[i].second;
+					effcs_gun_[i].cnt = data.effcs_gun[i].cnt;
+				}
+				{
+					int i = 0;
+					for (auto& t : veh.use_veh.wheelframe) {
+						gndsmkeffcs_[i] = t.gndsmkeffcs.scale;
+						i++;
+					}
 				}
 			}
 			void put_data(Chara& data) {
@@ -500,12 +554,41 @@ public:
 				veh.mat = this->mat;
 				veh.pos = this->pos;
 				veh.Gun_ = this->Gun_;
+				for (int i = 0; i < ef_size; i++) {
+					data.effcs[i].flug = this->effcs_[i].flug;
+					data.effcs[i].pos = this->effcs_[i].pos;
+					data.effcs[i].nor = this->effcs_[i].nor;
+					data.effcs[i].scale = this->effcs_[i].scale;
+				}
+				for (int i = 0; i < 8; i++) {
+					data.effcs_missile[i].first.flug = effcs_missile_[i].first.flug;
+					data.effcs_missile[i].first.pos = effcs_missile_[i].first.pos;
+					data.effcs_missile[i].first.nor = effcs_missile_[i].first.nor;
+					data.effcs_missile[i].first.scale = effcs_missile_[i].first.scale;
+					data.effcs_missile[i].second = effcs_missile_[i].second;
+					data.effcs_missile[i].cnt = effcs_missile_[i].cnt;
+				}
+				for (int i = 0; i < 12; i++) {
+					data.effcs_gun[i].first.flug = effcs_gun_[i].first.flug;
+					data.effcs_gun[i].first.pos = effcs_gun_[i].first.pos;
+					data.effcs_gun[i].first.nor = effcs_gun_[i].first.nor;
+					data.effcs_gun[i].first.scale = effcs_gun_[i].first.scale;
+					data.effcs_gun[i].second = effcs_gun_[i].second;
+					data.effcs_gun[i].cnt = effcs_gun_[i].cnt;
+				}
+				{
+					int i = 0;
+					for (auto& t : veh.use_veh.wheelframe) {
+						t.gndsmkeffcs.scale = gndsmkeffcs_[i];
+						i++;
+					}
+				}
 			}
 		};
 		std::list<sendstat> rep;
 		//====================================================
 		size_t id = 0;			     /**/
-		std::vector<EffectS> effcs; /*effect*/
+		std::array<EffectS, ef_size> effcs; /*effect*/
 		std::array<ef_guns, 8> effcs_missile; /*effect*/
 		std::array<ef_guns, 12> effcs_gun;    /*effect*/
 		size_t missile_effcnt = 0;
@@ -529,12 +612,11 @@ public:
 		SoundHandle se_gun;
 		SoundHandle se_hit;
 		//セット
-		void set_human(const std::vector<Mainclass::Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic, const size_t&eff_size) {
+		void set_human(const std::vector<Mainclass::Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
 			auto& c = *this;
 			{
 				std::fill(c.key.begin(), c.key.end(), false); //操作
 
-				c.effcs.resize(eff_size);
 				fill_id(c.effcs);			      //エフェクト
 				//共通
 				{
@@ -696,6 +778,10 @@ public:
 											veh.HP = std::max<int16_t>(veh.HP - c.spec.damage_a, 0); //
 											//撃破時エフェクト
 											if (veh.HP == 0) {
+												this->vehicle.KILL++;
+												this->vehicle.KILL_ID = t.id;
+												veh.DEATH++;
+												veh.DEATH_ID = this->id;
 												t.effcs[ef_bomb].set(veh.obj.frame(veh.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
 											}
 											//弾処理

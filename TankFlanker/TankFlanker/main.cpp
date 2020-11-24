@@ -157,7 +157,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		}
 		//ƒLƒƒƒ‰Ý’è
 		for (auto& c : chara) {
-			c.set_human(Vehicles, Ammo, hit_pic, 9);//
+			c.set_human(Vehicles, Ammo, hit_pic);//
 		}
 		//ƒ‰ƒ€ƒ_
 		auto ram_draw = [&]() { 
@@ -628,7 +628,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							c.effcs[ef_fire].set(veh.obj.frame(cg.gun_info.frame3.first), u.vec, u.spec.caliber_a / 0.1f);
 							if (u.spec.caliber_a >= 0.017f) {
 								c.effcs_gun[c.gun_effcnt].first.set(veh.obj.frame(cg.gun_info.frame3.first), u.vec);
-								c.effcs_gun[c.gun_effcnt].first.put(Drawparts->get_effHandle(ef_smoke2));
 								c.effcs_gun[c.gun_effcnt].second = &u;
 								c.effcs_gun[c.gun_effcnt].cnt = 0;
 								++c.gun_effcnt %= c.effcs_gun.size();
@@ -636,7 +635,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 						else {
 							c.effcs_missile[c.missile_effcnt].first.set(veh.obj.frame(cg.gun_info.frame3.first), u.vec);
-							c.effcs_missile[c.missile_effcnt].first.put(Drawparts->get_effHandle(ef_smoke1));
 							c.effcs_missile[c.missile_effcnt].second = &u;
 							c.effcs_missile[c.missile_effcnt].cnt = 0;
 							++c.missile_effcnt %= c.effcs_missile.size();
@@ -651,6 +649,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						t.put(Drawparts->get_effHandle(int(t.id)));
 					}
 				}
+				for (auto& t : c.effcs_gun) {
+					t.first.put(Drawparts->get_effHandle(ef_smoke2));
+				}
+				for (auto& t : c.effcs_missile) {
+					t.first.put(Drawparts->get_effHandle(ef_smoke1));
+				}
+
 				for (auto& t : veh.use_veh.wheelframe) {
 					t.gndsmkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), t.gndsmkeffcs.scale);
 					if (start_c2) {
@@ -822,6 +827,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					for (auto& a : c.effcs_missile) {
 						if (a.second != nullptr) {
 							if (a.second->flug) {
+								a.first.pos = a.second->pos;
 								a.first.handle.SetPos(a.second->pos);
 							}
 							if (a.cnt != -1) {
@@ -837,6 +843,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					for (auto& a : c.effcs_gun) {
 						if (a.second != nullptr) {
 							if (a.second->flug) {
+								a.first.pos = a.second->pos;
 								a.first.handle.SetPos(a.second->pos);
 							}
 							if (a.cnt != -1) {
@@ -1180,13 +1187,33 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					Mainclass::Chara::sendstat tmp;
 					tmp.get_data(c);
 					c.rep.push_back(tmp);
+					for (auto& t : c.effcs) {
+						t.put_end();
+					}
+					for (auto& t : c.effcs_gun) {
+						t.first.put_end();
+					}
+					for (auto& t : c.effcs_missile) {
+						t.first.put_end();
+					}
 				}
 			}
+			//
 		}
 		SetMouseDispFlag(TRUE);
 		SetMousePoint(deskx / 2, desky / 2);
 
 		//ƒŠƒvƒŒƒC
+		for (auto& c : chara) {
+			//ƒ~ƒTƒCƒ‹
+			for (auto& a : c.effcs_missile) {
+				a.first.handle.Dispose();
+			}
+			//e–C
+			for (auto& a : c.effcs_gun) {
+				a.first.handle.Dispose();
+			}
+		}
 		SetMouseDispFlag(FALSE);
 		SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 		{
@@ -1251,15 +1278,48 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						c.se_cockpit.SetPosition(c.vehicle.pos);
 						c.se_hit.SetPosition(c.vehicle.pos);
 						c.se_gun.SetPosition(c.vehicle.pos);
-						for (auto& t : c.effcs) {
-							if (t.id != ef_smoke1 && t.id != ef_smoke2) {
-								t.put(Drawparts->get_effHandle(int(t.id)));
+						/*effect*/
+						{
+							int i = 0;
+							for (auto& t : c.effcs) {
+								t.put(Drawparts->get_effHandle(i));
+								i++;
 							}
 						}
 						for (auto& t : veh.use_veh.wheelframe) {
 							t.gndsmkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), t.gndsmkeffcs.scale);
 						}
+						//e–C
+						for (auto& a : c.effcs_gun) {
+							a.first.put(Drawparts->get_effHandle(ef_smoke2));
+							if (a.second != nullptr) {
+								if (a.second->flug) {
+									a.first.handle.SetPos(a.second->pos);
+								}
+								if (a.cnt != -1) {
+									if (a.cnt >= 3.f * GetFPS()) {
+										a.first.handle.Dispose();
+									}
+								}
+							}
+						}
+						//ƒ~ƒTƒCƒ‹
+						for (auto& a : c.effcs_missile) {
+							a.first.put(Drawparts->get_effHandle(ef_smoke1));
+							if (a.second != nullptr) {
+								if (a.second->flug) {
+									a.first.handle.SetPos(a.second->pos);
+								}
+								if (a.cnt != -1) {
+									if (a.cnt >= 3.f * GetFPS()) {
+										a.first.handle.Dispose();
+									}
+								}
+							}
+						}
+						/**/
 					}
+					/**/
 				}
 				//•`‰æ
 				{

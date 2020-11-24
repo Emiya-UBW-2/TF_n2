@@ -642,10 +642,15 @@ public:
 				}
 			}
 		}
+
+		if (chara.vehicle.KILL_ID != -1) {
+			font->DrawStringFormat(disp_x / 4, disp_y / 3, GetColor(255, 0, 0), "KILL : %d", chara.vehicle.KILL);
+			font->DrawStringFormat(disp_x / 4, disp_y / 3 + y_r(18, out_disp_y), GetColor(255, 0, 0), "KILL ID : %d", chara.vehicle.KILL_ID);
+		}
+
 		if (overrider != -1) {
 			disp_x = xxx;
 			disp_y = yyy;
 		}
-
 	}
 };
