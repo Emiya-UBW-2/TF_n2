@@ -1214,6 +1214,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				a.first.handle.Dispose();
 			}
 		}
+		eyevec2 = mine.vehicle.mat.zvec() * -1.f;
+		eye_pos_ads = VGet(0, 0.58f, 0);
 		SetMouseDispFlag(FALSE);
 		SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 		{
@@ -1249,12 +1251,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					{
 						int mousex, mousey;
 						GetMousePoint(&mousex, &mousey);
-						SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
+						SetMousePoint(Drawparts->out_disp_x / 2, Drawparts->out_disp_y / 2);
 
-						float y = atan2f(eyevec.x(), eyevec.z()) + deg2rad(float(mousex - Drawparts->disp_x / 2) * 0.1f);
-						float x = atan2f(eyevec.y(), std::hypotf(eyevec.x(), eyevec.z())) + deg2rad(float(mousey - Drawparts->disp_y / 2) * 0.1f);
+						float y = atan2f(eyevec2.x(), eyevec2.z()) + deg2rad(float(mousex - Drawparts->out_disp_x / 2) * 0.1f);
+						float x = atan2f(eyevec2.y(), std::hypotf(eyevec2.x(), eyevec2.z())) + deg2rad(float(mousey - Drawparts->out_disp_y / 2) * 0.1f);
 						x = std::clamp(x, deg2rad(-45), deg2rad(45));
-						eyevec = VGet(cos(x) * std::sin(y), std::sin(x), std::cos(x) * std::cos(y));
+						eyevec2 = VGet(cos(x) * std::sin(y), std::sin(x), std::cos(x) * std::cos(y));
 					}
 				}
 				//
@@ -1343,17 +1345,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						if (Rot == ADS) {
 							cams.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
 							cams.campos.y(std::max(cams.campos.y(), 5.f));
-							if (Drawparts->use_vr) {
-								cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
-								cams.camup = MATRIX_ref::Vtrans(HMDmat.yvec(), veh.mat);//veh.mat.yvec();
-							}
-							else {
+							{
 								if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
+									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
 								}
 								else {
-									eyevec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
-									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
+									eyevec2 = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
+									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
 								}
 								cams.camup = veh.mat.yvec();
 							}
@@ -1362,7 +1360,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							cams.camvec = veh.pos + veh.mat.yvec() * (6.f);
 							cams.camvec.y(std::max(cams.camvec.y(), 5.f));
 							if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-								cams.campos = cams.camvec + eyevec * range;
+								cams.campos = cams.camvec + eyevec2 * range;
 								cams.campos.y(std::max(cams.campos.y(), 0.f));
 								if (mapparts->map_col_line_nearest(cams.camvec, &cams.campos)) {
 									cams.campos = cams.camvec + (cams.campos - cams.camvec) * (0.9f);
@@ -1370,8 +1368,8 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								cams.camup = VGet(0.f, 1.f, 0.f);
 							}
 							else {
-								eyevec = (cams.camvec - aimpos).Norm();
-								cams.campos = cams.camvec + eyevec * range;
+								eyevec2 = (cams.camvec - aimpos).Norm();
+								cams.campos = cams.camvec + eyevec2 * range;
 								cams.camup = veh.mat.yvec();
 							}
 						}
@@ -1380,7 +1378,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						//farŽæ“¾
 						cams.far_ = 4000.f;
 						//fov
-						cams.fov = deg2rad(Drawparts->use_vr ? 90 : 45);
+						cams.fov = deg2rad(45);
 						//Æ€À•WŽæ“¾
 						MAIN_Screen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
 						{
@@ -1401,7 +1399,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					//UI
 					UI_Screen2.SetDraw_Screen();
 					{
-						UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), mine);
+						UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), mine,0);
 					}
 					//sky
 					SkyScreen2.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
