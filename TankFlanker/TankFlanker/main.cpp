@@ -704,7 +704,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 											if (c.id == t.id || veh_t.hit_check) {
 												continue;
 											}
-											if ((Segment_Point_MinLength(a.pos.get(), a.repos.get(), veh_t.pos.get()) > 5.f)) {
+											if ((Segment_Point_MinLen(a.pos, a.repos, veh_t.pos) > 5.f)) {
 												continue;
 											}
 											veh_t.col.SetMatrix(veh_t.mat * MATRIX_ref::Mtrans(veh_t.pos));
