@@ -405,6 +405,7 @@ private:
 		int DEATH_ID = -1;						      /*体力*/
 		VECTOR_ref pos;							      //車体座標
 		MATRIX_ref mat;							      //車体回転行列
+		MATRIX_ref mat_start;					      //車体回転行列(初期配置)
 		VECTOR_ref add;							      //車体加速度
 		std::vector<Guns> Gun_;						      /**/
 		float speed = 0.f, speed_add = 0.f, speed_sub = 0.f;		      /**/
@@ -460,6 +461,7 @@ private:
 			this->HP = this->use_veh.HP;
 			this->pos = pos_;
 			this->mat = mat_;
+			this->mat_start = this->mat;
 			this->xradadd_right = 0.f;
 			this->xradadd_left = 0.f;
 			this->yradadd_left = 0.f;

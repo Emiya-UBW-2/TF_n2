@@ -62,7 +62,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	SetCreate3DSoundFlag(FALSE);
 	MV1 hit_pic;      //弾痕
 	//コックピット
-	frames	stickx_f, sticky_f, stickz_f, compass_f, speed_f, spd3_f, spd2_f, spd1_f, cockpit_f, clock_h_f, clock_m_f, clock_s_f, subcompass_f;
+	frames	stickx_f, sticky_f, stickz_f, compass_f, speed_f, speed2_f, spd3_f, spd2_f, spd1_f, cockpit_f, clock_h_f, clock_h2_f, clock_m_f, clock_m2_f, clock_s_f, clock_s2_f, subcompass_f,subcompass2_f;
 	MV1 cockpit;
 	//操作
 	int Rot = 0;//
@@ -95,6 +95,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		}
 		else if ((p.find("予備コンパス", 0) != std::string::npos)) {
 			subcompass_f = { i,cockpit.frame(i) - cockpit.frame(int(cockpit.frame_parent(i))) };
+			subcompass2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
 			//コンパス
 		}
 		else if (p.find("スティック縦", 0) != std::string::npos) {
@@ -106,6 +107,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		}
 		else if ((p.find("速度計", 0) != std::string::npos)) {
 			speed_f = { i,cockpit.frame(i) };
+			speed2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
 		}
 		else if ((p.find("速度100", 0) != std::string::npos)) {
 			spd3_f = { i,cockpit.frame(i) };
@@ -118,12 +120,15 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		}
 		else if ((p.find("時計", 0) != std::string::npos)) {
 			clock_h_f = { i,cockpit.frame(i) };
+			clock_h2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
 		}
 		else if ((p.find("分針", 0) != std::string::npos)) {
 			clock_m_f = { i,cockpit.frame(i) };
+			clock_m2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
 		}
 		else if ((p.find("秒針", 0) != std::string::npos)) {
 			clock_s_f = { i,cockpit.frame(i) };
+			clock_s2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
 		}
 	}
 	//
@@ -161,12 +166,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		fill_id(chara); //ID
 		for (auto& c : chara) {
 			auto& veh = c.vehicle;
-			veh.pos = VGet(
-				float(30 * (c.id / 3))*sin(deg2rad(-130)),
-				10.f,
-				float(30 * (c.id / 3))*cos(deg2rad(-130)) + float(30 * (c.id % 3))
-			);
-			veh.mat = MATRIX_ref::RotY(deg2rad(-130));
+			veh.spawn(
+				VGet(
+					float(30 * (c.id / 3))*sin(deg2rad(-130)),
+					10.f,
+					float(30 * (c.id / 3))*cos(deg2rad(-130)) + float(30 * (c.id % 3))
+				),
+				MATRIX_ref::RotY(deg2rad(-130)));
 		}
 		//キャラ設定
 		for (auto& c : chara) {
@@ -606,7 +612,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 					}
 					if (hitb) {
-						veh.spawn(VGet(0.f, 10.f, float(30 * (c.id % 3))), MATRIX_ref::RotY(deg2rad(-130)));
+						veh.spawn(
+							VGet(
+								float(30 * (c.id / 3))*sin(deg2rad(-130)),
+								10.f,
+								float(30 * (c.id / 3))*cos(deg2rad(-130)) + float(30 * (c.id % 3))
+							),
+							MATRIX_ref::RotY(deg2rad(-130)));
 						c.p_anime_geardown.second = 1.f;
 						c.changegear.first = true;
 					}
@@ -999,39 +1011,50 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						cockpit.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
 						cockpit.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
 						cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
-						cockpit.SetFrameLocalMatrix(compass_f.first, MATRIX_ref(veh.mat).Inverse() * MATRIX_ref::Mtrans(compass_f.second));
+						cockpit.SetFrameLocalMatrix(compass_f.first, veh.mat.Inverse() * MATRIX_ref::Mtrans(compass_f.second));
+						//速度計
 						{
-							float spd_buf = veh.speed*3.6f;
-							float spd = 0.f;
-							if (spd_buf <= 400.f) {
-								spd = 180.f*spd_buf / 440.f;
+							{
+								float spd_buf = veh.speed*3.6f;
+								float spd = 0.f;
+								if (spd_buf <= 400.f) {
+									spd = 180.f*spd_buf / 440.f;
+								}
+								else {
+									spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
+								}
+								cockpit.frame_reset(speed_f.first);
+								cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(speed2_f.second, -deg2rad(spd)) * MATRIX_ref::Mtrans(speed_f.second));
 							}
-							else {
-								spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
-							}
-							cockpit.frame_reset(speed_f.first);
-							cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(speed_f.first + 1) - cockpit.frame(speed_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(spd)) * MATRIX_ref::Mtrans(speed_f.second));
-						}
-						{
-							float spd_buf = veh.speed*3.6f / 1224.f;
+							{
+								float spd_buf = veh.speed*3.6f / 1224.f;
 
-							cockpit.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*1.f)) * MATRIX_ref::Mtrans(spd3_f.second));
-							cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*10.f)) * MATRIX_ref::Mtrans(spd2_f.second));
-							cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*100.f)) * MATRIX_ref::Mtrans(spd1_f.second));
+								cockpit.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*1.f)) * MATRIX_ref::Mtrans(spd3_f.second));
+								cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*10.f)) * MATRIX_ref::Mtrans(spd2_f.second));
+								cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*100.f)) * MATRIX_ref::Mtrans(spd1_f.second));
+							}
 						}
+						//時計
 						{
-							float spd_buf = veh.speed*3.6f / 1224.f;
-							cockpit.SetFrameLocalMatrix(clock_h_f.first,
-								MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(clock_h_f.first + 1) - cockpit.frame(clock_h_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(360.f / 10.f*spd_buf*1.f))
-								* MATRIX_ref::Mtrans(clock_h_f.second));
-							cockpit.SetFrameLocalMatrix(clock_m_f.first,
-								MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(clock_m_f.first + 1) - cockpit.frame(clock_m_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(360.f / 10.f*spd_buf*10.f))
-								* MATRIX_ref::Mtrans(clock_m_f.second));
-							cockpit.SetFrameLocalMatrix(clock_s_f.first,
-								MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(clock_s_f.first + 1) - cockpit.frame(clock_s_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(360.f / 10.f*spd_buf*10.f))
-								* MATRIX_ref::Mtrans(clock_s_f.second));
+							DATEDATA DateBuf;
+							GetDateTime(&DateBuf);
+							cockpit.frame_reset(clock_h_f.first);
+							cockpit.SetFrameLocalMatrix(clock_h_f.first, MATRIX_ref::RotAxis(clock_h2_f.second, -deg2rad(360.f *DateBuf.Hour / 12 + 360.f / 12.f*DateBuf.Min / 60)) * MATRIX_ref::Mtrans(clock_h_f.second));
+							cockpit.frame_reset(clock_m_f.first);
+							cockpit.SetFrameLocalMatrix(clock_m_f.first, MATRIX_ref::RotAxis(clock_m2_f.second, -deg2rad(360.f *DateBuf.Min / 60 + 360.f / 60.f*DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_m_f.second));
+							cockpit.frame_reset(clock_s_f.first);
+							cockpit.SetFrameLocalMatrix(clock_s_f.first, MATRIX_ref::RotAxis(clock_s2_f.second, -deg2rad(360.f *DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_s_f.second));
 						}
-						cockpit.SetMatrix(MATRIX_ref(veh.mat)*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, veh.mat)));
+						//コンパス
+						{
+							VECTOR_ref tmp = veh.mat.zvec();
+							tmp = VGet(tmp.x(), 0.f, tmp.z());
+							tmp = tmp.Norm();
+
+							cockpit.frame_reset(subcompass_f.first);
+							cockpit.SetFrameLocalMatrix(subcompass_f.first, MATRIX_ref::RotAxis(subcompass2_f.second, std::atan2f(tmp.z(), -tmp.x())) * MATRIX_ref::Mtrans(subcompass_f.second));
+						}
+						cockpit.SetMatrix(veh.mat*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, veh.mat)));
 					}
 					//VRに移す
 					Drawparts->draw_VR(
@@ -1157,7 +1180,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 									spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
 								}
 								cockpit.frame_reset(speed_f.first);
-								cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(speed_f.first + 1) - cockpit.frame(speed_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(spd)) *						MATRIX_ref::Mtrans(speed_f.second));
+								cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(speed2_f.second, -deg2rad(spd)) * MATRIX_ref::Mtrans(speed_f.second));
 							}
 							{
 								float spd_buf = veh.speed*3.6f / 1224.f;
@@ -1171,15 +1194,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						{
 							DATEDATA DateBuf;
 							GetDateTime(&DateBuf);
-							cockpit.SetFrameLocalMatrix(clock_h_f.first,
-								MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(clock_h_f.first + 1) - cockpit.frame(clock_h_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(360.f *DateBuf.Hour / 12 + 360.f / 12.f*DateBuf.Min / 60))
-								* MATRIX_ref::Mtrans(clock_h_f.second));
-							cockpit.SetFrameLocalMatrix(clock_m_f.first,
-								MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(clock_m_f.first + 1) - cockpit.frame(clock_m_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(360.f *DateBuf.Min  / 60 + 360.f / 60.f*DateBuf.Sec / 60))
-								* MATRIX_ref::Mtrans(clock_m_f.second));
-							cockpit.SetFrameLocalMatrix(clock_s_f.first,
-								MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(clock_s_f.first + 1) - cockpit.frame(clock_s_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(360.f *DateBuf.Sec / 60))
-								* MATRIX_ref::Mtrans(clock_s_f.second));
+							cockpit.frame_reset(clock_h_f.first);
+							cockpit.SetFrameLocalMatrix(clock_h_f.first, MATRIX_ref::RotAxis(clock_h2_f.second, -deg2rad(360.f *DateBuf.Hour / 12 + 360.f / 12.f*DateBuf.Min / 60)) * MATRIX_ref::Mtrans(clock_h_f.second));
+							cockpit.frame_reset(clock_m_f.first);
+							cockpit.SetFrameLocalMatrix(clock_m_f.first, MATRIX_ref::RotAxis(clock_m2_f.second, -deg2rad(360.f *DateBuf.Min / 60 + 360.f / 60.f*DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_m_f.second));
+							cockpit.frame_reset(clock_s_f.first);
+							cockpit.SetFrameLocalMatrix(clock_s_f.first, MATRIX_ref::RotAxis(clock_s2_f.second, -deg2rad(360.f *DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_s_f.second));
 						}
 						//コンパス
 						{
@@ -1187,11 +1207,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							tmp = VGet(tmp.x(), 0.f, tmp.z());
 							tmp = tmp.Norm();
 
-							cockpit.SetFrameLocalMatrix(subcompass_f.first,
-								MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(subcompass_f.first + 1) - cockpit.frame(subcompass_f.first), MATRIX_ref(veh.mat).Inverse()), std::atan2f(-tmp.x(), tmp.z()))
-								* MATRIX_ref::Mtrans(subcompass_f.second));
+							cockpit.frame_reset(subcompass_f.first);
+							cockpit.SetFrameLocalMatrix(subcompass_f.first, MATRIX_ref::RotAxis(subcompass2_f.second, std::atan2f(tmp.z(), -tmp.x())) * MATRIX_ref::Mtrans(subcompass_f.second));
 						}
-						cockpit.SetMatrix(MATRIX_ref(veh.mat)*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, veh.mat)));
+						cockpit.SetMatrix(veh.mat*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, veh.mat)));
 					}
 					//Screen2に移す
 					outScreen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_);
