@@ -1,24 +1,19 @@
 #pragma once
-class Mapclass {
+class Mapclass:Mainclass {
 private:
 	MV1 map, map_col;					    //’n–Ê
 	MV1 tree_model, tree_far;				    //–Ø
 	MV1 sky;	  //‹ó
 	MV1 sea;	  //ŠC
-	GraphHandle SkyScreen;
-	int disp_x = 1920;
-	int disp_y = 1080;
+	std::vector<treePats> tree;	/*•Ç‚ðƒZƒbƒg*/
 public:
-	Mapclass(const int& xd, const int& yd) {
-		disp_x = xd;
-		disp_y = yd;
-
-		SkyScreen = GraphHandle::Make(disp_x, disp_y);    //‹ó•`‰æ
+	Mapclass() {
 	}
 
 	~Mapclass() {
 
 	}
+
 	void set_map_pre() {
 		MV1::Load("data/map_new/model.mv1", &map, true);		   //map
 		MV1::Load("data/map_new/col.mv1", &map_col, true);		   //mapƒRƒŠƒWƒ‡ƒ“
@@ -28,7 +23,7 @@ public:
 		MV1::Load("data/model/sea/model.mv1", &sea, true);	 //ŠC
 	}
 
-	void set_map(std::vector<Mainclass::treePats>* tree) {
+	void set_map() {
 		map.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
 
 		VECTOR_ref size;
@@ -57,33 +52,45 @@ public:
 				}
 				else if (p.Polygons[i].MaterialIndex == 3) {
 					//–Ø
-					tree->resize(tree->size() + 1);
-					tree->back().mat = MATRIX_ref::Scale(VGet(15.f / 10.f, 15.f / 10.f, 15.f / 10.f));
-					tree->back().pos = (VECTOR_ref(p.Vertexs[p.Polygons[i].VIndex[0]].Position) + p.Vertexs[p.Polygons[i].VIndex[1]].Position + p.Vertexs[p.Polygons[i].VIndex[2]].Position) * (1.f / 3.f);
+					tree.resize(tree.size() + 1);
+					tree.back().mat = MATRIX_ref::Scale(VGet(15.f / 10.f, 15.f / 10.f, 15.f / 10.f));
+					tree.back().pos = (VECTOR_ref(p.Vertexs[p.Polygons[i].VIndex[0]].Position) + p.Vertexs[p.Polygons[i].VIndex[1]].Position + p.Vertexs[p.Polygons[i].VIndex[2]].Position) * (1.f / 3.f);
 
-					tree->back().obj = tree_model.Duplicate();
-					tree->back().obj.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
-					tree->back().obj_far = tree_far.Duplicate();
-					tree->back().obj_far.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
+					tree.back().obj = tree_model.Duplicate();
+					tree.back().obj.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
+					tree.back().obj_far = tree_far.Duplicate();
+					tree.back().obj_far.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
 				}
 			}
 		}
 
 	}
 
-	void delete_map(std::vector<Mainclass::treePats>* tree) {
+	void delete_map() {
 		map.Dispose();		   //map
 		map_col.Dispose();		   //mapƒRƒŠƒWƒ‡ƒ“
 		tree_model.Dispose(); //–Ø
 		tree_far.Dispose(); //–Ø
 		sky.Dispose();	 //‹ó
 		sea.Dispose();	 //ŠC
-		for (auto&t : *tree) {
+		for (auto&t : tree) {
 			t.obj.Dispose();
 			t.obj_far.Dispose();
 		}
-		tree->clear();
+		tree.clear();
+	}
 
+	void map_settree() {
+		for (auto& l : tree) {
+			l.obj.SetMatrix(l.mat * MATRIX_ref::Mtrans(l.pos));
+			l.obj_far.SetMatrix(l.mat * MATRIX_ref::Mtrans(l.pos));
+		}
+	}
+	void map_drawtree() {
+		for (auto& l : tree) {
+			l.obj.DrawModel();
+			//l.obj_far.DrawModel();
+		}
 	}
 
 	auto& map_get() { return map; }

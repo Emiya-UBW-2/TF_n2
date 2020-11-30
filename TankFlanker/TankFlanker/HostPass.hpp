@@ -7,11 +7,14 @@ private:
 	//GraphHandle MainScreen;
 	//GraphHandle NearScreen;
 	//GraphHandle GaussScreen;
-
-	GraphHandle *FarScreen_ptr;
-	GraphHandle *NearFarScreen_ptr;
-	GraphHandle *NearScreen_ptr;
-	GraphHandle *GaussScreen_ptr;
+	GraphHandle FarScreen_;		//描画スクリーン
+	GraphHandle NearFarScreen_;		//描画スクリーン
+	GraphHandle NearScreen_;		//描画スクリーン
+	GraphHandle GaussScreen_;		//描画スクリーン
+	GraphHandle SkyScreen;			//空描画
+	GraphHandle BufScreen;		//描画スクリーン
+	GraphHandle UI_Screen;		//描画スクリーン
+	GraphHandle MAIN_Screen;	//描画スクリーン
 
 	int EXTEND = 4;
 	bool dof_flag = true;
@@ -28,6 +31,15 @@ public:
 		//MainScreen = GraphHandle::Make(disp_x, disp_y, true);
 		//NearScreen = GraphHandle::Make(disp_x, disp_y, true);
 		//GaussScreen = GraphHandle::Make(disp_x / EXTEND, disp_y / EXTEND); /*エフェクト*/
+
+		//FarScreen_ = GraphHandle::Make(disp_x, disp_y, true);		//描画スクリーン
+		//NearFarScreen_ = GraphHandle::Make(disp_x, disp_y, true);		//描画スクリーン
+		//NearScreen_ = GraphHandle::Make(disp_x, disp_y, true);		//描画スクリーン
+		//GaussScreen_ = GraphHandle::Make(disp_x / 4, disp_y / 4, true);		//描画スクリーン
+		//SkyScreen = GraphHandle::Make(disp_x, disp_y);			//空描画
+		//BufScreen = GraphHandle::Make(disp_x, disp_y, true);		//描画スクリーン
+		//UI_Screen = GraphHandle::Make(disp_x, disp_y, true);		//描画スクリーン
+		//MAIN_Screen = GraphHandle::Make(disp_x, disp_y, true);	//描画スクリーン
 	}
 	~HostPassEffect() {
 	}

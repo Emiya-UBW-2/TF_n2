@@ -26,6 +26,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	auto UIparts = std::make_unique<UI>(Drawparts->out_disp_x, Drawparts->out_disp_y, Drawparts->disp_x, Drawparts->disp_y, Drawparts->use_vr);	/*UI*/
 	auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);																		/*デバッグ*/
 	auto Hostpassparts = std::make_unique<HostPassEffect>( dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);				/*ホストパスエフェクト*/
+	auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->out_disp_x, Drawparts->out_disp_y);				/*ホストパスエフェクト*/
 	DXDraw::cam_info cams;
 	VECTOR_ref eyevec, eyevec2;																	//視点
 	VECTOR_ref aimpos;																			//機体の狙い
@@ -33,7 +34,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	VECTOR_ref aimposout;																		//UIに出力
 	FontHandle font12 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 	/*map*/
-	auto mapparts = std::make_unique<Mapclass>(Drawparts->disp_x, Drawparts->disp_y);
+	auto mapparts = std::make_unique<Mapclass>();
 	//disp
 	GraphHandle FarScreen_ = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);		//描画スクリーン
 	GraphHandle NearFarScreen_ = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);		//描画スクリーン
@@ -74,7 +75,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	VECTOR_ref rec_HMD;
 	//データ
 	std::vector<Mainclass::Chara> chara;	/*キャラ*/
-	std::vector<Mainclass::treePats> tree;	/*壁をセット*/
 	std::vector<Mainclass::Ammos> Ammo;		/*弾薬*/
 	std::vector<Mainclass::Vehcs> Vehicles;	/*車輛データ*/
 	//
@@ -159,7 +159,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		mapparts->set_map_pre();
 		UIparts->load_window("マップモデル");			   //ロード画面
 		//壁
-		mapparts->set_map(&tree);
+		mapparts->set_map();
 		//光、影
 		Drawparts->Set_Light_Shadow(mapparts->map_get().mesh_maxpos(0), mapparts->map_get().mesh_minpos(0), VGet(0.0f, -0.5f, 0.5f), [&mapparts] { mapparts->map_get().DrawModel(); });
 		//キャラ選択
@@ -205,10 +205,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 									}
 								}
 							}
-							for (auto& l : tree) {
-								l.obj.DrawModel();
-								//l.obj_far.DrawModel();
-							}
+							mapparts->map_drawtree();
 							//
 
 						}
@@ -884,10 +881,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			}
 			start_c2 = false;
 			//木セット
-			for (auto& l : tree) {
-				l.obj.SetMatrix(l.mat * MATRIX_ref::Mtrans(l.pos));
-				l.obj_far.SetMatrix(l.mat * MATRIX_ref::Mtrans(l.pos));
-			}
+			mapparts->map_settree();
 			{
 				//他の座標をここで出力(ホスト)
 			}
@@ -911,9 +905,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						auto& veh = c.vehicle;
 						veh.obj.DrawModel();
 					}
-					for (auto& l : tree) {
-						l.obj.DrawModel();
-					}
+					mapparts->map_drawtree();
 				}
 				, VGet(200.f, 200.f, 200.f), VGet(2000.f, 2000.f, 2000.f));
 			//VR更新
@@ -964,7 +956,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						//near取得
 						cams.near_ = (Rot == ADS) ? (5.f + 25.f * (cams.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
 						//far取得
-						cams.far_ = 4000.f;
+						cams.far_ = 6000.f;
 						//fov
 						cams.fov = deg2rad(Drawparts->use_vr ? 90 : 45);
 						//照準座標取得
@@ -1151,12 +1143,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						mapparts->sky_draw();
 					}
 					//被写体深度描画
-					Hostpassparts->dof(BufScreen2, SkyScreen2, ram_draw, cams, FarScreen_2, NearFarScreen_2, NearScreen_2);
+					Hostpass2parts->dof(BufScreen2, SkyScreen2, ram_draw, cams, FarScreen_2, NearFarScreen_2, NearScreen_2);
 					//最終描画
 					MAIN_Screen2.SetDraw_Screen();
 					{
 						BufScreen2.DrawGraph(0, 0, false);
-						Hostpassparts->bloom(BufScreen2, GaussScreen_2, 4, 255);//ブルーム
+						Hostpass2parts->bloom(BufScreen2, GaussScreen_2, 4, 255);//ブルーム
 					}
 					//コックピット演算
 					{
@@ -1403,9 +1395,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							auto& veh = c.vehicle;
 							veh.obj.DrawModel();
 						}
-						for (auto& l : tree) {
-							l.obj.DrawModel();
-						}
+						mapparts->map_drawtree();
 					}
 					, VGet(200.f, 200.f, 200.f), VGet(2000.f, 2000.f, 2000.f));
 
@@ -1478,12 +1468,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						mapparts->sky_draw();
 					}
 					//被写体深度描画
-					Hostpassparts->dof(BufScreen2, SkyScreen2, ram_draw, cams, FarScreen_2, NearFarScreen_2, NearScreen_2);
+					Hostpass2parts->dof(BufScreen2, SkyScreen2, ram_draw, cams, FarScreen_2, NearFarScreen_2, NearScreen_2);
 					//最終描画
 					MAIN_Screen2.SetDraw_Screen();
 					{
 						BufScreen2.DrawGraph(0, 0, false);
-						Hostpassparts->bloom(BufScreen2, GaussScreen_2, 4, 255);//ブルーム
+						Hostpass2parts->bloom(BufScreen2, GaussScreen_2, 4, 255);//ブルーム
 					}
 					//コックピット演算
 					if (Rot == ADS) {
@@ -1563,7 +1553,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				veh.init();
 			}
 			chara.clear();
-			mapparts->delete_map(&tree);
+			mapparts->delete_map();
 			Drawparts->Delete_Shadow();
 		}
 		//
