@@ -1,4 +1,4 @@
-#include "sub.hpp"
+ï»¿#include "sub.hpp"
 #include "UI.hpp"
 #include "HostPass.hpp"
 #include "map.hpp"
@@ -7,7 +7,7 @@
 #define ADS 2
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nShowCmd) {
-	//İ’è“Ç‚İ‚İ
+	//è¨­å®šèª­ã¿è¾¼ã¿
 	bool dof_e = false;
 	bool bloom_e = false;
 	bool shadow_e = false;
@@ -22,119 +22,52 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		FileRead_close(mdata);
 	}
 	//
-	auto Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);									/*”Ä—pƒNƒ‰ƒX*/
+	auto Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);									/*æ±ç”¨ã‚¯ãƒ©ã‚¹*/
 	auto UIparts = std::make_unique<UI>(Drawparts->out_disp_x, Drawparts->out_disp_y, Drawparts->disp_x, Drawparts->disp_y, Drawparts->use_vr);	/*UI*/
-	auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);																		/*ƒfƒoƒbƒO*/
-	auto Hostpassparts = std::make_unique<HostPassEffect>( dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);				/*ƒzƒXƒgƒpƒXƒGƒtƒFƒNƒg*/
-	auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->out_disp_x, Drawparts->out_disp_y);				/*ƒzƒXƒgƒpƒXƒGƒtƒFƒNƒg*/
+	auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);																		/*ãƒ‡ãƒãƒƒã‚°*/
+	auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);				/*ãƒ›ã‚¹ãƒˆãƒ‘ã‚¹ã‚¨ãƒ•ã‚§ã‚¯ãƒˆ*/
+	auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->out_disp_x, Drawparts->out_disp_y);				/*ãƒ›ã‚¹ãƒˆãƒ‘ã‚¹ã‚¨ãƒ•ã‚§ã‚¯ãƒˆ*/
 	DXDraw::cam_info cams;
-	VECTOR_ref eyevec, eyevec2;																	//‹“_
-	VECTOR_ref aimpos;																			//‹@‘Ì‚Ì‘_‚¢
-	VECTOR_ref aimpos2;																			//‹@‘Ì‚Ì‘_‚¢
-	VECTOR_ref aimposout;																		//UI‚Éo—Í
+	VECTOR_ref eyevec, eyevec2;																	//è¦–ç‚¹
+	VECTOR_ref aimposout;																		//UIã«å‡ºåŠ›
 	FontHandle font12 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 	/*map*/
 	auto mapparts = std::make_unique<Mapclass>();
-	//disp
-	GraphHandle FarScreen_ = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);		//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle NearFarScreen_ = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);		//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle NearScreen_ = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);		//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle GaussScreen_ = GraphHandle::Make(Drawparts->disp_x / 4, Drawparts->disp_y / 4, true);		//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle SkyScreen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y);			//‹ó•`‰æ
-	GraphHandle BufScreen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);		//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle UI_Screen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);		//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle MAIN_Screen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);	//•`‰æƒXƒNƒŠ[ƒ“
 	//out_disp
-	GraphHandle FarScreen_2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);		//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle NearFarScreen_2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);		//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle NearScreen_2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);		//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle GaussScreen_2 = GraphHandle::Make(Drawparts->out_disp_x / 4, Drawparts->out_disp_y / 4, true);		//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle SkyScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y);			//‹ó•`‰æ
-	GraphHandle BufScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);		//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle UI_Screen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);		//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle MAIN_Screen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//•`‰æƒXƒNƒŠ[ƒ“
-	GraphHandle outScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//•`‰æƒXƒNƒŠ[ƒ“
-//‚»‚Ì‘¼
+	GraphHandle outScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//æç”»ã‚¹ã‚¯ãƒªãƒ¼ãƒ³
+//ãã®ä»–
 	//
 	SetCreate3DSoundFlag(TRUE);
 	SoundHandle se_cockpit = SoundHandle::Load("data/audio/fighter-cockpit1.wav");
 	SoundHandle se_gun = SoundHandle::Load("data/audio/hit.wav");
 	SoundHandle se_hit = SoundHandle::Load("data/audio/hit.wav");
 	SetCreate3DSoundFlag(FALSE);
-	MV1 hit_pic;      //’e­
-	//ƒRƒbƒNƒsƒbƒg
-	frames	stickx_f, sticky_f, stickz_f, compass_f, speed_f, speed2_f, spd3_f, spd2_f, spd1_f, cockpit_f, clock_h_f, clock_h2_f, clock_m_f, clock_m2_f, clock_s_f, clock_s2_f, subcompass_f,subcompass2_f;
-	MV1 cockpit;
-	//‘€ì
+	MV1 hit_pic;      //å¼¾ç—•
+	//ã‚³ãƒƒã‚¯ãƒ”ãƒƒãƒˆ
+	Mainclass::cockpits cocks;
+	//æ“ä½œ
 	int Rot = 0;//
 	float range = 0.f, range_p = 30.f;
-	VECTOR_ref eye_pos_ads= VGet(0, 0.58f, 0);
+	VECTOR_ref eye_pos_ads = VGet(0, 0.58f, 0);
 	//
 	VECTOR_ref HMDpos;
 	MATRIX_ref HMDmat;
 	VECTOR_ref rec_HMD;
-	//ƒf[ƒ^
-	std::vector<Mainclass::Chara> chara;	/*ƒLƒƒƒ‰*/
-	std::vector<Mainclass::Ammos> Ammo;		/*’e–ò*/
-	std::vector<Mainclass::Vehcs> Vehicles;	/*Ôçpƒf[ƒ^*/
+	//ãƒ‡ãƒ¼ã‚¿
+	std::vector<Mainclass::Chara> chara;	/*ã‚­ãƒ£ãƒ©*/
+	std::vector<Mainclass::Ammos> Ammo;		/*å¼¾è–¬*/
+	std::vector<Mainclass::Vehcs> Vehicles;	/*è»Šè¼›ãƒ‡ãƒ¼ã‚¿*/
 	//
-	MV1::Load("data/model/hit/model.mv1", &hit_pic, true);			//’e­
+	MV1::Load("data/model/hit/model.mv1", &hit_pic, true);			//å¼¾ç—•
 	Mainclass::Vehcs::set_vehicles_pre("data/plane/", &Vehicles, true);
-	MV1::Load("data/model/cockpit/model.mv1", &cockpit, false);
 	//
-	UIparts->load_window("Ô—¼ƒ‚ƒfƒ‹");					//ƒ[ƒh‰æ–Ê
-	//ƒRƒbƒNƒsƒbƒg
-	for (int i = 0; i < cockpit.frame_num(); i++) {
-		std::string p = cockpit.frame_name(i);
-		if (p.find("ÀÈ", 0) != std::string::npos) {
-			cockpit_f = { i,cockpit.frame(i) };
-		}
-		else if ((p.find("p¨w¦Ší", 0) != std::string::npos) && (p.find("—\”õ", 0) == std::string::npos)) {
-			compass_f = { i,cockpit.frame(i) - cockpit.frame(int(cockpit.frame_parent(i))) };
-			//ƒWƒƒƒCƒƒRƒ“ƒpƒX
-		}
-		else if ((p.find("—\”õƒRƒ“ƒpƒX", 0) != std::string::npos)) {
-			subcompass_f = { i,cockpit.frame(i) - cockpit.frame(int(cockpit.frame_parent(i))) };
-			subcompass2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-			//ƒRƒ“ƒpƒX
-		}
-		else if (p.find("ƒXƒeƒBƒbƒNc", 0) != std::string::npos) {
-			stickx_f = { i,cockpit.frame(i) };
-			stickz_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-		}
-		else if ((p.find("ƒyƒ_ƒ‹", 0) != std::string::npos) && (p.find("‰E", 0) == std::string::npos) && (p.find("¶", 0) == std::string::npos)) {
-			sticky_f = { i,cockpit.frame(i) };
-		}
-		else if ((p.find("‘¬“xŒv", 0) != std::string::npos)) {
-			speed_f = { i,cockpit.frame(i) };
-			speed2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-		}
-		else if ((p.find("‘¬“x100", 0) != std::string::npos)) {
-			spd3_f = { i,cockpit.frame(i) };
-		}
-		else if ((p.find("‘¬“x010", 0) != std::string::npos)) {
-			spd2_f = { i,cockpit.frame(i) };
-		}
-		else if ((p.find("‘¬“x001", 0) != std::string::npos)) {
-			spd1_f = { i,cockpit.frame(i) };
-		}
-		else if ((p.find("Œv", 0) != std::string::npos)) {
-			clock_h_f = { i,cockpit.frame(i) };
-			clock_h2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-		}
-		else if ((p.find("•ªj", 0) != std::string::npos)) {
-			clock_m_f = { i,cockpit.frame(i) };
-			clock_m2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-		}
-		else if ((p.find("•bj", 0) != std::string::npos)) {
-			clock_s_f = { i,cockpit.frame(i) };
-			clock_s2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-		}
-	}
+	UIparts->load_window("è»Šä¸¡ãƒ¢ãƒ‡ãƒ«");					//ãƒ­ãƒ¼ãƒ‰ç”»é¢
+	//ã‚³ãƒƒã‚¯ãƒ”ãƒƒãƒˆ
+	cocks.set_();
 	//
-	Mainclass::Ammos::set_ammos(&Ammo);							//’e–ò
-	Mainclass::Vehcs::set_vehicles(&Vehicles);					//Ôçp
-	//ƒRƒR‚©‚çŒJ‚è•Ô‚µ“Ç‚İ‚İ//-------------------------------------------------------------------
+	Mainclass::Ammos::set_ammos(&Ammo);							//å¼¾è–¬
+	Mainclass::Vehcs::set_vehicles(&Vehicles);					//è»Šè¼›
+	//ã‚³ã‚³ã‹ã‚‰ç¹°ã‚Šè¿”ã—èª­ã¿è¾¼ã¿//-------------------------------------------------------------------
 	bool oldv = false;
 	bool start_c = true;
 	bool start_c2 = true;
@@ -151,18 +84,18 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			c.se_gun = se_gun.Duplicate();
 			c.se_hit = se_hit.Duplicate();
 		}
-		//ƒLƒƒƒ‰‘I‘ğ
+		//ã‚­ãƒ£ãƒ©é¸æŠ
 		if (!UIparts->select_window(&chara[0], &Vehicles)) {
 			break;
 		}
-		//ƒ}ƒbƒv“Ç‚İ‚İ
+		//ãƒãƒƒãƒ—èª­ã¿è¾¼ã¿
 		mapparts->set_map_pre();
-		UIparts->load_window("ƒ}ƒbƒvƒ‚ƒfƒ‹");			   //ƒ[ƒh‰æ–Ê
-		//•Ç
+		UIparts->load_window("ãƒãƒƒãƒ—ãƒ¢ãƒ‡ãƒ«");			   //ãƒ­ãƒ¼ãƒ‰ç”»é¢
+		//å£
 		mapparts->set_map();
-		//ŒõA‰e
+		//å…‰ã€å½±
 		Drawparts->Set_Light_Shadow(mapparts->map_get().mesh_maxpos(0), mapparts->map_get().mesh_minpos(0), VGet(0.0f, -0.5f, 0.5f), [&mapparts] { mapparts->map_get().DrawModel(); });
-		//ƒLƒƒƒ‰‘I‘ğ
+		//ã‚­ãƒ£ãƒ©é¸æŠ
 		fill_id(chara); //ID
 		for (auto& c : chara) {
 			auto& veh = c.vehicle;
@@ -174,62 +107,62 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				),
 				MATRIX_ref::RotY(deg2rad(-130)));
 		}
-		//ƒLƒƒƒ‰İ’è
+		//ã‚­ãƒ£ãƒ©è¨­å®š
 		for (auto& c : chara) {
 			c.set_human(Vehicles, Ammo, hit_pic);//
 		}
-		//ƒ‰ƒ€ƒ_
-		auto ram_draw = [&]() { 
-				Drawparts->Draw_by_Shadow(
-					[&]() {
-						//ƒ}ƒbƒv
-						SetFogStartEnd(30000.0f, 60000.f);
-						SetFogColor(128, 128, 128);
-						{
-							mapparts->map_get().DrawModel();
-						}
-						//ŠC
-						mapparts->sea_draw(cams.campos);
-						//‹@‘Ì
-						SetFogStartEnd(0.0f, 3000.f);
-						SetFogColor(128, 128, 128);
-						{
-							for (auto& c : chara) {
-								auto& veh = c.vehicle;
-								//í“¬‹@
-								veh.obj.DrawModel();
-								//’e­
-								for (auto& h : veh.hit_obj) {
-									if (h.flug) {
-										h.pic.DrawFrame(h.use);
-									}
-								}
-							}
-							mapparts->map_drawtree();
-							//
-
-						}
-						SetFogEnable(FALSE);
-						SetUseLighting(FALSE);
-						for (auto& c : chara) {
-							auto& veh = c.vehicle;
-							for (auto& cg : veh.Gun_) {
-								for (auto& a : cg.bullet) {
-									if (a.flug) {
-										DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - cams.campos).size() / 24.f))*4.5f, a.color, GetColor(255, 255, 255));
-									}
-								}
+		//ãƒ©ãƒ ãƒ€
+		auto ram_draw = [&]() {
+			Drawparts->Draw_by_Shadow(
+				[&]() {
+				//ãƒãƒƒãƒ—
+				SetFogStartEnd(30000.0f, 60000.f);
+				SetFogColor(128, 128, 128);
+				{
+					mapparts->map_get().DrawModel();
+				}
+				//æµ·
+				mapparts->sea_draw(cams.campos);
+				//æ©Ÿä½“
+				SetFogStartEnd(0.0f, 3000.f);
+				SetFogColor(128, 128, 128);
+				{
+					for (auto& c : chara) {
+						auto& veh = c.vehicle;
+						//æˆ¦é—˜æ©Ÿ
+						veh.obj.DrawModel();
+						//å¼¾ç—•
+						for (auto& h : veh.hit_obj) {
+							if (h.flug) {
+								h.pic.DrawFrame(h.use);
 							}
 						}
-						SetUseLighting(TRUE);
-						SetFogEnable(TRUE);
 					}
-				); 
-			};
-		//’ÊMŠJn
+					mapparts->map_drawtree();
+					//
+
+				}
+				SetFogEnable(FALSE);
+				SetUseLighting(FALSE);
+				for (auto& c : chara) {
+					auto& veh = c.vehicle;
+					for (auto& cg : veh.Gun_) {
+						for (auto& a : cg.bullet) {
+							if (a.flug) {
+								DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - cams.campos).size() / 24.f))*4.5f, a.color, GetColor(255, 255, 255));
+							}
+						}
+					}
+				}
+				SetUseLighting(TRUE);
+				SetFogEnable(TRUE);
+			}
+			);
+		};
+		//é€šä¿¡é–‹å§‹
 		{
 		}
-		//ŠJn
+		//é–‹å§‹
 		auto& mine = chara[0];
 		Rot = 0;
 		eyevec = mine.vehicle.mat.zvec() * -1.f;
@@ -258,7 +191,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			Debugparts->put_way();
 			for (auto& c : chara) {
 				auto& veh = c.vehicle;
-				//“–‚½‚è”»’èƒŠƒtƒŒƒbƒVƒ…
+				//å½“ãŸã‚Šåˆ¤å®šãƒªãƒ•ãƒ¬ãƒƒã‚·ãƒ¥
 				if (veh.hit_check) {
 					veh.col.SetMatrix(MATRIX_ref::Mtrans(VGet(0.f, -100.f, 0.f)));
 					for (int i = 0; i < veh.col.mesh_num(); i++) {
@@ -267,9 +200,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					veh.hit_check = false;
 				}
 			}
-			//ƒvƒŒƒCƒ„[‘€ì
+			//ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼æ“ä½œ
 			{
-				//ƒXƒR[ƒv
+				//ã‚¹ã‚³ãƒ¼ãƒ—
 				if (Drawparts->use_vr) {
 					Rot = ADS;
 				}
@@ -288,7 +221,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 					easing_set(&range, range_p, 0.9f);
 				}
-				//Œ©‰ñ‚µ
+				//è¦‹å›ã—
 				if (Drawparts->use_vr) {
 					if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
 						chara[1].view_yrad = 0.f;
@@ -301,26 +234,26 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						mine.view_xrad = 0.f;
 					}
 				}
-				//ƒL[
+				//ã‚­ãƒ¼
 				{
 					if (Drawparts->use_vr) {
-						chara[1].key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //ËŒ‚
-						chara[1].key[1] = ((GetMouseInput() & MOUSE_INPUT_MIDDLE) != 0); //ƒ}ƒVƒ“ƒKƒ“
+						chara[1].key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //å°„æ’ƒ
+						chara[1].key[1] = ((GetMouseInput() & MOUSE_INPUT_MIDDLE) != 0); //ãƒã‚·ãƒ³ã‚¬ãƒ³
 						chara[1].key[2] = (CheckHitKey(KEY_INPUT_W) != 0);
 						chara[1].key[3] = (CheckHitKey(KEY_INPUT_S) != 0);
 						chara[1].key[4] = (CheckHitKey(KEY_INPUT_D) != 0);
 						chara[1].key[5] = (CheckHitKey(KEY_INPUT_A) != 0);
-						//ƒˆ[
+						//ãƒ¨ãƒ¼
 						chara[1].key[6] = (CheckHitKey(KEY_INPUT_Q) != 0);
 						chara[1].key[7] = (CheckHitKey(KEY_INPUT_E) != 0);
-						//ƒXƒƒbƒgƒ‹
+						//ã‚¹ãƒ­ãƒƒãƒˆãƒ«
 						chara[1].key[8] = (CheckHitKey(KEY_INPUT_R) != 0);
 						chara[1].key[9] = (CheckHitKey(KEY_INPUT_F) != 0);
-						//‹r
+						//è„š
 						chara[1].key[10] = (CheckHitKey(KEY_INPUT_C) != 0);
-						//ƒuƒŒ[ƒL
+						//ãƒ–ãƒ¬ãƒ¼ã‚­
 						chara[1].key[11] = (CheckHitKey(KEY_INPUT_G) != 0);
-						//¸–§‘€ì
+						//ç²¾å¯†æ“ä½œ
 						chara[1].key[12] = (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
 						chara[1].key[13] = (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
 						chara[1].key[14] = (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
@@ -328,25 +261,25 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						chara[1].key[16] = (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
 						chara[1].key[17] = (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
 					}
-					//’ÊíAVR‹¤’Ê
+					//é€šå¸¸ã€VRå…±é€š
 					if (!Drawparts->use_vr) {
-						mine.key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //ËŒ‚
-						mine.key[1] = ((GetMouseInput() & MOUSE_INPUT_MIDDLE) != 0); //ƒ}ƒVƒ“ƒKƒ“
+						mine.key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //å°„æ’ƒ
+						mine.key[1] = ((GetMouseInput() & MOUSE_INPUT_MIDDLE) != 0); //ãƒã‚·ãƒ³ã‚¬ãƒ³
 						mine.key[2] = (CheckHitKey(KEY_INPUT_W) != 0);
 						mine.key[3] = (CheckHitKey(KEY_INPUT_S) != 0);
 						mine.key[4] = (CheckHitKey(KEY_INPUT_D) != 0);
 						mine.key[5] = (CheckHitKey(KEY_INPUT_A) != 0);
-						//ƒˆ[
+						//ãƒ¨ãƒ¼
 						mine.key[6] = (CheckHitKey(KEY_INPUT_Q) != 0);
 						mine.key[7] = (CheckHitKey(KEY_INPUT_E) != 0);
-						//ƒXƒƒbƒgƒ‹
+						//ã‚¹ãƒ­ãƒƒãƒˆãƒ«
 						mine.key[8] = (CheckHitKey(KEY_INPUT_R) != 0);
 						mine.key[9] = (CheckHitKey(KEY_INPUT_F) != 0);
-						//‹r
+						//è„š
 						mine.key[10] = (CheckHitKey(KEY_INPUT_C) != 0);
-						//ƒuƒŒ[ƒL
+						//ãƒ–ãƒ¬ãƒ¼ã‚­
 						mine.key[11] = (CheckHitKey(KEY_INPUT_G) != 0);
-						//¸–§‘€ì
+						//ç²¾å¯†æ“ä½œ
 						mine.key[12] = false;
 						mine.key[13] = false;
 						mine.key[14] = false;
@@ -354,25 +287,25 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						mine.key[16] = false;
 						mine.key[17] = false;
 					}
-					//VRê—p
+					//VRå°‚ç”¨
 					if (Drawparts->use_vr) {
-						mine.key[0] = false;   //ËŒ‚
-						mine.key[1] = false; //ƒ}ƒVƒ“ƒKƒ“
+						mine.key[0] = false;   //å°„æ’ƒ
+						mine.key[1] = false; //ãƒã‚·ãƒ³ã‚¬ãƒ³
 						mine.key[2] = false;
 						mine.key[3] = false;
 						mine.key[4] = false;
 						mine.key[5] = false;
-						//ƒˆ[
+						//ãƒ¨ãƒ¼
 						mine.key[6] = false;
 						mine.key[7] = false;
-						//ƒXƒƒbƒgƒ‹
+						//ã‚¹ãƒ­ãƒƒãƒˆãƒ«
 						mine.key[8] = false;
 						mine.key[9] = false;
-						//‹r
+						//è„š
 						mine.key[10] = false;
-						//ƒuƒŒ[ƒL
+						//ãƒ–ãƒ¬ãƒ¼ã‚­
 						mine.key[11] = false;
-						//¸–§‘€ì
+						//ç²¾å¯†æ“ä½œ
 						mine.key[12] = false;
 						mine.key[13] = false;
 						mine.key[14] = false;
@@ -383,40 +316,40 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						auto& ptr_LEFTHAND = *Drawparts->get_device_hand1();
 						if (&ptr_LEFTHAND != nullptr) {
 							if (ptr_LEFTHAND.turn && ptr_LEFTHAND.now) {
-								//ƒƒCƒ“•Ší
+								//ãƒ¡ã‚¤ãƒ³æ­¦å™¨
 								mine.key[0] = mine.key[0] || ((ptr_LEFTHAND.on[0] & BUTTON_TRIGGER) != 0);
-								//ƒTƒu•Ší
+								//ã‚µãƒ–æ­¦å™¨
 								mine.key[1] = mine.key[1] || ((ptr_LEFTHAND.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_IndexController_B)) != 0);
-								//ƒsƒbƒ`
+								//ãƒ”ãƒƒãƒ
 								mine.key[2] = mine.key[2] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(28)));
 								mine.key[3] = mine.key[3] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-28)));
-								//ƒ[ƒ‹
+								//ãƒ­ãƒ¼ãƒ«
 								mine.key[4] = mine.key[4] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(24)));
 								mine.key[5] = mine.key[5] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-24)));
 								if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
-									//ƒˆ[
+									//ãƒ¨ãƒ¼
 									mine.key[6] = mine.key[6] || (ptr_LEFTHAND.touch.x() > 0.5f);
 									mine.key[7] = mine.key[7] || (ptr_LEFTHAND.touch.x() < -0.5f);
-									//ƒXƒƒbƒgƒ‹
+									//ã‚¹ãƒ­ãƒƒãƒˆãƒ«
 									mine.key[8] = mine.key[8] || (ptr_LEFTHAND.touch.y() > 0.5f);
 									mine.key[9] = mine.key[9] || (ptr_LEFTHAND.touch.y() < -0.5f);
-									//ƒuƒŒ[ƒL
+									//ãƒ–ãƒ¬ãƒ¼ã‚­
 									if ((ptr_LEFTHAND.touch.x() >= -0.5f) && (ptr_LEFTHAND.touch.x() <= 0.5f) && (ptr_LEFTHAND.touch.y() >= -0.5f) && (ptr_LEFTHAND.touch.y() <= 0.5f)) {
 										mine.key[11] = mine.key[11] || true;
 									}
 								}
-								//‹r
+								//è„š
 
-								//¸–§‘€ì
+								//ç²¾å¯†æ“ä½œ
 								{
-									//ƒsƒbƒ`
+									//ãƒ”ãƒƒãƒ
 									mine.key[12] = mine.key[12] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(22)));
 									mine.key[13] = mine.key[13] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-22)));
-									//ƒ[ƒ‹
+									//ãƒ­ãƒ¼ãƒ«
 									mine.key[14] = mine.key[14] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(14)));
 									mine.key[15] = mine.key[15] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-14)));
 									if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
-										//ƒˆ[
+										//ãƒ¨ãƒ¼
 										mine.key[16] = mine.key[16] || (ptr_LEFTHAND.touch.x() > 0.45f);
 										mine.key[17] = mine.key[17] || (ptr_LEFTHAND.touch.x() < -0.45f);
 									}
@@ -426,9 +359,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 					}
 				}
-				//ƒ}ƒEƒX‚Æ‹“_Šp“x‚ğƒŠƒ“ƒN
+				//ãƒã‚¦ã‚¹ã¨è¦–ç‚¹è§’åº¦ã‚’ãƒªãƒ³ã‚¯
 				if (Drawparts->use_vr) {
-					//+‹“_æ“¾
+					//+è¦–ç‚¹å–å¾—
 					auto& ptr_ = *Drawparts->get_device_hmd();
 					Drawparts->GetDevicePositionVR(Drawparts->get_hmd_num(), &HMDpos, &HMDmat);
 					if (start_c && (ptr_.turn && ptr_.now) != oldv) {
@@ -461,48 +394,48 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				}
 			}
 			{
-				//‘¼‚ÌƒL[“ü—Í‚ğ‚±‚±‚Åæ“¾(ƒzƒXƒg)
+				//ä»–ã®ã‚­ãƒ¼å…¥åŠ›ã‚’ã“ã“ã§å–å¾—(ãƒ›ã‚¹ãƒˆ)
 			}
-			//”½‰f
+			//åæ˜ 
 			for (auto& c : chara) {
 				auto& veh = c.vehicle;
-				//”òs‹@‰‰Z
+				//é£›è¡Œæ©Ÿæ¼”ç®—
 				{
 					float rad_spec = deg2rad(veh.use_veh.body_rad_limit * (veh.use_veh.mid_speed_limit / veh.speed));
 					if (veh.speed < veh.use_veh.min_speed_limit) {
 						rad_spec = deg2rad(veh.use_veh.body_rad_limit * (std::clamp(veh.speed, 0.f, veh.use_veh.min_speed_limit) / veh.use_veh.min_speed_limit));
 					}
-					//ƒsƒbƒ`
+					//ãƒ”ãƒƒãƒ
 					easing_set(&veh.xradadd_right, (c.key[2] ? -rad_spec / 3.f : c.key[12] ? -rad_spec / 9.f : 0.f), 0.95f);
 					easing_set(&veh.xradadd_left, (c.key[3] ? rad_spec / 3.f : c.key[13] ? rad_spec / 9.f : 0.f), 0.95f);
-					//ƒ[ƒ‹
+					//ãƒ­ãƒ¼ãƒ«
 					easing_set(&veh.zradadd_right, (c.key[4] ? rad_spec : (c.key[14] ? rad_spec / 3.f : 0.f)), 0.95f);
 					easing_set(&veh.zradadd_left, (c.key[5] ? -rad_spec : (c.key[15] ? -rad_spec / 3.f : 0.f)), 0.95f);
-					//ƒˆ[
+					//ãƒ¨ãƒ¼
 					easing_set(&veh.yradadd_left, (c.key[6] ? -rad_spec / 8.f : (c.key[16] ? -rad_spec / 24.f : 0.f)), 0.95f);
 					easing_set(&veh.yradadd_right, (c.key[7] ? rad_spec / 8.f : (c.key[17] ? rad_spec / 24.f : 0.f)), 0.95f);
-					//ƒXƒƒbƒgƒ‹
+					//ã‚¹ãƒ­ãƒƒãƒˆãƒ«
 					easing_set(&veh.speed_add, ((c.key[8] && veh.speed < veh.use_veh.max_speed_limit) ? (0.5f / 3.6f) : 0.f), 0.95f);
 					easing_set(&veh.speed_sub, c.key[9] ? ((veh.speed > veh.use_veh.min_speed_limit) ? (-0.5f / 3.6f) : ((veh.speed > 0.f) ? (-0.2f / 3.6f) : 0.f)) : 0.f, 0.95f);
-					//ƒXƒs[ƒh
+					//ã‚¹ãƒ”ãƒ¼ãƒ‰
 					veh.speed += (veh.speed_add + veh.speed_sub) * 60.f / fps;
 					{
 						auto tmp = veh.mat.zvec();
 						auto tmp2 = std::sin(atan2f(tmp.y(), std::hypotf(tmp.x(), tmp.z())));
-						veh.speed += (((std::abs(tmp2) > std::sin(deg2rad(1.0f))) ? tmp2 * 0.5f : 0.f) / 3.6f) * 60.f / fps; //—‰º
+						veh.speed += (((std::abs(tmp2) > std::sin(deg2rad(1.0f))) ? tmp2 * 0.5f : 0.f) / 3.6f) * 60.f / fps; //è½ä¸‹
 					}
-					//À•WŒn”½‰f
+					//åº§æ¨™ç³»åæ˜ 
 					{
 						auto t_mat = veh.mat;
 						veh.mat *= MATRIX_ref::RotAxis(t_mat.xvec(), (veh.xradadd_right + veh.xradadd_left) / fps);
 						veh.mat *= MATRIX_ref::RotAxis(t_mat.zvec(), (veh.zradadd_right + veh.zradadd_left) / fps);
 						veh.mat *= MATRIX_ref::RotAxis(t_mat.yvec(), (veh.yradadd_left + veh.yradadd_right) / fps);
 					}
-					//‹r
+					//è„š
 					c.changegear.get_in(c.key[10]);
 					easing_set(&c.p_anime_geardown.second, float(c.changegear.first), 0.95f);
 					MV1SetAttachAnimBlendRate(veh.obj.get(), c.p_anime_geardown.first, c.p_anime_geardown.second);
-					//‘Ç
+					//èˆµ
 					for (int i = 0; i < c.p_animes_rudder.size(); i++) {
 						easing_set(&c.p_animes_rudder[i].second, float(c.key[i + 2] + c.key[i + 12])*0.5f, 0.95f);
 						MV1SetAttachAnimBlendRate(veh.obj.get(), c.p_animes_rudder[i].first, c.p_animes_rudder[i].second);
@@ -522,7 +455,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							for (auto& t : veh.use_veh.wheelframe) {
 								easing_set(&t.gndsmkeffcs.scale, 0.01f, 0.9f);
 								auto tmp = veh.obj.frame(int(t.frame.first + 1)) - VGet(0.f, 0.2f, 0.f);
-								//’n–Ê
+								//åœ°é¢
 								{
 									auto hp = mapparts->map_col_line(tmp + (veh.mat.yvec() * (0.5f)), tmp, 0);
 									if (hp.HitFlag == TRUE) {
@@ -557,14 +490,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 
 							for (auto& f : veh.use_veh.wheelframe_nospring) {
-
-								veh.obj.SetFrameLocalMatrix(f.frame.first,
-									MATRIX_ref::RotAxis(
-										MATRIX_ref::Vtrans(
-											VGet(0.f, 0.f, 0.f), MV1GetFrameLocalMatrix(veh.obj.get(), f.frame.first + 1)),
-											(f.frame.second.x() >= 0) ? veh.wheel_Left : veh.wheel_Right) *
-
-									MATRIX_ref::Mtrans(f.frame.second));
+								veh.obj.SetFrameLocalMatrix(f.frame.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(VGet(0.f, 0.f, 0.f), MV1GetFrameLocalMatrix(veh.obj.get(), f.frame.first + 1)), (f.frame.second.x() >= 0) ? veh.wheel_Left : veh.wheel_Right) *MATRIX_ref::Mtrans(f.frame.second));
 							}
 						}
 						else {
@@ -574,7 +500,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 						veh.pos += veh.add + (veh.mat.zvec() * (-veh.speed / fps));
 					}
-					//•Ç‚Ì“–‚½‚è”»’è
+					//å£ã®å½“ãŸã‚Šåˆ¤å®š
 					bool hitb = false;
 					{
 						VECTOR_ref p_0 = veh.pos + MATRIX_ref::Vtrans(VGet(veh.use_veh.minpos.x(), 0.f, veh.use_veh.maxpos.z()), veh.mat);
@@ -619,17 +545,17 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						c.p_anime_geardown.second = 1.f;
 						c.changegear.first = true;
 					}
-					//ƒo[ƒi[
+					//ãƒãƒ¼ãƒŠãƒ¼
 					for (auto& be : c.p_burner) {
 						veh.obj.SetFrameLocalMatrix(be.first, MATRIX_ref::Scale(VGet(1.f, 1.f, std::clamp(veh.speed / veh.use_veh.mid_speed_limit, 0.1f, 1.f))) * MATRIX_ref::Mtrans(be.second));
 					}
 				}
-				//ËŒ‚
+				//å°„æ’ƒ
 				for (auto& cg : veh.Gun_) {
 					if (c.key[(cg.id == 0) ? 0 : 1] && cg.loadcnt == 0 && cg.rounds > 0) {
 						auto& u = cg.bullet[cg.usebullet];
 						++cg.usebullet %= cg.bullet.size();
-						//ƒRƒR‚¾‚¯•Ï‰»
+						//ã‚³ã‚³ã ã‘å¤‰åŒ–
 						c.se_gun.play(DX_PLAYTYPE_BACK, TRUE);
 						u.spec = cg.Spec[0];
 						u.spec.speed_a *= float(75 + GetRand(50)) / 100.f;
@@ -684,9 +610,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						t.gndsmkeffcs.set_loop(Drawparts->get_effHandle(ef_gndsmoke));
 					}
 				}
-				//’eŠÖ˜A
+				//å¼¾é–¢é€£
 				{
-					//’e”»’è
+					//å¼¾åˆ¤å®š
 					for (auto& cg : veh.Gun_) {
 						for (auto& a : cg.bullet) {
 							float size = 3.f;
@@ -694,11 +620,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								if (a.flug) {
 									a.repos = a.pos;
 									a.pos += a.vec * (a.spec.speed_a / fps / size);
-									//”»’è
+									//åˆ¤å®š
 									{
 										bool ground_hit = false;
 										VECTOR_ref normal;
-										//‹@‘ÌˆÈŠO‚É“–‚½‚é
+										//æ©Ÿä½“ä»¥å¤–ã«å½“ãŸã‚‹
 										for (int i = 0; i < mapparts->map_col_get().mesh_num(); i++) {
 											auto hps = mapparts->map_col_line(a.repos, a.pos, i);
 											if (hps.HitFlag) {
@@ -707,7 +633,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 												ground_hit = true;
 											}
 										}
-										//•K—v‚È‚É“–‚½‚è”»’è‚ğƒŠƒtƒŒƒbƒVƒ…‚·‚é
+										//å¿…è¦ãªæ™‚ã«å½“ãŸã‚Šåˆ¤å®šã‚’ãƒªãƒ•ãƒ¬ãƒƒã‚·ãƒ¥ã™ã‚‹
 										for (auto& t : chara) {
 											auto& veh_t = t.vehicle;
 											if (c.id == t.id || veh_t.hit_check) {
@@ -722,9 +648,9 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 											}
 											veh_t.hit_check = true;
 										}
-										//”òs‹@‚É‚ ‚½‚é
+										//é£›è¡Œæ©Ÿã«ã‚ãŸã‚‹
 										auto hitplane = c.get_reco(chara, a);
-										//‚»‚ÌŒãˆ—
+										//ãã®å¾Œå‡¦ç†
 										switch (a.spec.type_a) {
 										case 0: //AP
 											if (!hitplane) {
@@ -769,7 +695,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 												a.pos += VGet(0.f, a.yadd / size, 0.f);
 											}
 											break;
-										case 2: //ƒ~ƒTƒCƒ‹
+										case 2: //ãƒŸã‚µã‚¤ãƒ«
 											if (!hitplane) {
 												if (ground_hit) {
 													if (a.spec.caliber_a >= 0.020f) {
@@ -786,7 +712,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 												VECTOR_ref pos;
 												float dist = (std::numeric_limits<float>::max)();
 												for (auto& t : chara) {
-													//’eŠÖ˜A
+													//å¼¾é–¢é€£
 													if (c.id == t.id) {
 														continue;
 													}
@@ -800,12 +726,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 												}
 												if (id != chara.size()) {
 													auto vec_a = (a.pos - pos).Norm();
-													//”½‰f
+													//åæ˜ 
 													auto vec_z = a.vec;
 													float z_hyp = std::hypotf(vec_z.x(), vec_z.z());
 													float a_hyp = std::hypotf(vec_a.x(), vec_a.z());
 													float cost = (vec_a.z() * vec_z.x() - vec_a.x() * vec_z.z()) / (a_hyp * z_hyp);
-													float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cosæ“¾2D
+													float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //coså–å¾—2D
 													float view_xrad = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
 													{
 														float limit = deg2rad(25.f) / fps;
@@ -821,7 +747,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 										}
 									}
 
-									//Á‚·(2•b‚½‚Á‚½AƒXƒs[ƒh‚ª100ˆÈ‰ºAŠÑ’Ê‚ª0ˆÈ‰º)
+									//æ¶ˆã™(2ç§’ãŸã£ãŸã€ã‚¹ãƒ”ãƒ¼ãƒ‰ãŒ100ä»¥ä¸‹ã€è²«é€šãŒ0ä»¥ä¸‹)
 									if (a.cnt >= 2.5f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
 										a.flug = false;
 									}
@@ -839,13 +765,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							a.cnt += 1.f / fps;
 						}
 					}
-					//’e­
+					//å¼¾ç—•
 					for (auto& h : veh.hit_obj) {
 						if (h.flug) {
 							h.pic.SetMatrix(h.mat* veh.mat*MATRIX_ref::Mtrans(veh.pos + MATRIX_ref::Vtrans(h.pos, veh.mat)));
 						}
 					}
-					//ƒ~ƒTƒCƒ‹
+					//ãƒŸã‚µã‚¤ãƒ«
 					for (auto& a : c.effcs_missile) {
 						if (a.second != nullptr) {
 							if (a.second->flug) {
@@ -861,7 +787,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 							}
 						}
 					}
-					//e–C
+					//éŠƒç ²
 					for (auto& a : c.effcs_gun) {
 						if (a.second != nullptr) {
 							if (a.second->flug) {
@@ -880,15 +806,15 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				}
 			}
 			start_c2 = false;
-			//–ØƒZƒbƒg
+			//æœ¨ã‚»ãƒƒãƒˆ
 			mapparts->map_settree();
 			{
-				//‘¼‚ÌÀ•W‚ğ‚±‚±‚Åo—Í(ƒzƒXƒg)
+				//ä»–ã®åº§æ¨™ã‚’ã“ã“ã§å‡ºåŠ›(ãƒ›ã‚¹ãƒˆ)
 			}
 			{
-				//ƒzƒXƒg‚©‚ç‚ÌÀ•W‚ğ‚±‚±‚Å“ü—Í
+				//ãƒ›ã‚¹ãƒˆã‹ã‚‰ã®åº§æ¨™ã‚’ã“ã“ã§å…¥åŠ›
 			}
-			//ƒ‚ƒfƒ‹‚É”½‰f
+			//ãƒ¢ãƒ‡ãƒ«ã«åæ˜ 
 			for (auto& c : chara) {
 				auto& veh = c.vehicle;
 				veh.obj.SetMatrix(veh.mat * MATRIX_ref::Mtrans(veh.pos));
@@ -898,26 +824,26 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				c.se_hit.SetPosition(c.vehicle.pos);
 				c.se_gun.SetPosition(c.vehicle.pos);
 			}
-			//‰e—pˆÓ
-			Drawparts->Ready_Shadow(cams.campos, 
+			//å½±ç”¨æ„
+			Drawparts->Ready_Shadow(cams.campos,
 				[&] {
-					for (auto& c : chara) {
-						auto& veh = c.vehicle;
-						veh.obj.DrawModel();
-					}
-					mapparts->map_drawtree();
+				for (auto& c : chara) {
+					auto& veh = c.vehicle;
+					veh.obj.DrawModel();
 				}
-				, VGet(200.f, 200.f, 200.f), VGet(2000.f, 2000.f, 2000.f));
-			//VRXV
+				mapparts->map_drawtree();
+			}
+			, VGet(200.f, 200.f, 200.f), VGet(2000.f, 2000.f, 2000.f));
+			//VRæ›´æ–°
 			Drawparts->Move_Player();
-			//•`‰æ
+			//æç”»
 			{
-				//©‹@•`‰æ
+				//è‡ªæ©Ÿæç”»
 				{
 					auto& veh = mine.vehicle;
 					//cams
 					{
-						//campos,camvec,camupæ“¾
+						//campos,camvec,camupå–å¾—
 						if (Rot == ADS) {
 							cams.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
 							cams.campos.y(std::max(cams.campos.y(), 5.f));
@@ -926,13 +852,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								cams.camup = MATRIX_ref::Vtrans(HMDmat.yvec(), veh.mat);//veh.mat.yvec();
 							}
 							else {
-								if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
-								}
-								else {
+								if ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0) {
 									eyevec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
-									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
 								}
+								cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
 								cams.camup = veh.mat.yvec();
 							}
 						}
@@ -948,147 +871,82 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								cams.camup = VGet(0.f, 1.f, 0.f);
 							}
 							else {
-								eyevec = (cams.camvec - aimpos).Norm();
+								eyevec = (cams.camvec - (mine.vehicle.pos + mine.vehicle.mat.zvec() * (-1000.f))).Norm();
 								cams.campos = cams.camvec + eyevec * range;
 								cams.camup = veh.mat.yvec();
 							}
 						}
-						//nearæ“¾
+						//nearå–å¾—
 						cams.near_ = (Rot == ADS) ? (5.f + 25.f * (cams.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
-						//faræ“¾
+						//farå–å¾—
 						cams.far_ = 6000.f;
 						//fov
 						cams.fov = deg2rad(Drawparts->use_vr ? 90 : 45);
-						//Æ€À•Wæ“¾
-						MAIN_Screen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
+						//ç…§æº–åº§æ¨™å–å¾—
+						Hostpassparts->MAIN_Screen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
 						{
-							VECTOR_ref startpos = mine.vehicle.pos;
-							VECTOR_ref endpos = startpos + mine.vehicle.mat.zvec() * (-1000.f);
-							//’nŒ`
-							mapparts->map_col_line_nearest(startpos, &endpos);
-							//
-							easing_set(&aimpos, endpos, 0.f);
+							VECTOR_ref aimpos = mine.vehicle.pos + mine.vehicle.mat.zvec() * (-1000.f);
+							//åœ°å½¢
+							mapparts->map_col_line_nearest(mine.vehicle.pos, &aimpos);
 							aimposout = ConvWorldPosToScreenPos(aimpos.get());
 							for (auto& c : chara) {
-								auto& veht = c.vehicle;
-								c.winpos = ConvWorldPosToScreenPos(veht.pos.get());
+								c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
 							}
 						}
 					}
 					Set3DSoundListenerPosAndFrontPosAndUpVec(cams.campos.get(), cams.camvec.get(), cams.camup.get());
 					//UI
-					UI_Screen.SetDraw_Screen();
+					Hostpassparts->UI_Screen.SetDraw_Screen();
 					{
 						UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), mine);
 					}
 					//sky
-					SkyScreen.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
+					Hostpassparts->SkyScreen.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
 					{
 						mapparts->sky_draw();
 					}
-					//”íÊ‘Ì[“x•`‰æ
-					Hostpassparts->dof(BufScreen, SkyScreen, ram_draw, cams, FarScreen_, NearFarScreen_, NearScreen_);
-					//ÅI•`‰æ
-					MAIN_Screen.SetDraw_Screen();
+					//è¢«å†™ä½“æ·±åº¦æç”»
+					Hostpassparts->dof(ram_draw, cams);
+					//æœ€çµ‚æç”»
+					Hostpassparts->MAIN_Screen.SetDraw_Screen();
 					{
-						BufScreen.DrawGraph(0, 0, false);
-						Hostpassparts->bloom(BufScreen, GaussScreen_, 4, 255);//ƒuƒ‹[ƒ€
+						Hostpassparts->bloom(255);//ãƒ–ãƒ«ãƒ¼ãƒ 
 					}
-					//ƒRƒbƒNƒsƒbƒg‰‰Z
+					//ã‚³ãƒƒã‚¯ãƒ”ãƒƒãƒˆæ¼”ç®—
 					if (Rot == ADS) {
-						float px = (mine.p_animes_rudder[1].second - mine.p_animes_rudder[0].second)*deg2rad(30);
-						float pz = (mine.p_animes_rudder[2].second - mine.p_animes_rudder[3].second)*deg2rad(30);
-						float py = (mine.p_animes_rudder[5].second - mine.p_animes_rudder[4].second)*deg2rad(20);
-
-						cockpit.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
-						cockpit.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
-						cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
-						cockpit.SetFrameLocalMatrix(compass_f.first, veh.mat.Inverse() * MATRIX_ref::Mtrans(compass_f.second));
-						//‘¬“xŒv
-						{
-							{
-								float spd_buf = veh.speed*3.6f;
-								float spd = 0.f;
-								if (spd_buf <= 400.f) {
-									spd = 180.f*spd_buf / 440.f;
-								}
-								else {
-									spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
-								}
-								cockpit.frame_reset(speed_f.first);
-								cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(speed2_f.second, -deg2rad(spd)) * MATRIX_ref::Mtrans(speed_f.second));
-							}
-							{
-								float spd_buf = veh.speed*3.6f / 1224.f;
-
-								cockpit.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*1.f)) * MATRIX_ref::Mtrans(spd3_f.second));
-								cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*10.f)) * MATRIX_ref::Mtrans(spd2_f.second));
-								cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*100.f)) * MATRIX_ref::Mtrans(spd1_f.second));
-							}
-						}
-						//Œv
-						{
-							DATEDATA DateBuf;
-							GetDateTime(&DateBuf);
-							cockpit.frame_reset(clock_h_f.first);
-							cockpit.SetFrameLocalMatrix(clock_h_f.first, MATRIX_ref::RotAxis(clock_h2_f.second, -deg2rad(360.f *DateBuf.Hour / 12 + 360.f / 12.f*DateBuf.Min / 60)) * MATRIX_ref::Mtrans(clock_h_f.second));
-							cockpit.frame_reset(clock_m_f.first);
-							cockpit.SetFrameLocalMatrix(clock_m_f.first, MATRIX_ref::RotAxis(clock_m2_f.second, -deg2rad(360.f *DateBuf.Min / 60 + 360.f / 60.f*DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_m_f.second));
-							cockpit.frame_reset(clock_s_f.first);
-							cockpit.SetFrameLocalMatrix(clock_s_f.first, MATRIX_ref::RotAxis(clock_s2_f.second, -deg2rad(360.f *DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_s_f.second));
-						}
-						//ƒRƒ“ƒpƒX
-						{
-							VECTOR_ref tmp = veh.mat.zvec();
-							tmp = VGet(tmp.x(), 0.f, tmp.z());
-							tmp = tmp.Norm();
-
-							cockpit.frame_reset(subcompass_f.first);
-							cockpit.SetFrameLocalMatrix(subcompass_f.first, MATRIX_ref::RotAxis(subcompass2_f.second, std::atan2f(tmp.z(), -tmp.x())) * MATRIX_ref::Mtrans(subcompass_f.second));
-						}
-						cockpit.SetMatrix(veh.mat*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, veh.mat)));
+						cocks.ready_(mine);
 					}
-					//VR‚ÉˆÚ‚·
+					//VRã«ç§»ã™
 					Drawparts->draw_VR(
 						[&] {
 						SetCameraNearFar(0.01f, 2.f);
 						SetUseZBuffer3D(FALSE);												/*zbufuse*/
 						SetWriteZBuffer3D(FALSE);											/*zbufwrite*/
-						if (Drawparts->use_vr) {
-							DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.8f, 0.f, MAIN_Screen.get(), TRUE);
-						}
-						else {
-							DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.475f, 0.f, MAIN_Screen.get(), TRUE);
-						}
+						DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, Drawparts->use_vr ? 1.8f : 1.475f, 0.f, Hostpassparts->MAIN_Screen.get(), TRUE);
 						SetUseZBuffer3D(TRUE);												/*zbufuse*/
 						SetWriteZBuffer3D(TRUE);											/*zbufwrite*/
-						//MAIN_Screen.DrawGraph(0, 0, true);
-						//ƒRƒbƒNƒsƒbƒg
+						//Hostpassparts->MAIN_Screen.DrawGraph(0, 0, true);
+						//ã‚³ãƒƒã‚¯ãƒ”ãƒƒãƒˆ
 						SetCameraNearFar(0.01f, 2.f);
 						if (Rot == ADS) {
-							cockpit.DrawModel();
+							cocks.cockpit.DrawModel();
 						}
 						//UI
 						SetUseZBuffer3D(FALSE);												/*zbufuse*/
 						SetWriteZBuffer3D(FALSE);											/*zbufwrite*/
-						if (Drawparts->use_vr) {
-							DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.8f, 0.f, UI_Screen.get(), TRUE);
-						}
-						else {
-							DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.475f, 0.f, UI_Screen.get(), TRUE);
-						}
+						DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, Drawparts->use_vr ? 1.8f : 1.475f, 0.f, Hostpassparts->UI_Screen.get(), TRUE);
 						SetUseZBuffer3D(TRUE);												/*zbufuse*/
 						SetWriteZBuffer3D(TRUE);											/*zbufwrite*/
-						//UI_Screen.DrawGraph(0, 0, true);
+						//Hostpassparts->UI_Screen.DrawGraph(0, 0, true);
 					}, cams);
 				}
-				//2P•`‰æ
+				//2Pæç”»
 				if (Drawparts->use_vr) {
 					auto& ct = chara[1];
 					auto& veh = ct.vehicle;
 					//cams
 					{
-						//campos,camvec,camupæ“¾
+						//campos,camvec,camupå–å¾—
 						{
 							int mousex, mousey;
 							GetMousePoint(&mousex, &mousey);
@@ -1102,29 +960,24 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						{
 							cams.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(/*eye_pos_ads*/ VGet(0, 0.58f, 0), veh.mat);
 							cams.campos.y(std::max(cams.campos.y(), 5.f));
-							if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-								cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
-							}
-							else {
+							if ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0) {
 								eyevec2 = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
-								cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
 							}
+							cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
 							cams.camup = veh.mat.yvec();
 						}
-						//nearæ“¾
+						//nearå–å¾—
 						cams.near_ = 5.f + 25.f * (cams.far_ - 300.f) / (3000.f - 300.f);
-						//faræ“¾
+						//farå–å¾—
 						cams.far_ = 4000.f;
 						//fov
 						cams.fov = deg2rad(45);
-						//Æ€À•Wæ“¾
-						MAIN_Screen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
+						//ç…§æº–åº§æ¨™å–å¾—
+						Hostpass2parts->MAIN_Screen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
 						{
-							VECTOR_ref endpos = ct.vehicle.pos + ct.vehicle.mat.zvec() * (-1000.f);
-							//’nŒ`
-							mapparts->map_col_line_nearest(ct.vehicle.pos, &endpos);
-							//
-							easing_set(&aimpos2, endpos, 0.0f);
+							VECTOR_ref aimpos2 = ct.vehicle.pos + ct.vehicle.mat.zvec() * (-1000.f);
+							//åœ°å½¢
+							mapparts->map_col_line_nearest(ct.vehicle.pos, &aimpos2);
 							aimposout = ConvWorldPosToScreenPos(aimpos2.get());
 							for (auto& c : chara) {
 								auto& veht = c.vehicle;
@@ -1133,92 +986,41 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 					}
 					//UI
-					UI_Screen2.SetDraw_Screen();
+					Hostpass2parts->UI_Screen.SetDraw_Screen();
 					{
-						UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), ct,0);
+						UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), ct, 0);
 					}
 					//sky
-					SkyScreen2.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
+					Hostpass2parts->SkyScreen.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
 					{
 						mapparts->sky_draw();
 					}
-					//”íÊ‘Ì[“x•`‰æ
-					Hostpass2parts->dof(BufScreen2, SkyScreen2, ram_draw, cams, FarScreen_2, NearFarScreen_2, NearScreen_2);
-					//ÅI•`‰æ
-					MAIN_Screen2.SetDraw_Screen();
+					//è¢«å†™ä½“æ·±åº¦æç”»
+					Hostpass2parts->dof(ram_draw, cams);
+					//æœ€çµ‚æç”»
+					Hostpass2parts->MAIN_Screen.SetDraw_Screen();
 					{
-						BufScreen2.DrawGraph(0, 0, false);
-						Hostpass2parts->bloom(BufScreen2, GaussScreen_2, 4, 255);//ƒuƒ‹[ƒ€
+						Hostpass2parts->bloom(255);//ãƒ–ãƒ«ãƒ¼ãƒ 
 					}
-					//ƒRƒbƒNƒsƒbƒg‰‰Z
+					//ã‚³ãƒƒã‚¯ãƒ”ãƒƒãƒˆæ¼”ç®—
 					{
-						float px = (ct.p_animes_rudder[1].second - ct.p_animes_rudder[0].second)*deg2rad(30);
-						float pz = (ct.p_animes_rudder[2].second - ct.p_animes_rudder[3].second)*deg2rad(30);
-						float py = (ct.p_animes_rudder[5].second - ct.p_animes_rudder[4].second)*deg2rad(20);
-
-						cockpit.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
-						cockpit.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
-						cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
-						cockpit.SetFrameLocalMatrix(compass_f.first, MATRIX_ref(veh.mat).Inverse() * MATRIX_ref::Mtrans(compass_f.second));
-						//‘¬“xŒv
-						{
-							{
-								float spd_buf = veh.speed*3.6f;
-								float spd = 0.f;
-								if (spd_buf <= 400.f) {
-									spd = 180.f*spd_buf / 440.f;
-								}
-								else {
-									spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
-								}
-								cockpit.frame_reset(speed_f.first);
-								cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(speed2_f.second, -deg2rad(spd)) * MATRIX_ref::Mtrans(speed_f.second));
-							}
-							{
-								float spd_buf = veh.speed*3.6f / 1224.f;
-
-								cockpit.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*1.f)) * MATRIX_ref::Mtrans(spd3_f.second));
-								cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*10.f)) * MATRIX_ref::Mtrans(spd2_f.second));
-								cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*100.f)) * MATRIX_ref::Mtrans(spd1_f.second));
-							}
-						}
-						//Œv
-						{
-							DATEDATA DateBuf;
-							GetDateTime(&DateBuf);
-							cockpit.frame_reset(clock_h_f.first);
-							cockpit.SetFrameLocalMatrix(clock_h_f.first, MATRIX_ref::RotAxis(clock_h2_f.second, -deg2rad(360.f *DateBuf.Hour / 12 + 360.f / 12.f*DateBuf.Min / 60)) * MATRIX_ref::Mtrans(clock_h_f.second));
-							cockpit.frame_reset(clock_m_f.first);
-							cockpit.SetFrameLocalMatrix(clock_m_f.first, MATRIX_ref::RotAxis(clock_m2_f.second, -deg2rad(360.f *DateBuf.Min / 60 + 360.f / 60.f*DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_m_f.second));
-							cockpit.frame_reset(clock_s_f.first);
-							cockpit.SetFrameLocalMatrix(clock_s_f.first, MATRIX_ref::RotAxis(clock_s2_f.second, -deg2rad(360.f *DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_s_f.second));
-						}
-						//ƒRƒ“ƒpƒX
-						{
-							VECTOR_ref tmp = veh.mat.zvec();
-							tmp = VGet(tmp.x(), 0.f, tmp.z());
-							tmp = tmp.Norm();
-
-							cockpit.frame_reset(subcompass_f.first);
-							cockpit.SetFrameLocalMatrix(subcompass_f.first, MATRIX_ref::RotAxis(subcompass2_f.second, std::atan2f(tmp.z(), -tmp.x())) * MATRIX_ref::Mtrans(subcompass_f.second));
-						}
-						cockpit.SetMatrix(veh.mat*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, veh.mat)));
+						cocks.ready_(ct);
 					}
-					//Screen2‚ÉˆÚ‚·
+					//Screen2ã«ç§»ã™
 					outScreen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_);
 					{
-						MAIN_Screen2.DrawGraph(0, 0, true);
+						Hostpass2parts->MAIN_Screen.DrawGraph(0, 0, true);
 						SetCameraNearFar(0.01f, 2.f);
-						//ƒRƒbƒNƒsƒbƒg
-						cockpit.DrawModel();
+						//ã‚³ãƒƒã‚¯ãƒ”ãƒƒãƒˆ
+						cocks.cockpit.DrawModel();
 						//UI
 						SetUseZBuffer3D(FALSE);												/*zbufuse*/
 						SetWriteZBuffer3D(FALSE);											/*zbufwrite*/
-						DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.475f, 0.f, UI_Screen2.get(), TRUE);
+						DrawBillboard3D((cams.campos + (cams.camvec - cams.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.475f, 0.f, Hostpass2parts->UI_Screen.get(), TRUE);
 						SetUseZBuffer3D(TRUE);												/*zbufuse*/
 						SetWriteZBuffer3D(TRUE);											/*zbufwrite*/
 
-						//UI_Screen2.DrawGraph(0, 0, true);
+						//Hostpass2parts->UI_Screen.DrawGraph(0, 0, true);
 					}
 				}
 			}
@@ -1244,7 +1046,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 			if (CheckHitKey(KEY_INPUT_O) != 0) {
 				break;
 			}
-			//ƒŠƒvƒŒƒC
+			//ãƒªãƒ—ãƒ¬ã‚¤
 			{
 				for (auto& c : chara) {
 					Mainclass::Chara::sendstat tmp;
@@ -1266,30 +1068,32 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		SetMouseDispFlag(TRUE);
 		SetMousePoint(deskx / 2, desky / 2);
 
-		//ƒŠƒvƒŒƒC
+		//ãƒªãƒ—ãƒ¬ã‚¤
 		for (auto& c : chara) {
-			//ƒ~ƒTƒCƒ‹
+			//ãƒŸã‚µã‚¤ãƒ«
 			for (auto& a : c.effcs_missile) {
 				a.first.handle.Dispose();
 			}
-			//e–C
+			//éŠƒç ²
 			for (auto& a : c.effcs_gun) {
 				a.first.handle.Dispose();
 			}
 		}
+		size_t sel_l = 0;
+		switchs start_stop;
 		eyevec2 = mine.vehicle.mat.zvec() * -1.f;
 		eye_pos_ads = VGet(0, 0.58f, 0);
 		SetMouseDispFlag(FALSE);
 		SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 		{
-			auto tt = mine.rep.begin();
+			auto tt = chara[0].rep.begin();
 			auto tt2 = chara[1].rep.begin();
 			while (ProcessMessage() == 0) {
 				const auto fps = GetFPS();
 				const auto waits = GetNowHiPerformanceCount();
-				//ƒvƒŒƒCƒ„[‘€ì
+				//ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼æ“ä½œ
 				{
-					//ƒXƒR[ƒv
+					//ã‚¹ã‚³ãƒ¼ãƒ—
 					{
 						Rot = std::clamp(Rot + GetMouseWheelRotVol(), 0, ADS);
 						switch (Rot) {
@@ -1305,12 +1109,21 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						}
 						easing_set(&range, range_p, 0.9f);
 					}
-					//Œ©‰ñ‚µ
-					if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-						mine.view_yrad = 0.f;
-						mine.view_xrad = 0.f;
+					//é¸æŠ
+					{
+						if (CheckHitKey(KEY_INPUT_0) != 0) {
+							sel_l = 0;
+						}
+						if (CheckHitKey(KEY_INPUT_1) != 0) {
+							sel_l = 1;
+						}
 					}
-					//ƒ}ƒEƒX‚Æ‹“_Šp“x‚ğƒŠƒ“ƒN
+					//è¦‹å›ã—
+					if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+						chara[sel_l].view_yrad = 0.f;
+						chara[sel_l].view_xrad = 0.f;
+					}
+					//ãƒã‚¦ã‚¹ã¨è¦–ç‚¹è§’åº¦ã‚’ãƒªãƒ³ã‚¯
 					{
 						int mousex, mousey;
 						GetMousePoint(&mousex, &mousey);
@@ -1324,15 +1137,20 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				}
 				//
 				{
-					tt->put_data(mine);
-					tt++;
-					if (tt == mine.rep.end()) {
-						break;
-					}
+					tt->put_data(chara[0]);
 					tt2->put_data(chara[1]);
-					tt2++;
-					if (tt2 == chara[1].rep.end()) {
-						break;
+
+					start_stop.get_in(CheckHitKey(KEY_INPUT_SPACE) != 0);
+
+					if (!start_stop.first) {
+						tt++;
+						if (tt == chara[0].rep.end()) {
+							break;
+						}
+						tt2++;
+						if (tt2 == chara[1].rep.end()) {
+							break;
+						}
 					}
 				}
 				//
@@ -1354,7 +1172,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						for (auto& t : veh.use_veh.wheelframe) {
 							t.gndsmkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), t.gndsmkeffcs.scale);
 						}
-						//e–C
+						//éŠƒç ²
 						for (auto& a : c.effcs_gun) {
 							a.first.put(Drawparts->get_effHandle(ef_smoke2));
 							if (a.second != nullptr) {
@@ -1368,7 +1186,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								}
 							}
 						}
-						//ƒ~ƒTƒCƒ‹
+						//ãƒŸã‚µã‚¤ãƒ«
 						for (auto& a : c.effcs_missile) {
 							a.first.put(Drawparts->get_effHandle(ef_smoke1));
 							if (a.second != nullptr) {
@@ -1386,7 +1204,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 					/**/
 				}
-				//•`‰æ
+				//æç”»
 				{
 
 					Drawparts->Ready_Shadow(cams.campos,
@@ -1399,23 +1217,18 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 					, VGet(200.f, 200.f, 200.f), VGet(2000.f, 2000.f, 2000.f));
 
-					auto& veh = mine.vehicle;
+					auto& veh = chara[sel_l].vehicle;
 					//cams
 					{
-						//campos,camvec,camupæ“¾
+						//campos,camvec,camupå–å¾—
 						if (Rot == ADS) {
 							cams.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
 							cams.campos.y(std::max(cams.campos.y(), 5.f));
-							{
-								if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
-								}
-								else {
-									eyevec2 = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
-									cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
-								}
-								cams.camup = veh.mat.yvec();
+							if ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0) {
+								eyevec2 = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
 							}
+							cams.camvec = cams.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
+							cams.camup = veh.mat.yvec();
 						}
 						else {
 							cams.camvec = veh.pos + veh.mat.yvec() * (6.f);
@@ -1429,26 +1242,23 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								cams.camup = VGet(0.f, 1.f, 0.f);
 							}
 							else {
-								eyevec2 = (cams.camvec - aimpos).Norm();
+								eyevec2 = (cams.camvec - (veh.pos + veh.mat.zvec() * (-1000.f))).Norm();
 								cams.campos = cams.camvec + eyevec2 * range;
 								cams.camup = veh.mat.yvec();
 							}
 						}
-						//nearæ“¾
+						//nearå–å¾—
 						cams.near_ = (Rot == ADS) ? (5.f + 25.f * (cams.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
-						//faræ“¾
+						//farå–å¾—
 						cams.far_ = 4000.f;
 						//fov
 						cams.fov = deg2rad(45);
-						//Æ€À•Wæ“¾
-						MAIN_Screen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
+						//ç…§æº–åº§æ¨™å–å¾—
+						Hostpass2parts->MAIN_Screen.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, 0.01f, 5000.0f);
 						{
-							VECTOR_ref startpos = mine.vehicle.pos;
-							VECTOR_ref endpos = startpos + mine.vehicle.mat.zvec() * (-1000.f);
-							//’nŒ`
-							mapparts->map_col_line_nearest(startpos, &endpos);
-							//
-							easing_set(&aimpos, endpos, 0.f);
+							VECTOR_ref aimpos = veh.pos + veh.mat.zvec() * (-1000.f);
+							//åœ°å½¢
+							mapparts->map_col_line_nearest(veh.pos, &aimpos);
 							aimposout = ConvWorldPosToScreenPos(aimpos.get());
 							for (auto& c : chara) {
 								auto& veht = c.vehicle;
@@ -1458,71 +1268,49 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					}
 					Set3DSoundListenerPosAndFrontPosAndUpVec(cams.campos.get(), cams.camvec.get(), cams.camup.get());
 					//UI
-					UI_Screen2.SetDraw_Screen();
+					Hostpass2parts->UI_Screen.SetDraw_Screen();
 					{
-						UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), mine,0);
+						UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), chara[sel_l], 0);
 					}
 					//sky
-					SkyScreen2.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
+					Hostpass2parts->SkyScreen.SetDraw_Screen(cams.campos - cams.camvec, VGet(0, 0, 0), cams.camup, cams.fov, 1.0f, 50.0f);
 					{
 						mapparts->sky_draw();
 					}
-					//”íÊ‘Ì[“x•`‰æ
-					Hostpass2parts->dof(BufScreen2, SkyScreen2, ram_draw, cams, FarScreen_2, NearFarScreen_2, NearScreen_2);
-					//ÅI•`‰æ
-					MAIN_Screen2.SetDraw_Screen();
+					//è¢«å†™ä½“æ·±åº¦æç”»
+					Hostpass2parts->dof(ram_draw, cams, !start_stop.first);
+					//æœ€çµ‚æç”»
+					Hostpass2parts->MAIN_Screen.SetDraw_Screen();
 					{
-						BufScreen2.DrawGraph(0, 0, false);
-						Hostpass2parts->bloom(BufScreen2, GaussScreen_2, 4, 255);//ƒuƒ‹[ƒ€
+						Hostpass2parts->bloom(255);//ãƒ–ãƒ«ãƒ¼ãƒ 
 					}
-					//ƒRƒbƒNƒsƒbƒg‰‰Z
+					//ã‚³ãƒƒã‚¯ãƒ”ãƒƒãƒˆæ¼”ç®—
 					if (Rot == ADS) {
-						float px = (mine.p_animes_rudder[1].second - mine.p_animes_rudder[0].second)*deg2rad(30);
-						float pz = (mine.p_animes_rudder[2].second - mine.p_animes_rudder[3].second)*deg2rad(30);
-						float py = (mine.p_animes_rudder[5].second - mine.p_animes_rudder[4].second)*deg2rad(20);
-
-						cockpit.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
-						cockpit.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
-						cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
-						cockpit.SetFrameLocalMatrix(compass_f.first, MATRIX_ref(veh.mat).Inverse() * MATRIX_ref::Mtrans(compass_f.second));
-						{
-							float spd_buf = veh.speed*3.6f;
-							float spd = 0.f;
-							if (spd_buf <= 400.f) {
-								spd = 180.f*spd_buf / 440.f;
-							}
-							else {
-								spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
-							}
-							cockpit.frame_reset(speed_f.first);
-							cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(cockpit.frame(speed_f.first + 1) - cockpit.frame(speed_f.first), MATRIX_ref(veh.mat).Inverse()), -deg2rad(spd)) *						MATRIX_ref::Mtrans(speed_f.second));
-						}
-						{
-							float spd_buf = veh.speed*3.6f / 1224.f;
-
-							cockpit.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*1.f)) * MATRIX_ref::Mtrans(spd3_f.second));
-							cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*10.f)) * MATRIX_ref::Mtrans(spd2_f.second));
-							cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*100.f)) * MATRIX_ref::Mtrans(spd1_f.second));
-						}
-						cockpit.SetMatrix(MATRIX_ref(veh.mat)*MATRIX_ref::Mtrans(veh.obj.frame(veh.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, veh.mat)));
+						cocks.ready_(chara[sel_l]);
 					}
-					//VR‚ÉˆÚ‚·
+					//VRã«ç§»ã™
 					outScreen2.SetDraw_Screen(cams.campos, cams.camvec, cams.camup, cams.fov, cams.near_, cams.far_);
 					{
-						MAIN_Screen2.DrawGraph(0, 0, true);
-						//ƒRƒbƒNƒsƒbƒg
+						Hostpass2parts->MAIN_Screen.DrawGraph(0, 0, true);
+						//ã‚³ãƒƒã‚¯ãƒ”ãƒƒãƒˆ
 						if (Rot == ADS) {
 							SetCameraNearFar(0.01f, 2.f);
-							cockpit.DrawModel();
+							cocks.cockpit.DrawModel();
 						}
 						//UI
-						UI_Screen2.DrawGraph(0, 0, true);
+						Hostpass2parts->UI_Screen.DrawGraph(0, 0, true);
 					}
 					//draw
 					GraphHandle::SetDraw_Screen(int(DX_SCREEN_BACK), false);
 					{
 						outScreen2.DrawGraph(0, 0, false);
 						font12.DrawString(10, 10, "REPLAY", GetColor(255, 0, 0));
+						if (start_stop.first) {
+							font12.DrawString(10, 10 + 20, "|>", GetColor(255, 0, 0));
+						}
+						else {
+							font12.DrawString(10, 10 + 20, "||", GetColor(255, 0, 0));
+						}
 					}
 				}
 
@@ -1532,12 +1320,12 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				}
 			}
 		}
-		//‰ğ•ú
+		//è§£æ”¾
 		{
 			for (auto& c : chara) {
 				c.rep.clear();
 				auto& veh = c.vehicle;
-				/*ƒGƒtƒFƒNƒg*/
+				/*ã‚¨ãƒ•ã‚§ã‚¯ãƒˆ*/
 				for (auto& t : c.effcs_gun) {
 					t.first.handle.Dispose();
 				}
@@ -1558,5 +1346,5 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		}
 		//
 	} while (ProcessMessage() == 0 && ending);
-	return 0; // ƒ\ƒtƒg‚ÌI—¹
+	return 0; // ã‚½ãƒ•ãƒˆã®çµ‚äº†
 }
