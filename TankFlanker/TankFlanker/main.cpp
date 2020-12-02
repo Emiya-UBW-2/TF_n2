@@ -51,8 +51,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	Mainclass::cockpits cocks;
 	//操作
 	CAMS cam_s;
-	//DXDraw::cam_info cams;
-	//int Rot = 0;
 	float range = 0.f, range_p = 30.f;
 	VECTOR_ref eye_pos_ads = VGet(0, 0.58f, 0);
 	//
@@ -170,7 +168,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		}
 		//開始
 		auto& mine = chara[0];
-		cam_s.Rot = 0;
+		cam_s.Rot = ADS;
 		eyevec = mine.vehicle.mat.zvec() * -1.f;
 		cam_s.cam.campos = mine.vehicle.pos + VGet(0.f, 3.f, 0.f) + eyevec * range;
 		eyevec2 = chara[1].vehicle.mat.zvec() * -1.f;
@@ -597,25 +595,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					cg.loadcnt = std::max(cg.loadcnt - 1.f / fps, 0.f);
 					cg.fired = std::max(cg.fired - 1.f / fps, 0.f);
 				}
-				/*effect*/
-				for (auto& t : c.effcs) {
-					if (t.id != ef_smoke1 && t.id != ef_smoke2) {
-						t.put(Drawparts->get_effHandle(int(t.id)));
-					}
-				}
-				for (auto& t : c.effcs_gun) {
-					t.first.put(Drawparts->get_effHandle(ef_smoke2));
-				}
-				for (auto& t : c.effcs_missile) {
-					t.first.put(Drawparts->get_effHandle(ef_smoke1));
-				}
-
-				for (auto& t : veh.use_veh.wheelframe) {
-					t.gndsmkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), t.gndsmkeffcs.scale);
-					if (start_c2) {
-						t.gndsmkeffcs.set_loop(Drawparts->get_effHandle(ef_gndsmoke));
-					}
-				}
 				//弾関連
 				{
 					//弾判定
@@ -799,6 +778,25 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 								}
 							}
 						}
+					}
+				}
+				/*effect*/
+				for (auto& t : c.effcs) {
+					if (t.id != ef_smoke1 && t.id != ef_smoke2) {
+						t.put(Drawparts->get_effHandle(int(t.id)));
+					}
+				}
+				for (auto& t : c.effcs_gun) {
+					t.first.put(Drawparts->get_effHandle(ef_smoke2));
+				}
+				for (auto& t : c.effcs_missile) {
+					t.first.put(Drawparts->get_effHandle(ef_smoke1));
+				}
+
+				for (auto& t : veh.use_veh.wheelframe) {
+					t.gndsmkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), t.gndsmkeffcs.scale);
+					if (start_c2) {
+						t.gndsmkeffcs.set_loop(Drawparts->get_effHandle(ef_gndsmoke));
 					}
 				}
 			}
@@ -1148,30 +1146,11 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 				{
 					tt->put_data(chara[0]);
 					tt2->put_data(chara[1]);
-
-					start_stop.get_in(CheckHitKey(KEY_INPUT_SPACE) != 0);
-
-					if (!start_stop.first) {
-						tt++;
-						if (tt == chara[0].rep.end()) {
-							break;
-						}
-						tt2++;
-						if (tt2 == chara[1].rep.end()) {
-							break;
-						}
-					}
 				}
 				//cam_s.cam
 				{
 					if (sel_l == 0 && ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0)) {
 						cam_s = *tcam;
-						if (!start_stop.first) {
-							tcam++;
-							if (tcam == rep_cam.end()) {
-								break;
-							}
-						}
 						cam_s.cam.fov = deg2rad(45);
 					}
 					else {
@@ -1209,6 +1188,24 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 						cam_s.cam.far_ = 4000.f;
 						//fov
 						cam_s.cam.fov = deg2rad(45);
+					}
+				}
+				//
+				{
+					start_stop.get_in(CheckHitKey(KEY_INPUT_SPACE) != 0);
+					if (!start_stop.first) {
+						tt++;
+						if (tt == chara[0].rep.end()) {
+							break;
+						}
+						tt2++;
+						if (tt2 == chara[1].rep.end()) {
+							break;
+						}
+						tcam++;
+						if (tcam == rep_cam.end()) {
+							break;
+						}
 					}
 				}
 				//
