@@ -31,6 +31,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 		DXDraw::cam_info cam;
 		int Rot = 0;//
 	};
+	DXDraw::cam_info cam_easy;
 	std::list<CAMS> rep_cam;
 	VECTOR_ref eyevec, eyevec2;																	//視点
 	VECTOR_ref aimposout;																		//UIに出力
@@ -840,43 +841,62 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 					{
 						//campos,camvec,camup取得
 						if (cam_s.Rot == ADS) {
-							cam_s.cam.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
-							cam_s.cam.campos.y(std::max(cam_s.cam.campos.y(), 5.f));
+							cam_easy.camvec -= cam_easy.campos;
+							cam_easy.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
+							cam_easy.campos.y(std::max(cam_easy.campos.y(), 5.f));
 							if (Drawparts->use_vr) {
-								cam_s.cam.camvec = cam_s.cam.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
-								cam_s.cam.camup = MATRIX_ref::Vtrans(HMDmat.yvec(), veh.mat);//veh.mat.yvec();
+								cam_easy.camvec = cam_easy.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
+								cam_easy.camup = MATRIX_ref::Vtrans(HMDmat.yvec(), veh.mat);//veh.mat.yvec();
 							}
 							else {
-								if ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0) {
-									eyevec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
+								if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+									easing_set(&cam_easy.camvec, MATRIX_ref::Vtrans(eyevec, veh.mat)*-1.f, 0.75f);
+									cam_easy.camvec += cam_easy.campos;
+
+									cam_easy.camup = veh.mat.yvec();
 								}
-								cam_s.cam.camvec = cam_s.cam.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
-								cam_s.cam.camup = veh.mat.yvec();
+								else {
+									eyevec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
+									cam_easy.camvec = cam_easy.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
+									cam_easy.camup = veh.mat.yvec();
+								}
 							}
 						}
 						else {
-							cam_s.cam.camvec = veh.pos + veh.mat.yvec() * (6.f);
-							cam_s.cam.camvec.y(std::max(cam_s.cam.camvec.y(), 5.f));
+							cam_easy.campos -= cam_easy.camvec;
+
+							cam_easy.camvec = veh.pos + veh.mat.yvec() * (6.f);
+							cam_easy.camvec.y(std::max(cam_easy.camvec.y(), 5.f));
+
 							if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-								cam_s.cam.campos = cam_s.cam.camvec + eyevec * range;
-								cam_s.cam.campos.y(std::max(cam_s.cam.campos.y(), 0.f));
-								if (mapparts->map_col_line_nearest(cam_s.cam.camvec, &cam_s.cam.campos)) {
-									cam_s.cam.campos = cam_s.cam.camvec + (cam_s.cam.campos - cam_s.cam.camvec) * (0.9f);
-								}
-								cam_s.cam.camup = VGet(0.f, 1.f, 0.f);
+
+								easing_set(&cam_easy.campos, eyevec * range, 0.9f);
+								cam_easy.campos += cam_easy.camvec;
+								cam_easy.campos.y(std::max(cam_easy.campos.y(), 0.f));
+								mapparts->map_col_line_nearest(cam_easy.camvec, &cam_easy.campos);
+
+								easing_set(&cam_easy.camup, VGet(0.f, 1.f, 0.f), 0.9f);
 							}
 							else {
-								eyevec = (cam_s.cam.camvec - (mine.vehicle.pos + mine.vehicle.mat.zvec() * (-1000.f))).Norm();
-								cam_s.cam.campos = cam_s.cam.camvec + eyevec * range;
-								cam_s.cam.camup = veh.mat.yvec();
+								cam_easy.camvec = veh.pos + veh.mat.yvec() * (6.f);
+								cam_easy.camvec.y(std::max(cam_easy.camvec.y(), 5.f));
+
+								eyevec = (cam_easy.camvec - (mine.vehicle.pos + mine.vehicle.mat.zvec() * (-1000.f))).Norm();
+								cam_easy.campos = cam_easy.camvec + eyevec * range;
+
+								cam_easy.camup = veh.mat.yvec();
 							}
+
+
 						}
 						//near取得
-						cam_s.cam.near_ = (cam_s.Rot == ADS) ? (5.f + 25.f * (cam_s.cam.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
+						cam_easy.near_ = (cam_s.Rot == ADS) ? (5.f + 25.f * (cam_easy.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
 						//far取得
-						cam_s.cam.far_ = 6000.f;
+						cam_easy.far_ = 6000.f;
 						//fov
-						cam_s.cam.fov = deg2rad(Drawparts->use_vr ? 90 : 45);
+						cam_easy.fov = deg2rad(Drawparts->use_vr ? 90 : 45);
+
+						cam_s.cam = cam_easy;
 					}
 					//照準座標取得
 					{
