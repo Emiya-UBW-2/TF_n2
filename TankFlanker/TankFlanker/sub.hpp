@@ -3,6 +3,7 @@
 #define NOMINMAX
 #include <D3D11.h>
 #include <array>
+#include<iostream>
 #include <fstream>
 #include <memory>
 #include <optional>
@@ -349,7 +350,7 @@ public:
 			}
 		}
 	};
-private:
+public:
 	struct ammos {
 		bool hit{ false };
 		bool flug{ false };
@@ -359,6 +360,15 @@ private:
 		float yadd = 0.f;
 		VECTOR_ref pos, repos, vec;
 	};
+	struct ef_guns {
+		EffectS first;
+		ammos* second = nullptr;
+		bool n_l;
+		bool flug;
+		VECTOR_ref pos;
+		int cnt = -1;
+	};
+private:
 	class Guns {							      /**/
 	public:
 		size_t id = 0;
@@ -377,11 +387,6 @@ private:
 			this->Spec.clear();
 		}
 	};								      /**/
-	struct ef_guns {
-		EffectS first;
-		ammos* second = nullptr;
-		int cnt = -1;
-	};
 	class pair_hit {							      /**/
 	public:
 		size_t first = 0;
@@ -500,17 +505,18 @@ public:
 				VECTOR_ref nor;					 /**/
 				float scale = 1.f;				 /**/
 			};
-			struct eff_guns_buf {
-				eff_buf first;
-				ammos* second = nullptr;
+			struct ef_guns_buf {
+				EffectS first;
+				bool n_l{ false };
+				bool flug{ false };
+				VECTOR_ref pos;
 				int cnt = -1;
 			};
 			std::array<eff_buf, ef_size> effcs_; /*effect*/
-			std::array<eff_guns_buf, 8> effcs_missile_; /*effect*/
-			std::array<eff_guns_buf, 12> effcs_gun_;    /*effect*/
+			std::array<ef_guns_buf, 8> effcs_missile_; /*effect*/
+			std::array<ef_guns_buf, 12> effcs_gun_;    /*effect*/
 
 			std::array<float, 3> gndsmkeffcs_; /*effect*/
-
 
 			void get_data(Chara& data) {
 				auto& veh = data.vehicle;
@@ -531,7 +537,9 @@ public:
 					effcs_missile_[i].first.pos = data.effcs_missile[i].first.pos;
 					effcs_missile_[i].first.nor = data.effcs_missile[i].first.nor;
 					effcs_missile_[i].first.scale = data.effcs_missile[i].first.scale;
-					effcs_missile_[i].second = data.effcs_missile[i].second;
+					effcs_missile_[i].flug = data.effcs_missile[i].flug;
+					effcs_missile_[i].n_l = data.effcs_missile[i].n_l;
+					effcs_missile_[i].pos = data.effcs_missile[i].pos;
 					effcs_missile_[i].cnt = data.effcs_missile[i].cnt;
 				}
 				for (int i = 0; i < 12; i++) {
@@ -539,7 +547,9 @@ public:
 					effcs_gun_[i].first.pos = data.effcs_gun[i].first.pos;
 					effcs_gun_[i].first.nor = data.effcs_gun[i].first.nor;
 					effcs_gun_[i].first.scale = data.effcs_gun[i].first.scale;
-					effcs_gun_[i].second = data.effcs_gun[i].second;
+					effcs_gun_[i].flug = data.effcs_gun[i].flug;
+					effcs_gun_[i].n_l = data.effcs_gun[i].n_l;
+					effcs_gun_[i].pos = data.effcs_gun[i].pos;
 					effcs_gun_[i].cnt = data.effcs_gun[i].cnt;
 				}
 				{
@@ -557,7 +567,24 @@ public:
 				veh.obj.SetMatrix(this->v_mat);
 				veh.mat = this->mat;
 				veh.pos = this->pos;
-				veh.Gun_ = this->Gun_;
+				{
+					veh.Gun_ = this->Gun_;
+					int i = 0, j = 0;
+					for (auto& p : veh.Gun_) {
+						auto& t = this->Gun_[i];
+						j = 0;
+						for (auto& a : p.bullet) {
+							auto& b = t.bullet[j];
+							a.flug = b.flug;
+							a.pos = b.pos;
+							a.repos = b.repos;
+							a.spec.caliber_a = b.spec.caliber_a;
+							a.color = b.color;
+							j++;
+						}
+						i++;
+					}
+				}
 				for (int i = 0; i < ef_size; i++) {
 					data.effcs[i].flug = this->effcs_[i].flug;
 					data.effcs[i].pos = this->effcs_[i].pos;
@@ -569,7 +596,9 @@ public:
 					data.effcs_missile[i].first.pos = effcs_missile_[i].first.pos;
 					data.effcs_missile[i].first.nor = effcs_missile_[i].first.nor;
 					data.effcs_missile[i].first.scale = effcs_missile_[i].first.scale;
-					data.effcs_missile[i].second = effcs_missile_[i].second;
+					data.effcs_missile[i].flug = effcs_missile_[i].flug;
+					data.effcs_missile[i].n_l = effcs_missile_[i].n_l;
+					data.effcs_missile[i].pos = effcs_missile_[i].pos;
 					data.effcs_missile[i].cnt = effcs_missile_[i].cnt;
 				}
 				for (int i = 0; i < 12; i++) {
@@ -577,7 +606,9 @@ public:
 					data.effcs_gun[i].first.pos = effcs_gun_[i].first.pos;
 					data.effcs_gun[i].first.nor = effcs_gun_[i].first.nor;
 					data.effcs_gun[i].first.scale = effcs_gun_[i].first.scale;
-					data.effcs_gun[i].second = effcs_gun_[i].second;
+					data.effcs_gun[i].flug = effcs_gun_[i].flug;
+					data.effcs_gun[i].n_l = effcs_gun_[i].n_l;
+					data.effcs_gun[i].pos = effcs_gun_[i].pos;
 					data.effcs_gun[i].cnt = effcs_gun_[i].cnt;
 				}
 				{
