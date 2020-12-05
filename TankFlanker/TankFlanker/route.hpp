@@ -45,12 +45,12 @@ public:
 			FileRead_close(mdata);
 		}
 		//
-		auto Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);									/*汎用クラス*/
+		auto Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);													/*汎用クラス*/
 		auto UIparts = std::make_unique<UI>(Drawparts->out_disp_x, Drawparts->out_disp_y, Drawparts->disp_x, Drawparts->disp_y, Drawparts->use_vr);	/*UI*/
-		auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);																		/*デバッグ*/
-		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);				/*ホストパスエフェクト*/
-		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->out_disp_x, Drawparts->out_disp_y);				/*ホストパスエフェクト*/
-		auto mapparts = std::make_unique<Mapclass>();		/*map*/
+		auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);																						/*デバッグ*/
+		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);								/*ホストパスエフェクト*/
+		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->out_disp_x, Drawparts->out_disp_y);						/*ホストパスエフェクト*/
+		auto mapparts = std::make_unique<Mapclass>();																								/*map*/
 		//
 		font12 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 		outScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//描画スクリーン
@@ -701,16 +701,18 @@ public:
 															//反映
 															auto vec_a = (a.pos - pos).Norm();
 															auto vec_z = a.vec;
-															float z_hyp = std::hypotf(vec_z.x(), vec_z.z());
-															float a_hyp = std::hypotf(vec_a.x(), vec_a.z());
-															float cost = (vec_a.z() * vec_z.x() - vec_a.x() * vec_z.z()) / (a_hyp * z_hyp);
-															float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cos取得2D
-															float view_xrad = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
-															{
-																float limit = deg2rad(1.f) / fps;
-																float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad, -limit, limit);
-																float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad, -limit, limit);
-																a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
+															if (vec_a.dot(vec_z) < 0) {
+																float z_hyp = std::hypotf(vec_z.x(), vec_z.z());
+																float a_hyp = std::hypotf(vec_a.x(), vec_a.z());
+																float cost = (vec_a.z() * vec_z.x() - vec_a.x() * vec_z.z()) / (a_hyp * z_hyp);
+																float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cos取得2D
+																float view_xrad = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
+																{
+																	float limit = deg2rad(2.5f) / fps;
+																	float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad, -limit, limit);
+																	float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad, -limit, limit);
+																	a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
+																}
 															}
 														}
 													}
@@ -984,9 +986,7 @@ public:
 								DrawBillboard3D((cam_s.cam.campos + (cam_s.cam.camvec - cam_s.cam.campos).Norm()*1.0f).get(), 0.5f, 0.5f, Drawparts->use_vr ? 1.8f : 1.475f, 0.f, Hostpassparts->MAIN_Screen.get(), TRUE);
 								SetUseZBuffer3D(TRUE);												//zbufuse
 								SetWriteZBuffer3D(TRUE);											//zbufwrite
-								//Hostpassparts->MAIN_Screen.DrawGraph(0, 0, true);
 								//コックピット
-								SetCameraNearFar(0.01f, 2.f);
 								if (cam_s.Rot == ADS) {
 									cocks.cockpit.DrawModel();
 								}
@@ -1079,13 +1079,7 @@ public:
 								//コックピット
 								cocks.cockpit.DrawModel();
 								//UI
-								SetUseZBuffer3D(FALSE);												//zbufuse
-								SetWriteZBuffer3D(FALSE);											//zbufwrite
-								DrawBillboard3D((cam_s.cam.campos + (cam_s.cam.camvec - cam_s.cam.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.475f, 0.f, Hostpass2parts->UI_Screen.get(), TRUE);
-								SetUseZBuffer3D(TRUE);												//zbufuse
-								SetWriteZBuffer3D(TRUE);											//zbufwrite
-
-								//Hostpass2parts->UI_Screen.DrawGraph(0, 0, true);
+								Hostpass2parts->UI_Screen.DrawGraph(0, 0, true);
 							}
 						}
 					}
@@ -1141,7 +1135,7 @@ public:
 			//保存
 			{
 				std::ofstream fout;
-				fout.open("data/file.txt", std::ios::out | std::ios::binary | std::ios::trunc);
+				fout.open("data/file.txt", std::ios::binary);
 
 				auto tt = chara[0].rep.begin();
 				auto tt2 = chara[1].rep.begin();
@@ -1153,18 +1147,18 @@ public:
 						fout.write((char *)&tcam->cam, sizeof(tcam->cam));
 						fout.write((char *)&tcam->Rot, sizeof(tcam->Rot));
 					}
+					tt++;
 					if (tt == chara[0].rep.end()) {
 						break;
 					}
+					tt2++;
 					if (tt2 == chara[1].rep.end()) {
 						break;
 					}
+					tcam++;
 					if (tcam == rep_cam.end()) {
 						break;
 					}
-					tt++;
-					tt2++;
-					tcam++;
 				}
 				fout.close();  //ファイルを閉じる
 			}
@@ -1175,7 +1169,7 @@ public:
 				Mainclass::CAMS tmp_cam_rep;
 
 				std::ifstream fout;
-				fout.open("data/file.txt", std::ios::in | std::ios::binary);
+				fout.open("data/file.txt", std::ios::binary);
 				{
 					chara[0].rep.clear();
 					chara[1].rep.clear();
