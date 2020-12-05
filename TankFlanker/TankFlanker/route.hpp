@@ -415,8 +415,8 @@ public:
 							easing_set(&veh.zradadd_right, (c.key[4] ? rad_spec : (c.key[14] ? rad_spec / 3.f : 0.f)), 0.95f);
 							easing_set(&veh.zradadd_left, (c.key[5] ? -rad_spec : (c.key[15] ? -rad_spec / 3.f : 0.f)), 0.95f);
 							//ヨー
-							easing_set(&veh.yradadd_left, (c.key[6] ? -rad_spec / 8.f : (c.key[16] ? -rad_spec / 24.f : 0.f)), 0.95f);
-							easing_set(&veh.yradadd_right, (c.key[7] ? rad_spec / 8.f : (c.key[17] ? rad_spec / 24.f : 0.f)), 0.95f);
+							easing_set(&veh.yradadd_left, (c.key[6] ? -rad_spec / 24.f : (c.key[16] ? -rad_spec / 72.f : 0.f)), 0.95f);
+							easing_set(&veh.yradadd_right, (c.key[7] ? rad_spec / 24.f : (c.key[17] ? rad_spec / 72.f : 0.f)), 0.95f);
 							//スロットル
 							easing_set(&veh.speed_add, ((c.key[8] && veh.speed < veh.use_veh.max_speed_limit) ? (0.5f / 3.6f) : 0.f), 0.95f);
 							easing_set(&veh.speed_sub, c.key[9] ? ((veh.speed > veh.use_veh.min_speed_limit) ? (-0.5f / 3.6f) : ((veh.speed > 0.f) ? (-0.2f / 3.6f) : 0.f)) : 0.f, 0.95f);
@@ -785,9 +785,12 @@ public:
 							//ミサイル
 							for (auto& a : c.effcs_missile) {
 								if (a.second != nullptr) {
-									if (a.second->flug) {
+									a.n_l = (a.second != nullptr);
+									a.flug = a.second->flug;
+
+									if (a.flug) {
 										a.first.pos = a.second->pos;
-										a.first.handle.SetPos(a.second->pos);
+										a.first.handle.SetPos(a.first.pos);
 									}
 									if (a.count >= 0.f) {
 										a.count += 1.f / fps;
@@ -796,19 +799,17 @@ public:
 											a.count = -1.f;
 										}
 									}
-								}
-								if (a.second != nullptr) {
-									a.n_l = (a.second != nullptr);
-									a.flug = a.second->flug;
-									a.pos = a.second->pos;
 								}
 							}
 							//銃砲
 							for (auto& a : c.effcs_gun) {
 								if (a.second != nullptr) {
-									if (a.second->flug) {
+									a.n_l = (a.second != nullptr);
+									a.flug = a.second->flug;
+
+									if (a.flug) {
 										a.first.pos = a.second->pos;
-										a.first.handle.SetPos(a.second->pos);
+										a.first.handle.SetPos(a.first.pos);
 									}
 									if (a.count >= 0.f) {
 										a.count += 1.f / fps;
@@ -817,11 +818,6 @@ public:
 											a.count = -1.f;
 										}
 									}
-								}
-								if (a.second != nullptr) {
-									a.n_l = (a.second != nullptr);
-									a.flug = a.second->flug;
-									a.pos = a.second->pos;
 								}
 							}
 						}
@@ -1235,6 +1231,7 @@ public:
 					auto tt2 = chara[1].rep.begin();
 					while (ProcessMessage() == 0) {
 						const auto waits = GetNowHiPerformanceCount();
+						Debugparts->put_way();
 						//プレイヤー操作
 						{
 							//スコープ
@@ -1393,7 +1390,7 @@ public:
 									a.first.put(Drawparts->get_effHandle(ef_smoke2));
 									if (a.n_l) {
 										if (a.flug) {
-											a.first.handle.SetPos(a.pos);
+											a.first.handle.SetPos(a.first.pos);
 										}
 										if (a.count >= 0.f) {
 											if (a.count >= 3.f) {
@@ -1407,7 +1404,7 @@ public:
 									a.first.put(Drawparts->get_effHandle(ef_smoke1));
 									if (a.n_l) {
 										if (a.flug) {
-											a.first.handle.SetPos(a.pos);
+											a.first.handle.SetPos(a.first.pos);
 										}
 										if (a.count >= 0.f) {
 											if (a.count >= 3.f) {
@@ -1492,6 +1489,8 @@ public:
 								else {
 									font12.DrawString(10, 10 + 20, "||", GetColor(255, 0, 0));
 								}
+								Debugparts->end_way();
+								Debugparts->debug(10, 10, float(GetNowHiPerformanceCount() - waits) / 1000.f);
 							}
 						}
 

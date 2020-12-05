@@ -368,7 +368,6 @@ public:
 		ammos* second = nullptr;
 		bool n_l;
 		bool flug;
-		VECTOR_ref pos;
 		float count = -1.f;
 	};
 	struct CAMS {
@@ -544,7 +543,6 @@ public:
 					effcs_missile_[i].first.scale = data.effcs_missile[i].first.scale;
 					effcs_missile_[i].flug = data.effcs_missile[i].flug;
 					effcs_missile_[i].n_l = data.effcs_missile[i].n_l;
-					effcs_missile_[i].pos = data.effcs_missile[i].pos;
 					effcs_missile_[i].count = data.effcs_missile[i].count;
 				}
 				for (int i = 0; i < 12; i++) {
@@ -554,7 +552,6 @@ public:
 					effcs_gun_[i].first.scale = data.effcs_gun[i].first.scale;
 					effcs_gun_[i].flug = data.effcs_gun[i].flug;
 					effcs_gun_[i].n_l = data.effcs_gun[i].n_l;
-					effcs_gun_[i].pos = data.effcs_gun[i].pos;
 					effcs_gun_[i].count = data.effcs_gun[i].count;
 				}
 				{
@@ -603,7 +600,6 @@ public:
 					data.effcs_missile[i].first.scale = effcs_missile_[i].first.scale;
 					data.effcs_missile[i].flug = effcs_missile_[i].flug;
 					data.effcs_missile[i].n_l = effcs_missile_[i].n_l;
-					data.effcs_missile[i].pos = effcs_missile_[i].pos;
 					data.effcs_missile[i].count = effcs_missile_[i].count;
 				}
 				for (int i = 0; i < 12; i++) {
@@ -613,7 +609,6 @@ public:
 					data.effcs_gun[i].first.scale = effcs_gun_[i].first.scale;
 					data.effcs_gun[i].flug = effcs_gun_[i].flug;
 					data.effcs_gun[i].n_l = effcs_gun_[i].n_l;
-					data.effcs_gun[i].pos = effcs_gun_[i].pos;
 					data.effcs_gun[i].count = effcs_gun_[i].count;
 				}
 				{
@@ -653,7 +648,6 @@ public:
 						fout.write((char *)&e.first.scale, sizeof(e.first.scale));
 						fout.write((char *)&e.flug, sizeof(e.flug));
 						fout.write((char *)&e.n_l, sizeof(e.n_l));
-						fout.write((char *)&e.pos, sizeof(e.pos));
 						fout.write((char *)&e.count, sizeof(e.count));
 					}
 					for (auto& e : this->effcs_gun_) {
@@ -663,7 +657,6 @@ public:
 						fout.write((char *)&e.first.scale, sizeof(e.first.scale));
 						fout.write((char *)&e.flug, sizeof(e.flug));
 						fout.write((char *)&e.n_l, sizeof(e.n_l));
-						fout.write((char *)&e.pos, sizeof(e.pos));
 						fout.write((char *)&e.count, sizeof(e.count));
 					}
 					for (auto& e : this->gndsmkeffcs_) {
@@ -702,7 +695,6 @@ public:
 						fout.read((char *)&e.first.scale, sizeof(e.first.scale));
 						fout.read((char *)&e.flug, sizeof(e.flug));
 						fout.read((char *)&e.n_l, sizeof(e.n_l));
-						fout.read((char *)&e.pos, sizeof(e.pos));
 						fout.read((char *)&e.count, sizeof(e.count));
 					}
 					for (auto& e : this->effcs_gun_) {
@@ -712,7 +704,6 @@ public:
 						fout.read((char *)&e.first.scale, sizeof(e.first.scale));
 						fout.read((char *)&e.flug, sizeof(e.flug));
 						fout.read((char *)&e.n_l, sizeof(e.n_l));
-						fout.read((char *)&e.pos, sizeof(e.pos));
 						fout.read((char *)&e.count, sizeof(e.count));
 					}
 					for (auto& e : this->gndsmkeffcs_) {
@@ -1041,7 +1032,10 @@ public:
 	//コックピット
 	class cockpits {
 	public:
-		frames	stickx_f, sticky_f, stickz_f, compass_f, speed_f, speed2_f, spd3_f, spd2_f, spd1_f, cockpit_f, clock_h_f, clock_h2_f, clock_m_f, clock_m2_f, clock_s_f, clock_s2_f, subcompass_f, subcompass2_f;
+		frames	stickx_f, sticky_f, stickz_f, compass_f, compass2_f, speed_f, speed2_f, spd3_f, spd2_f, spd1_f, cockpit_f, clock_h_f, clock_h2_f, clock_m_f, clock_m2_f, clock_s_f, clock_s2_f, subcompass_f, subcompass2_f
+			, alt4_f, alt3_f, alt2_f, alt1_f
+			, salt4_f, salt3_f, salt2_f, salt1_f
+			, alt_1000_f, alt_1000_2_f, alt_100_f, alt_100_2_f;
 		MV1 cockpit;
 
 		void set_() {
@@ -1054,6 +1048,10 @@ public:
 				}
 				else if ((p.find("姿勢指示器", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
 					compass_f = { i,cockpit.frame(i) - cockpit.frame(int(cockpit.frame_parent(i))) };
+					//ジャイロコンパス
+				}
+				else if ((p.find("姿勢指示器", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
+					compass2_f = { i,cockpit.frame(i) - cockpit.frame(int(cockpit.frame_parent(i))) };
 					//ジャイロコンパス
 				}
 				else if ((p.find("予備コンパス", 0) != std::string::npos)) {
@@ -1081,6 +1079,43 @@ public:
 				else if ((p.find("速度001", 0) != std::string::npos)) {
 					spd1_f = { i,cockpit.frame(i) };
 				}
+
+				else if ((p.find("高度1000", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					alt4_f = { i,cockpit.frame(i) };
+				}
+				else if ((p.find("高度0100", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					alt3_f = { i,cockpit.frame(i) };
+				}
+				else if ((p.find("高度0010", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					alt2_f = { i,cockpit.frame(i) };
+				}
+				else if ((p.find("高度0001", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					alt1_f = { i,cockpit.frame(i) };
+				}
+
+				else if ((p.find("高度1000", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
+					salt4_f = { i,cockpit.frame(i) };
+				}
+				else if ((p.find("高度0100", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
+					salt3_f = { i,cockpit.frame(i) };
+				}
+				else if ((p.find("高度0010", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
+					salt2_f = { i,cockpit.frame(i) };
+				}
+				else if ((p.find("高度0001", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
+					salt1_f = { i,cockpit.frame(i) };
+				}
+
+				else if ((p.find("高度計", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					alt_1000_f = { i,cockpit.frame(i) };
+					alt_1000_2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
+				}
+				else if ((p.find("高度長針", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					alt_100_f = { i,cockpit.frame(i) };
+					alt_100_2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
+				}
+
+
 				else if ((p.find("時計", 0) != std::string::npos)) {
 					clock_h_f = { i,cockpit.frame(i) };
 					clock_h2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
@@ -1105,6 +1140,7 @@ public:
 			cockpit.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
 			cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
 			cockpit.SetFrameLocalMatrix(compass_f.first, c.vehicle.mat.Inverse() * MATRIX_ref::Mtrans(compass_f.second));
+			cockpit.SetFrameLocalMatrix(compass2_f.first, c.vehicle.mat.Inverse() * MATRIX_ref::Mtrans(compass2_f.second));
 			//速度計
 			{
 				{
@@ -1125,6 +1161,31 @@ public:
 					cockpit.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*1.f)) * MATRIX_ref::Mtrans(spd3_f.second));
 					cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*10.f)) * MATRIX_ref::Mtrans(spd2_f.second));
 					cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*spd_buf*100.f)) * MATRIX_ref::Mtrans(spd1_f.second));
+				}
+				{
+					float alt_buf = c.vehicle.pos.y() / 1000.f;
+
+					cockpit.SetFrameLocalMatrix(alt4_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*alt_buf*1.f)) * MATRIX_ref::Mtrans(alt4_f.second));
+					cockpit.SetFrameLocalMatrix(alt3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*alt_buf*10.f)) * MATRIX_ref::Mtrans(alt3_f.second));
+					cockpit.SetFrameLocalMatrix(alt2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*alt_buf*100.f)) * MATRIX_ref::Mtrans(alt2_f.second));
+					cockpit.SetFrameLocalMatrix(alt1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*alt_buf*1000.f)) * MATRIX_ref::Mtrans(alt1_f.second));
+				}
+				{
+					float alt_buf = c.vehicle.pos.y() / 1000.f;
+
+					cockpit.SetFrameLocalMatrix(salt4_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*alt_buf*1.f)) * MATRIX_ref::Mtrans(salt4_f.second));
+					cockpit.SetFrameLocalMatrix(salt3_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*alt_buf*10.f)) * MATRIX_ref::Mtrans(salt3_f.second));
+					cockpit.SetFrameLocalMatrix(salt2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*alt_buf*100.f)) * MATRIX_ref::Mtrans(salt2_f.second));
+					cockpit.SetFrameLocalMatrix(salt1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*alt_buf*1000.f)) * MATRIX_ref::Mtrans(salt1_f.second));
+				}
+				//時計
+				{
+					float alt_buf = c.vehicle.pos.y();
+
+					cockpit.frame_reset(alt_1000_f.first);
+					cockpit.SetFrameLocalMatrix(alt_1000_f.first, MATRIX_ref::RotAxis(alt_1000_2_f.second, -deg2rad(360.f *alt_buf / 1000)) * MATRIX_ref::Mtrans(alt_1000_f.second));
+					cockpit.frame_reset(alt_100_f.first);
+					cockpit.SetFrameLocalMatrix(alt_100_f.first, MATRIX_ref::RotAxis(alt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(alt_100_f.second));
 				}
 			}
 			//時計
