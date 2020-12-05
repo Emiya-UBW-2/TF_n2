@@ -10,6 +10,9 @@
 #include <vector>
 #include "DXLib_ref/DXLib_ref.h"
 
+#define FRAME_RATE 90.f
+#define ADS 2
+
 enum Effect {
 	ef_fire = 0, //発砲炎
 	ef_reco = 1, //大口径跳弾
@@ -368,10 +371,13 @@ public:
 		VECTOR_ref pos;
 		int cnt = -1;
 	};
+	struct CAMS {
+		DXDraw::cam_info cam;
+		int Rot = 0;//
+	};
 private:
 	class Guns {							      /**/
 	public:
-		size_t id = 0;
 		size_t usebullet{};					      /*使用弾*/
 		std::array<ammos, 64> bullet;				      /*確保する弾*/
 		float loadcnt{ 0 };					      /*装てんカウンター*/
@@ -499,7 +505,6 @@ public:
 			std::vector<Guns> Gun_;						      /**/
 			float speed;
 			struct eff_buf {
-				size_t id = 0;
 				bool flug{ false };				 /**/
 				VECTOR_ref pos;					 /**/
 				VECTOR_ref nor;					 /**/
@@ -517,6 +522,13 @@ public:
 			std::array<ef_guns_buf, 12> effcs_gun_;    /*effect*/
 
 			std::array<float, 3> gndsmkeffcs_; /*effect*/
+
+			//何故か要る
+			sendstat(void) {
+			}
+			//何故か要る
+			sendstat(const sendstat& p) {
+			}
 
 			void get_data(Chara& data) {
 				auto& veh = data.vehicle;
@@ -619,10 +631,105 @@ public:
 					}
 				}
 			}
+
+			void write(std::ofstream& fout) {
+				{
+					fout.write((char *)&this->speed, sizeof(this->speed));
+					fout.write((char *)&this->v_mat, sizeof(this->v_mat));
+					fout.write((char *)&this->mat, sizeof(this->mat));
+					fout.write((char *)&this->pos, sizeof(this->pos));
+					for (auto& p : this->Gun_) {
+						for (auto& a : p.bullet) {
+							fout.write((char *)&a.flug, sizeof(a.flug));
+							fout.write((char *)&a.pos, sizeof(a.pos));
+							fout.write((char *)&a.repos, sizeof(a.repos));
+							fout.write((char *)&a.spec.caliber_a, sizeof(a.spec.caliber_a));
+							fout.write((char *)&a.color, sizeof(a.color));
+						}
+					}
+					for (auto& e : this->effcs_) {
+						fout.write((char *)&e.flug, sizeof(e.flug));
+						fout.write((char *)&e.pos, sizeof(e.pos));
+						fout.write((char *)&e.nor, sizeof(e.nor));
+						fout.write((char *)&e.scale, sizeof(e.scale));
+					}
+					for (auto& e : this->effcs_missile_) {
+						fout.write((char *)&e.first.flug, sizeof(e.first.flug));
+						fout.write((char *)&e.first.pos, sizeof(e.first.pos));
+						fout.write((char *)&e.first.nor, sizeof(e.first.nor));
+						fout.write((char *)&e.first.scale, sizeof(e.first.scale));
+						fout.write((char *)&e.flug, sizeof(e.flug));
+						fout.write((char *)&e.n_l, sizeof(e.n_l));
+						fout.write((char *)&e.pos, sizeof(e.pos));
+						fout.write((char *)&e.cnt, sizeof(e.cnt));
+					}
+					for (auto& e : this->effcs_gun_) {
+						fout.write((char *)&e.first.flug, sizeof(e.first.flug));
+						fout.write((char *)&e.first.pos, sizeof(e.first.pos));
+						fout.write((char *)&e.first.nor, sizeof(e.first.nor));
+						fout.write((char *)&e.first.scale, sizeof(e.first.scale));
+						fout.write((char *)&e.flug, sizeof(e.flug));
+						fout.write((char *)&e.n_l, sizeof(e.n_l));
+						fout.write((char *)&e.pos, sizeof(e.pos));
+						fout.write((char *)&e.cnt, sizeof(e.cnt));
+					}
+					for (auto& e : this->gndsmkeffcs_) {
+						fout.write((char *)&e, sizeof(e));
+					}
+				}
+			}
+
+			void read(std::ifstream& fout) {
+				{
+					fout.read((char *)&this->speed, sizeof(this->speed));
+					fout.read((char *)&this->v_mat, sizeof(this->v_mat));
+					fout.read((char *)&this->mat, sizeof(this->mat));
+					fout.read((char *)&this->pos, sizeof(this->pos));
+					this->Gun_.clear();
+					this->Gun_.resize(5);
+					for (auto& p : this->Gun_) {
+						for (auto& a : p.bullet) {
+							fout.read((char *)&a.flug, sizeof(a.flug));
+							fout.read((char *)&a.pos, sizeof(a.pos));
+							fout.read((char *)&a.repos, sizeof(a.repos));
+							fout.read((char *)&a.spec.caliber_a, sizeof(a.spec.caliber_a));
+							fout.read((char *)&a.color, sizeof(a.color));
+						}
+					}
+					for (auto& e : this->effcs_) {
+						fout.read((char *)&e.flug, sizeof(e.flug));
+						fout.read((char *)&e.pos, sizeof(e.pos));
+						fout.read((char *)&e.nor, sizeof(e.nor));
+						fout.read((char *)&e.scale, sizeof(e.scale));
+					}
+					for (auto& e : this->effcs_missile_) {
+						fout.read((char *)&e.first.flug, sizeof(e.first.flug));
+						fout.read((char *)&e.first.pos, sizeof(e.first.pos));
+						fout.read((char *)&e.first.nor, sizeof(e.first.nor));
+						fout.read((char *)&e.first.scale, sizeof(e.first.scale));
+						fout.read((char *)&e.flug, sizeof(e.flug));
+						fout.read((char *)&e.n_l, sizeof(e.n_l));
+						fout.read((char *)&e.pos, sizeof(e.pos));
+						fout.read((char *)&e.cnt, sizeof(e.cnt));
+					}
+					for (auto& e : this->effcs_gun_) {
+						fout.read((char *)&e.first.flug, sizeof(e.first.flug));
+						fout.read((char *)&e.first.pos, sizeof(e.first.pos));
+						fout.read((char *)&e.first.nor, sizeof(e.first.nor));
+						fout.read((char *)&e.first.scale, sizeof(e.first.scale));
+						fout.read((char *)&e.flug, sizeof(e.flug));
+						fout.read((char *)&e.n_l, sizeof(e.n_l));
+						fout.read((char *)&e.pos, sizeof(e.pos));
+						fout.read((char *)&e.cnt, sizeof(e.cnt));
+					}
+					for (auto& e : this->gndsmkeffcs_) {
+						fout.read((char *)&e, sizeof(e));
+					}
+				}
+			}
 		};
 		std::list<sendstat> rep;
 		//====================================================
-		size_t id = 0;			     /**/
 		std::array<EffectS, ef_size> effcs; /*effect*/
 		std::array<ef_guns, 8> effcs_missile; /*effect*/
 		std::array<ef_guns, 12> effcs_gun;    /*effect*/
@@ -651,8 +758,6 @@ public:
 			auto& c = *this;
 			{
 				std::fill(c.key.begin(), c.key.end(), false); //操作
-
-				fill_id(c.effcs);			      //エフェクト
 				//共通
 				{
 					auto& veh = c.vehicle;
@@ -682,9 +787,9 @@ public:
 						}
 						//砲
 						veh.Gun_.resize(veh.use_veh.gunframe.size());
-						fill_id(veh.Gun_);
 						for (auto& cg : veh.Gun_) {
-							cg.gun_info = veh.use_veh.gunframe[cg.id];
+							size_t index = &cg - &veh.Gun_[0];
+							cg.gun_info = veh.use_veh.gunframe[index];
 							cg.rounds = cg.gun_info.rounds;
 							//使用砲弾
 							cg.Spec.resize(cg.Spec.size() + 1);
@@ -744,7 +849,7 @@ public:
 				std::optional<size_t> hitnear;
 				for (auto& t : tgts) {
 					//自分自身は省く
-					if (this->id == t.id) {
+					if (this == &t) {
 						continue;
 					}
 					//とりあえず当たったかどうか探す
@@ -821,9 +926,9 @@ public:
 										//撃破時エフェクト
 										if (veh_t.HP == 0) {
 											this->vehicle.KILL++;
-											this->vehicle.KILL_ID = (int)(t.id);
+											this->vehicle.KILL_ID = (int)(&t - &tgts[0]);
 											veh_t.DEATH++;
-											veh_t.DEATH_ID = (int)(this->id);
+											veh_t.DEATH_ID = (int)(this - &tgts[0]);
 											t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
 										}
 										//弾処理
@@ -1054,4 +1159,3 @@ public:
 	};
 	//
 };
-//

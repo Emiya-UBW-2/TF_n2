@@ -622,7 +622,7 @@ public:
 		}
 
 		for (auto&c : charas) {
-			if (c.id != chara.id) {
+			if (&c != &chara) {
 				int siz = int(32.f);
 				if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
 					siz = int(32.f);

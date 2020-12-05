@@ -102,6 +102,7 @@
   <ItemGroup>
     <ClInclude Include="HostPass.hpp" />
     <ClInclude Include="map.hpp" />
+    <ClInclude Include="route.hpp" />
     <ClInclude Include="sub.hpp" />
     <ClInclude Include="UI.hpp" />
   </ItemGroup>
