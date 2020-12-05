@@ -357,7 +357,7 @@ public:
 	struct ammos {
 		bool hit{ false };
 		bool flug{ false };
-		float cnt = 0.f;
+		float count = 0.f;
 		unsigned int color = 0;
 		Mainclass::Ammos spec;
 		float yadd = 0.f;
@@ -369,7 +369,7 @@ public:
 		bool n_l;
 		bool flug;
 		VECTOR_ref pos;
-		int cnt = -1;
+		float count = -1.f;
 	};
 	struct CAMS {
 		DXDraw::cam_info cam;
@@ -510,16 +510,9 @@ public:
 				VECTOR_ref nor;					 /**/
 				float scale = 1.f;				 /**/
 			};
-			struct ef_guns_buf {
-				EffectS first;
-				bool n_l{ false };
-				bool flug{ false };
-				VECTOR_ref pos;
-				int cnt = -1;
-			};
 			std::array<eff_buf, ef_size> effcs_; /*effect*/
-			std::array<ef_guns_buf, 8> effcs_missile_; /*effect*/
-			std::array<ef_guns_buf, 12> effcs_gun_;    /*effect*/
+			std::array<ef_guns, 8> effcs_missile_; /*effect*/
+			std::array<ef_guns, 12> effcs_gun_;    /*effect*/
 
 			std::array<float, 3> gndsmkeffcs_; /*effect*/
 
@@ -552,7 +545,7 @@ public:
 					effcs_missile_[i].flug = data.effcs_missile[i].flug;
 					effcs_missile_[i].n_l = data.effcs_missile[i].n_l;
 					effcs_missile_[i].pos = data.effcs_missile[i].pos;
-					effcs_missile_[i].cnt = data.effcs_missile[i].cnt;
+					effcs_missile_[i].count = data.effcs_missile[i].count;
 				}
 				for (int i = 0; i < 12; i++) {
 					effcs_gun_[i].first.flug = data.effcs_gun[i].first.flug;
@@ -562,7 +555,7 @@ public:
 					effcs_gun_[i].flug = data.effcs_gun[i].flug;
 					effcs_gun_[i].n_l = data.effcs_gun[i].n_l;
 					effcs_gun_[i].pos = data.effcs_gun[i].pos;
-					effcs_gun_[i].cnt = data.effcs_gun[i].cnt;
+					effcs_gun_[i].count = data.effcs_gun[i].count;
 				}
 				{
 					int i = 0;
@@ -611,7 +604,7 @@ public:
 					data.effcs_missile[i].flug = effcs_missile_[i].flug;
 					data.effcs_missile[i].n_l = effcs_missile_[i].n_l;
 					data.effcs_missile[i].pos = effcs_missile_[i].pos;
-					data.effcs_missile[i].cnt = effcs_missile_[i].cnt;
+					data.effcs_missile[i].count = effcs_missile_[i].count;
 				}
 				for (int i = 0; i < 12; i++) {
 					data.effcs_gun[i].first.flug = effcs_gun_[i].first.flug;
@@ -621,7 +614,7 @@ public:
 					data.effcs_gun[i].flug = effcs_gun_[i].flug;
 					data.effcs_gun[i].n_l = effcs_gun_[i].n_l;
 					data.effcs_gun[i].pos = effcs_gun_[i].pos;
-					data.effcs_gun[i].cnt = effcs_gun_[i].cnt;
+					data.effcs_gun[i].count = effcs_gun_[i].count;
 				}
 				{
 					int i = 0;
@@ -661,7 +654,7 @@ public:
 						fout.write((char *)&e.flug, sizeof(e.flug));
 						fout.write((char *)&e.n_l, sizeof(e.n_l));
 						fout.write((char *)&e.pos, sizeof(e.pos));
-						fout.write((char *)&e.cnt, sizeof(e.cnt));
+						fout.write((char *)&e.count, sizeof(e.count));
 					}
 					for (auto& e : this->effcs_gun_) {
 						fout.write((char *)&e.first.flug, sizeof(e.first.flug));
@@ -671,7 +664,7 @@ public:
 						fout.write((char *)&e.flug, sizeof(e.flug));
 						fout.write((char *)&e.n_l, sizeof(e.n_l));
 						fout.write((char *)&e.pos, sizeof(e.pos));
-						fout.write((char *)&e.cnt, sizeof(e.cnt));
+						fout.write((char *)&e.count, sizeof(e.count));
 					}
 					for (auto& e : this->gndsmkeffcs_) {
 						fout.write((char *)&e, sizeof(e));
@@ -710,7 +703,7 @@ public:
 						fout.read((char *)&e.flug, sizeof(e.flug));
 						fout.read((char *)&e.n_l, sizeof(e.n_l));
 						fout.read((char *)&e.pos, sizeof(e.pos));
-						fout.read((char *)&e.cnt, sizeof(e.cnt));
+						fout.read((char *)&e.count, sizeof(e.count));
 					}
 					for (auto& e : this->effcs_gun_) {
 						fout.read((char *)&e.first.flug, sizeof(e.first.flug));
@@ -720,7 +713,7 @@ public:
 						fout.read((char *)&e.flug, sizeof(e.flug));
 						fout.read((char *)&e.n_l, sizeof(e.n_l));
 						fout.read((char *)&e.pos, sizeof(e.pos));
-						fout.read((char *)&e.cnt, sizeof(e.cnt));
+						fout.read((char *)&e.count, sizeof(e.count));
 					}
 					for (auto& e : this->gndsmkeffcs_) {
 						fout.read((char *)&e, sizeof(e));

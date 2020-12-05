@@ -574,7 +574,7 @@ public:
 								}
 								u.hit = false;
 								u.flug = true;
-								u.cnt = 0.f;
+								u.count = 0.f;
 								u.yadd = 0.f;
 								u.repos = u.pos;
 								if (u.spec.type_a != 2) {
@@ -582,14 +582,14 @@ public:
 									if (u.spec.caliber_a >= 0.017f) {
 										c.effcs_gun[c.gun_effcnt].first.set(veh.obj.frame(cg.gun_info.frame3.first), u.vec);
 										c.effcs_gun[c.gun_effcnt].second = &u;
-										c.effcs_gun[c.gun_effcnt].cnt = 0;
+										c.effcs_gun[c.gun_effcnt].count = 0.f;
 										++c.gun_effcnt %= c.effcs_gun.size();
 									}
 								}
 								else {
 									c.effcs_missile[c.missile_effcnt].first.set(veh.obj.frame(cg.gun_info.frame3.first), u.vec);
 									c.effcs_missile[c.missile_effcnt].second = &u;
-									c.effcs_missile[c.missile_effcnt].cnt = 0;
+									c.effcs_missile[c.missile_effcnt].count = 0.f;
 									++c.missile_effcnt %= c.effcs_missile.size();
 								}
 							}
@@ -759,7 +759,7 @@ public:
 											}
 
 											//消す(2秒たった、スピードが100以下、貫通が0以下)
-											if (a.cnt >= 2.5f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
+											if (a.count >= 2.5f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
 												a.flug = false;
 											}
 											if (!a.flug) {
@@ -773,7 +773,7 @@ public:
 										}
 									}
 									a.yadd += M_GR / powf(fps, 2.f);
-									a.cnt += 1.f / fps;
+									a.count += 1.f / fps;
 								}
 							}
 							//弾痕
@@ -789,11 +789,11 @@ public:
 										a.first.pos = a.second->pos;
 										a.first.handle.SetPos(a.second->pos);
 									}
-									if (a.cnt != -1) {
-										a.cnt++;
-										if (a.cnt >= 3.f * GetFPS()) {
+									if (a.count >= 0.f) {
+										a.count += 1.f / fps;
+										if (a.count >= 3.f) {
 											a.first.handle.Stop();
-											a.cnt = -1;
+											a.count = -1.f;
 										}
 									}
 								}
@@ -810,11 +810,11 @@ public:
 										a.first.pos = a.second->pos;
 										a.first.handle.SetPos(a.second->pos);
 									}
-									if (a.cnt != -1) {
-										a.cnt++;
-										if (a.cnt >= 3.f * GetFPS()) {
+									if (a.count >= 0.f) {
+										a.count += 1.f / fps;
+										if (a.count >= 3.f) {
 											a.first.handle.Stop();
-											a.cnt = -1;
+											a.count = -1.f;
 										}
 									}
 								}
@@ -1395,8 +1395,8 @@ public:
 										if (a.flug) {
 											a.first.handle.SetPos(a.pos);
 										}
-										if (a.cnt != -1) {
-											if (a.cnt >= 3.f * GetFPS()) {
+										if (a.count >= 0.f) {
+											if (a.count >= 3.f) {
 												a.first.handle.Dispose();
 											}
 										}
@@ -1409,8 +1409,8 @@ public:
 										if (a.flug) {
 											a.first.handle.SetPos(a.pos);
 										}
-										if (a.cnt != -1) {
-											if (a.cnt >= 3.f * GetFPS()) {
+										if (a.count >= 0.f) {
+											if (a.count >= 3.f) {
 												a.first.handle.Dispose();
 											}
 										}
