@@ -1035,7 +1035,10 @@ public:
 		frames	stickx_f, sticky_f, stickz_f, compass_f, compass2_f, speed_f, speed2_f, spd3_f, spd2_f, spd1_f, cockpit_f, clock_h_f, clock_h2_f, clock_m_f, clock_m2_f, clock_s_f, clock_s2_f, subcompass_f, subcompass2_f
 			, alt4_f, alt3_f, alt2_f, alt1_f
 			, salt4_f, salt3_f, salt2_f, salt1_f
-			, alt_1000_f, alt_1000_2_f, alt_100_f, alt_100_2_f;
+			, alt_1000_f, alt_1000_2_f, alt_100_f, alt_100_2_f
+			, salt_1000_f, salt_1000_2_f, salt_100_f, salt_100_2_f
+			, fuel_f, fuel_2_f
+			, accel_f;
 		MV1 cockpit;
 
 		void set_() {
@@ -1065,6 +1068,9 @@ public:
 				}
 				else if ((p.find("ペダル", 0) != std::string::npos) && (p.find("右", 0) == std::string::npos) && (p.find("左", 0) == std::string::npos)) {
 					sticky_f = { i,cockpit.frame(i) };
+				}
+				else if ((p.find("スロットル", 0) != std::string::npos)) {
+					accel_f = { i,cockpit.frame(i) };
 				}
 				else if ((p.find("速度計", 0) != std::string::npos)) {
 					speed_f = { i,cockpit.frame(i) };
@@ -1114,7 +1120,19 @@ public:
 					alt_100_f = { i,cockpit.frame(i) };
 					alt_100_2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
 				}
+				else if ((p.find("高度計", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos) && (p.find("長針", 0) == std::string::npos)) {
+					salt_1000_f = { i,cockpit.frame(i) };
+					salt_1000_2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
+				}
+				else if ((p.find("高度計長針", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
+					salt_100_f = { i,cockpit.frame(i) };
+					salt_100_2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
+				}
 
+				else if ((p.find("燃料計", 0) != std::string::npos)) {
+					fuel_f = { i,cockpit.frame(i) };
+					fuel_2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
+				}
 
 				else if ((p.find("時計", 0) != std::string::npos)) {
 					clock_h_f = { i,cockpit.frame(i) };
@@ -1141,6 +1159,11 @@ public:
 			cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
 			cockpit.SetFrameLocalMatrix(compass_f.first, c.vehicle.mat.Inverse() * MATRIX_ref::Mtrans(compass_f.second));
 			cockpit.SetFrameLocalMatrix(compass2_f.first, c.vehicle.mat.Inverse() * MATRIX_ref::Mtrans(compass2_f.second));
+
+			{
+				float accel_ = c.vehicle.speed;
+				cockpit.SetFrameLocalMatrix(accel_f.first, MATRIX_ref::RotX(deg2rad(30.f - (std::clamp(accel_, 0.f, 800.f) / 400.f)*60.f)) * MATRIX_ref::Mtrans(accel_f.second));
+			}
 			//速度計
 			{
 				{
@@ -1178,7 +1201,6 @@ public:
 					cockpit.SetFrameLocalMatrix(salt2_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*alt_buf*100.f)) * MATRIX_ref::Mtrans(salt2_f.second));
 					cockpit.SetFrameLocalMatrix(salt1_f.first, MATRIX_ref::RotX(-deg2rad(360.f / 10.f*alt_buf*1000.f)) * MATRIX_ref::Mtrans(salt1_f.second));
 				}
-				//時計
 				{
 					float alt_buf = c.vehicle.pos.y();
 
@@ -1187,6 +1209,22 @@ public:
 					cockpit.frame_reset(alt_100_f.first);
 					cockpit.SetFrameLocalMatrix(alt_100_f.first, MATRIX_ref::RotAxis(alt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(alt_100_f.second));
 				}
+				{
+					float alt_buf = c.vehicle.pos.y();
+
+					cockpit.frame_reset(salt_1000_f.first);
+					cockpit.SetFrameLocalMatrix(salt_1000_f.first, MATRIX_ref::RotAxis(salt_1000_2_f.second, -deg2rad(360.f *alt_buf / 1000)) * MATRIX_ref::Mtrans(salt_1000_f.second));
+					cockpit.frame_reset(salt_100_f.first);
+					cockpit.SetFrameLocalMatrix(salt_100_f.first, MATRIX_ref::RotAxis(salt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(salt_100_f.second));
+				}
+
+				{
+					float alt_buf = 1.f;
+
+					cockpit.frame_reset(fuel_f.first);
+					cockpit.SetFrameLocalMatrix(fuel_f.first, MATRIX_ref::RotAxis(fuel_2_f.second, -deg2rad( 300.f * alt_buf )) * MATRIX_ref::Mtrans(fuel_f.second));
+				}
+
 			}
 			//時計
 			{
