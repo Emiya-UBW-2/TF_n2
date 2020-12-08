@@ -35,7 +35,7 @@ private:
 	int disp_y = 1080;
 	bool use_vr = false;
 public:
-	UI(const int& o_xd, const int& o_yd, const int& xd, const int& yd,const bool& use_vr_) {
+	UI(const int& o_xd, const int& o_yd, const int& xd, const int& yd, const bool& use_vr_) {
 		out_disp_x = o_xd;
 		out_disp_y = o_yd;
 		disp_x = xd;
@@ -62,7 +62,7 @@ public:
 	}
 	~UI() {
 	}
-	bool select_window(Mainclass::Chara* chara,std::vector<Mainclass::Vehcs>* vehcs) {
+	bool select_window(Mainclass::Chara* chara, std::vector<Mainclass::Vehcs>* vehcs) {
 		if (0) {
 			VECTOR_ref campos = VGet(0.f, 0.f, -15.f);
 			VECTOR_ref camaim = VGet(0.f, 3.f, 0.f);
@@ -239,7 +239,7 @@ public:
 					}
 
 
-					SkyScreen.SetDraw_Screen(campos - camaim, VGet(0, 0, 0), VGet(0.f, 1.f, 0.f),fov, 1000.0f, 5000.0f);
+					SkyScreen.SetDraw_Screen(campos - camaim, VGet(0, 0, 0), VGet(0.f, 1.f, 0.f), fov, 1000.0f, 5000.0f);
 					{
 						SetFogEnable(FALSE);
 						SetUseLighting(FALSE);
@@ -319,10 +319,10 @@ public:
 		const VECTOR_ref& aimpos,
 		const DXDraw::system_VR& vr_sys,
 		const Mainclass::Chara& chara,
-		const char& overrider=-1
+		const char& overrider = -1
 	) {
 		//オートエイム
-		int xxx=0, yyy=0;
+		int xxx = 0, yyy = 0;
 		if (overrider != -1) {
 			xxx = disp_x;
 			yyy = disp_y;
@@ -356,7 +356,7 @@ public:
 					}
 					else {
 						xs = x_r(200, out_disp_x);
-						xp = disp_x / 2 - x_r(20, out_disp_x)-xs;
+						xp = disp_x / 2 - x_r(20, out_disp_x) - xs;
 						ys = y_r(36, out_disp_y);
 						yp = disp_y / 2 + disp_y / 6 + y_r(20, out_disp_y)// - int(chara.vehicle.Gun_.size()) * (ys * 2 + y_r(3, out_disp_y))
 							;
@@ -407,7 +407,23 @@ public:
 					else {
 						xp1 = disp_x / 2 - disp_y / 6 + y_r(240 / 2, out_disp_y);
 					}
-					font->DrawStringFormat_RIGHT(xp1, disp_y / 2, GetColor(255, 255, 255), "%4.0f km/h", veh.speed * 3.6f);
+					font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 0, GetColor(255, 255, 255), "%4.0f km/h", veh.speed * 3.6f);
+
+					if (veh.over_heat) {
+						font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accer);
+						if ((GetNowHiPerformanceCount() / 100000) % 10 <= 5) {
+							font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 2, GetColor(255, 0, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
+						}
+					}
+					else {
+						if (veh.accer >= 100.f) {
+							font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 255, 0), "POWER %03.0f%%", veh.accer);
+							font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 2, GetColor(255, 255, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
+						}
+						else {
+							font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 255, 255), "POWER %03.0f%%", veh.accer);
+						}
+					}
 				}
 				{
 					auto& veh = chara.vehicle;
@@ -436,16 +452,16 @@ public:
 					int xs = 0, xp = 0, ys = 0, yp = 0;
 					if (!(use_vr && overrider == -1)) {
 						xs = x_r(200, out_disp_x);
-						xp = disp_x - x_r(20, out_disp_x)-xs;
+						xp = disp_x - x_r(20, out_disp_x) - xs;
 
-						xp = disp_x - x_r(20 + 30, out_disp_x) -xs;
+						xp = disp_x - x_r(20 + 30, out_disp_x) - xs;
 
 						ys = y_r(42, out_disp_y);
 						yp = disp_y - y_r(20, out_disp_y) - ys;
 					}
 					else {
 						xs = x_r(200, out_disp_x);
-						xp = disp_x/2 + x_r(20, out_disp_x);
+						xp = disp_x / 2 + x_r(20, out_disp_x);
 						ys = y_r(36, out_disp_y);
 						yp = disp_y / 2 + disp_y / 6 + y_r(20, out_disp_y) - ys;
 					}
@@ -465,7 +481,7 @@ public:
 
 						font->DrawStringFormat(
 							xp + (xs - font->GetDrawWidthFormat("%s", veh.use_veh.name.c_str())),
-							yp          + (ys * 2 / 3 - y_r(12, out_disp_y)) / 2,
+							yp + (ys * 2 / 3 - y_r(12, out_disp_y)) / 2,
 							GetColor(255, 255, 255), "%s", veh.use_veh.name.c_str());
 
 						SetDrawBright(255, 255, 255);
@@ -547,13 +563,13 @@ public:
 				if (!(use_vr && overrider == -1)) {
 					xs = x_r(200, out_disp_x);
 					xp = disp_x / 3;
-					ys = disp_y / 4/3;
+					ys = disp_y / 4 / 3;
 					yp = disp_y / 2;
 				}
 				else {
 					xs = 0;
 					xp = disp_x / 2 - (disp_y / 3 - y_r(240, out_disp_y)) / 2;
-					ys = (disp_y / 3 - y_r(240, out_disp_y))/3;
+					ys = (disp_y / 3 - y_r(240, out_disp_y)) / 3;
 					yp = disp_y / 2;
 				}
 
@@ -586,13 +602,13 @@ public:
 				if (!(use_vr && overrider == -1)) {
 					xs = x_r(200, out_disp_x);
 					xp = disp_x * 2 / 3;
-					ys = (disp_y / 4)/3;
+					ys = (disp_y / 4) / 3;
 					yp = disp_y / 2;
 				}
 				else {
 					xs = 0;
 					xp = disp_x / 2 + (disp_y / 3 - y_r(240, out_disp_y)) / 2;
-					ys = (disp_y / 3 - y_r(240, out_disp_y))/3;
+					ys = (disp_y / 3 - y_r(240, out_disp_y)) / 3;
 					yp = disp_y / 2;
 				}
 

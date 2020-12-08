@@ -12,15 +12,16 @@ class main_c : Mainclass {
 	FontHandle font12;
 	GraphHandle outScreen2;
 	MV1 hit_pic;	//弾痕
-	Mainclass::cockpits cocks;	//コックピット
 	//操作
 	Mainclass::CAMS cam_s;
 	float range = 0.f, range_p = 30.f;
+	float fovs = 1.f, fovs_p = 1.f;
 	VECTOR_ref eye_pos_ads = VGet(0, 0.58f, 0);
 	VECTOR_ref HMDpos;
 	MATRIX_ref HMDmat;
 	VECTOR_ref rec_HMD;
 	//データ
+	std::vector <Mainclass::cockpits> cocks;	//コックピット
 	std::vector<Mainclass::Chara> chara;	/*キャラ*/
 	std::vector<Mainclass::Ammos> Ammo;		/*弾薬*/
 	std::vector<Mainclass::Vehcs> Vehicles;	/*車輛データ*/
@@ -67,7 +68,9 @@ public:
 		//
 		UIparts->load_window("車両モデル");					//ロード画面
 		//
-		cocks.set_();			//コックピット
+		cocks.resize(2);
+		cocks[0].set_();			//コックピット
+		cocks[1].set_();			//コックピット
 		Mainclass::Ammos::set_ammos(&Ammo);							//弾薬
 		Mainclass::Vehcs::set_vehicles(&Vehicles);					//車輛
 		//ココから繰り返し読み込み//-------------------------------------------------------------------
@@ -210,7 +213,7 @@ public:
 							cam_s.Rot = ADS;
 						}
 						else {
-							cam_s.Rot = std::clamp(cam_s.Rot + GetMouseWheelRotVol(), 0, ADS);
+							cam_s.Rot = std::clamp(cam_s.Rot + GetMouseWheelRotVol(), 0, 3);
 							switch (cam_s.Rot) {
 							case 1:
 								range_p = 15.f;
@@ -218,11 +221,18 @@ public:
 							case 0:
 								range_p = 30.f;
 								break;
+							case 2:
+								fovs_p = 1.f;
+								break;
+							case 3:
+								fovs_p = 2.f;
+								break;
 							default:
 								cam_s.Rot = ADS;
 								break;
 							}
 							easing_set(&range, range_p, 0.9f);
+							easing_set(&fovs, fovs_p, 0.9f);
 						}
 						//見回し
 						if (Drawparts->use_vr) {
@@ -242,53 +252,53 @@ public:
 							if (Drawparts->use_vr) {
 								chara[1].key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //射撃
 								chara[1].key[1] = ((GetMouseInput() & MOUSE_INPUT_MIDDLE) != 0); //マシンガン
-								chara[1].key[2] = (CheckHitKey(KEY_INPUT_W) != 0);
-								chara[1].key[3] = (CheckHitKey(KEY_INPUT_S) != 0);
-								chara[1].key[4] = (CheckHitKey(KEY_INPUT_D) != 0);
-								chara[1].key[5] = (CheckHitKey(KEY_INPUT_A) != 0);
+								chara[1].key[2] = (CheckHitKey(KEY_INPUT_W) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
+								chara[1].key[3] = (CheckHitKey(KEY_INPUT_S) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
+								chara[1].key[4] = (CheckHitKey(KEY_INPUT_D) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
+								chara[1].key[5] = (CheckHitKey(KEY_INPUT_A) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
 								//ヨー
-								chara[1].key[6] = (CheckHitKey(KEY_INPUT_Q) != 0);
-								chara[1].key[7] = (CheckHitKey(KEY_INPUT_E) != 0);
+								chara[1].key[6] = (CheckHitKey(KEY_INPUT_Q) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
+								chara[1].key[7] = (CheckHitKey(KEY_INPUT_E) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
 								//スロットル
 								chara[1].key[8] = (CheckHitKey(KEY_INPUT_R) != 0);
 								chara[1].key[9] = (CheckHitKey(KEY_INPUT_F) != 0);
 								//脚
-								chara[1].key[10] = (CheckHitKey(KEY_INPUT_C) != 0);
+								chara[1].key[10] = false;
 								//ブレーキ
 								chara[1].key[11] = (CheckHitKey(KEY_INPUT_G) != 0);
 								//精密操作
-								chara[1].key[12] = (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								chara[1].key[13] = (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								chara[1].key[14] = (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								chara[1].key[15] = (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								chara[1].key[16] = (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								chara[1].key[17] = (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
+								chara[1].key[12] = (CheckHitKey(KEY_INPUT_W) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
+								chara[1].key[13] = (CheckHitKey(KEY_INPUT_S) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
+								chara[1].key[14] = (CheckHitKey(KEY_INPUT_D) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
+								chara[1].key[15] = (CheckHitKey(KEY_INPUT_A) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
+								chara[1].key[16] = (CheckHitKey(KEY_INPUT_Q) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
+								chara[1].key[17] = (CheckHitKey(KEY_INPUT_E) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
 							}
 							//通常、VR共通
 							if (!Drawparts->use_vr) {
 								mine.key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //射撃
 								mine.key[1] = ((GetMouseInput() & MOUSE_INPUT_MIDDLE) != 0); //マシンガン
-								mine.key[2] = (CheckHitKey(KEY_INPUT_W) != 0);
-								mine.key[3] = (CheckHitKey(KEY_INPUT_S) != 0);
-								mine.key[4] = (CheckHitKey(KEY_INPUT_D) != 0);
-								mine.key[5] = (CheckHitKey(KEY_INPUT_A) != 0);
+								mine.key[2] = (CheckHitKey(KEY_INPUT_W) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
+								mine.key[3] = (CheckHitKey(KEY_INPUT_S) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
+								mine.key[4] = (CheckHitKey(KEY_INPUT_D) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
+								mine.key[5] = (CheckHitKey(KEY_INPUT_A) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
 								//ヨー
-								mine.key[6] = (CheckHitKey(KEY_INPUT_Q) != 0);
-								mine.key[7] = (CheckHitKey(KEY_INPUT_E) != 0);
+								mine.key[6] = (CheckHitKey(KEY_INPUT_Q) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
+								mine.key[7] = (CheckHitKey(KEY_INPUT_E) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
 								//スロットル
 								mine.key[8] = (CheckHitKey(KEY_INPUT_R) != 0);
 								mine.key[9] = (CheckHitKey(KEY_INPUT_F) != 0);
 								//脚
-								mine.key[10] = (CheckHitKey(KEY_INPUT_C) != 0);
+								mine.key[10] = false;
 								//ブレーキ
 								mine.key[11] = (CheckHitKey(KEY_INPUT_G) != 0);
 								//精密操作
-								mine.key[12] = false;
-								mine.key[13] = false;
-								mine.key[14] = false;
-								mine.key[15] = false;
-								mine.key[16] = false;
-								mine.key[17] = false;
+								mine.key[12] = (CheckHitKey(KEY_INPUT_W) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
+								mine.key[13] = (CheckHitKey(KEY_INPUT_S) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
+								mine.key[14] = (CheckHitKey(KEY_INPUT_D) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
+								mine.key[15] = (CheckHitKey(KEY_INPUT_A) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
+								mine.key[16] = (CheckHitKey(KEY_INPUT_Q) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
+								mine.key[17] = (CheckHitKey(KEY_INPUT_E) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
 							}
 							//VR専用
 							if (Drawparts->use_vr) {
@@ -342,7 +352,7 @@ public:
 											}
 										}
 										//脚
-
+										mine.key[10] = false;
 										//精密操作
 										{
 											//ピッチ
@@ -418,10 +428,59 @@ public:
 							easing_set(&veh.yradadd_left, (c.key[6] ? -rad_spec / 24.f : (c.key[16] ? -rad_spec / 72.f : 0.f)), 0.95f);
 							easing_set(&veh.yradadd_right, (c.key[7] ? rad_spec / 24.f : (c.key[17] ? rad_spec / 72.f : 0.f)), 0.95f);
 							//スロットル
-							easing_set(&veh.speed_add, ((c.key[8] && veh.speed < veh.use_veh.max_speed_limit) ? (0.5f / 3.6f) : 0.f), 0.95f);
-							easing_set(&veh.speed_sub, c.key[9] ? ((veh.speed > veh.use_veh.min_speed_limit) ? (-0.5f / 3.6f) : ((veh.speed > 0.f) ? (-0.2f / 3.6f) : 0.f)) : 0.f, 0.95f);
+							if (veh.over_heat & veh.accer >= 80.f) {
+								easing_set(&veh.accer_ad, -200.f / fps, 0.95f);
+							}
+							else {
+								easing_set(&veh.accer_ad, (c.key[8] ? (25.0f / fps) : (c.key[9] ? (-25.0f / fps) : 0.f)), 0.95f);
+							}
+
+							veh.accer = std::clamp(veh.accer + veh.accer_ad, 0.f, 110.f);
+
+							if (veh.accer >= 100.f) {
+								//WIP
+								easing_set(&veh.speed_add, (0.6f / 3.6f), 0.95f);//0.1km/h
+
+								veh.WIP_timer += 1.0f / fps;
+								veh.WIP_timer_limit = 15.f*std::clamp(2.f - veh.speed / veh.use_veh.max_speed_limit, 0.f, 1.f);
+								if (veh.WIP_timer >= veh.WIP_timer_limit) {
+									//オーバーヒート
+									veh.over_heat = true;
+								}
+							}
+							else {
+
+								veh.WIP_timer = std::max(veh.WIP_timer - 1.0f / fps, 0.f);
+								if (veh.over_heat) {
+									//オーバーヒート
+									if (veh.WIP_timer <= 0.f) {
+										veh.over_heat = false;
+									}
+								}
+
+								if (veh.accer <= 50.f) {
+									if (veh.speed <= ((veh.use_veh.mid_speed_limit*(veh.accer / 10.f) + veh.use_veh.min_speed_limit*0.5f *(5.f - (veh.accer / 10.f))) / 5.f)) {
+										easing_set(&veh.speed_add, (((0.05f*(veh.accer / 10.f) + 0.2f *(5.f - (veh.accer / 10.f))) / 5.f) / 3.6f), 0.95f);//0.1km/h
+									}
+									else {
+										easing_set(&veh.speed_add, (-((0.5f*(veh.accer / 10.f) + 0.85f *(5.f - (veh.accer / 10.f))) / 5.f) / 3.6f), 0.975f);//-0.05km/h
+									}
+								}
+								else if (veh.speed >= ((veh.use_veh.mid_speed_limit*4.f + veh.use_veh.min_speed_limit*0.5f) / 5.f)) {
+									if (veh.speed <= ((veh.use_veh.max_speed_limit*(veh.accer / 10.f - 5.f) + veh.use_veh.mid_speed_limit *(5.f - (veh.accer / 10.f - 5.f))) / 5.f)) {
+										easing_set(&veh.speed_add, (((0.2f*(veh.accer / 10.f - 5.f) + 0.15f *(5.f - (veh.accer / 10.f - 5.f))) / 5.f) / 3.6f), 0.95f);//0.1km/h
+									}
+									else {
+										easing_set(&veh.speed_add, (-((0.75f*(veh.accer / 10.f - 5.f) + 1.35f *(5.f - (veh.accer / 10.f - 5.f))) / 5.f) / 3.6f), 0.975f);//-0.05km/h
+									}
+								}
+								else {//離昇出力
+									easing_set(&veh.speed_add, (0.5f / 3.6f), 0.95f);//0.1km/h
+								}
+							}
+
 							//スピード
-							veh.speed += (veh.speed_add + veh.speed_sub) * 60.f / fps;
+							veh.speed += veh.speed_add * 60.f / fps;
 							{
 								auto tmp = veh.mat.zvec();
 								auto tmp2 = std::sin(atan2f(tmp.y(), std::hypotf(tmp.x(), tmp.z())));
@@ -435,7 +494,8 @@ public:
 								veh.mat *= MATRIX_ref::RotAxis(t_mat.yvec(), (veh.yradadd_left + veh.yradadd_right) / fps);
 							}
 							//脚
-							c.changegear.get_in(c.key[10]);
+							//c.changegear.get_in(c.key[10]);
+							c.changegear.first = (veh.speed <= veh.use_veh.min_speed_limit*1.5f) && (veh.pos.y() <= 100.f);
 							easing_set(&c.p_anime_geardown.second, float(c.changegear.first), 0.95f);
 							MV1SetAttachAnimBlendRate(veh.obj.get(), c.p_anime_geardown.first, c.p_anime_geardown.second);
 							//舵
@@ -469,13 +529,15 @@ public:
 													veh.mat *= MATRIX_ref::RotVec2(veh.mat.yvec(), normal);
 												}
 												t.gndsmkeffcs.scale = std::clamp(veh.speed * 3.6f / 50.f, 0.1f, 1.f);
-												if (veh.speed >= 0.f && (c.key[11])) {
-													veh.speed += -0.5f / 3.6f;
+												if (!hit_f) {
+													if (veh.speed >= 0.f && (c.key[11])) {
+														veh.speed += -1.f / 3.6f * 60.f / fps;
+													}
+													if (veh.speed <= 0.f) {
+														easing_set(&veh.speed, 0.f, 0.9f);
+													}
+													hit_f = true;
 												}
-												if (veh.speed <= 0.f) {
-													easing_set(&veh.speed, 0.f, 0.9f);
-												}
-												hit_f = true;
 											}
 										}
 									}
@@ -701,7 +763,7 @@ public:
 															//反映
 															auto vec_a = (a.pos - pos).Norm();
 															auto vec_z = a.vec;
-															if (vec_a.dot(vec_z) < 0) {
+															if (vec_a.dot(vec_z) < 0 && (a.pos - pos).size() <= 500.f) {
 																float z_hyp = std::hypotf(vec_z.x(), vec_z.z());
 																float a_hyp = std::hypotf(vec_a.x(), vec_a.z());
 																float cost = (vec_a.z() * vec_z.x() - vec_a.x() * vec_z.z()) / (a_hyp * z_hyp);
@@ -738,16 +800,18 @@ public:
 															//反映
 															auto vec_a = (a.pos - pos).Norm();
 															auto vec_z = a.vec;
-															float z_hyp = std::hypotf(vec_z.x(), vec_z.z());
-															float a_hyp = std::hypotf(vec_a.x(), vec_a.z());
-															float cost = (vec_a.z() * vec_z.x() - vec_a.x() * vec_z.z()) / (a_hyp * z_hyp);
-															float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cos取得2D
-															float view_xrad = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
-															{
-																float limit = deg2rad(25.f) / fps;
-																float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad, -limit, limit);
-																float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad, -limit, limit);
-																a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
+															if (vec_a.dot(vec_z) < 0 && (a.pos - pos).size() <= 2000.f) {
+																float z_hyp = std::hypotf(vec_z.x(), vec_z.z());
+																float a_hyp = std::hypotf(vec_a.x(), vec_a.z());
+																float cost = (vec_a.z() * vec_z.x() - vec_a.x() * vec_z.z()) / (a_hyp * z_hyp);
+																float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cos取得2D
+																float view_xrad = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
+																{
+																	float limit = deg2rad(25.f) / fps;
+																	float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad, -limit, limit);
+																	float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad, -limit, limit);
+																	a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
+																}
 															}
 														}
 													}
@@ -879,7 +943,7 @@ public:
 							//cam_s.cam
 							{
 								//campos,camvec,camup取得
-								if (cam_s.Rot == ADS) {
+								if (cam_s.Rot >= ADS) {
 									cam_easy.camvec -= cam_easy.campos;
 									cam_easy.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
 									cam_easy.campos.y(std::max(cam_easy.campos.y(), 5.f));
@@ -929,11 +993,11 @@ public:
 
 								}
 								//near取得
-								cam_easy.near_ = (cam_s.Rot == ADS) ? (5.f + 25.f * (cam_easy.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
+								cam_easy.near_ = (cam_s.Rot >= ADS) ? (5.f + 25.f * (cam_easy.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
 								//far取得
 								cam_easy.far_ = 6000.f;
 								//fov
-								cam_easy.fov = deg2rad(Drawparts->use_vr ? 90 : 45);
+								cam_easy.fov = deg2rad(Drawparts->use_vr ? 90 : 45.f / fovs);
 
 								cam_s.cam = cam_easy;
 							}
@@ -970,8 +1034,8 @@ public:
 								Hostpassparts->bloom(255);//ブルーム
 							}
 							//コックピット演算
-							if (cam_s.Rot == ADS) {
-								cocks.ready_(mine);
+							if (cam_s.Rot >= ADS) {
+								cocks[0].ready_(mine);
 							}
 							//VRに移す
 							Drawparts->draw_VR(
@@ -979,17 +1043,17 @@ public:
 								SetCameraNearFar(0.01f, 2.f);
 								SetUseZBuffer3D(FALSE);												//zbufuse
 								SetWriteZBuffer3D(FALSE);											//zbufwrite
-								DrawBillboard3D((cam_s.cam.campos + (cam_s.cam.camvec - cam_s.cam.campos).Norm()*1.0f).get(), 0.5f, 0.5f, Drawparts->use_vr ? 1.8f : 1.475f, 0.f, Hostpassparts->MAIN_Screen.get(), TRUE);
+								DrawBillboard3D((cam_s.cam.campos + (cam_s.cam.camvec - cam_s.cam.campos).Norm()*1.0f).get(), 0.5f, 0.5f, Drawparts->use_vr ? 1.8f : 1.475f / fovs, 0.f, Hostpassparts->MAIN_Screen.get(), TRUE);
 								SetUseZBuffer3D(TRUE);												//zbufuse
 								SetWriteZBuffer3D(TRUE);											//zbufwrite
 								//コックピット
-								if (cam_s.Rot == ADS) {
-									cocks.cockpit.DrawModel();
+								if (cam_s.Rot >= ADS) {
+									cocks[0].cockpit.DrawModel();
 								}
 								//UI
 								SetUseZBuffer3D(FALSE);												//zbufuse
 								SetWriteZBuffer3D(FALSE);											//zbufwrite
-								DrawBillboard3D((cam_s.cam.campos + (cam_s.cam.camvec - cam_s.cam.campos).Norm()*1.0f).get(), 0.5f, 0.5f, Drawparts->use_vr ? 1.8f : 1.475f, 0.f, Hostpassparts->UI_Screen.get(), TRUE);
+								DrawBillboard3D((cam_s.cam.campos + (cam_s.cam.camvec - cam_s.cam.campos).Norm()*1.0f).get(), 0.5f, 0.5f, Drawparts->use_vr ? 1.8f : 1.475f / fovs, 0.f, Hostpassparts->UI_Screen.get(), TRUE);
 								SetUseZBuffer3D(TRUE);												//zbufuse
 								SetWriteZBuffer3D(TRUE);											//zbufwrite
 								//Hostpassparts->UI_Screen.DrawGraph(0, 0, true);
@@ -1030,7 +1094,7 @@ public:
 								//far取得
 								cam_s.cam.far_ = 4000.f;
 								//fov
-								cam_s.cam.fov = deg2rad(45);
+								cam_s.cam.fov = deg2rad(45.f / fovs);
 							}
 							//照準座標取得
 							{
@@ -1065,7 +1129,7 @@ public:
 							}
 							//コックピット演算
 							{
-								cocks.ready_(ct);
+								cocks[1].ready_(ct);
 							}
 							//Screen2に移す
 							outScreen2.SetDraw_Screen(cam_s.cam.campos, cam_s.cam.camvec, cam_s.cam.camup, cam_s.cam.fov, cam_s.cam.near_, cam_s.cam.far_);
@@ -1073,7 +1137,7 @@ public:
 								Hostpass2parts->MAIN_Screen.DrawGraph(0, 0, true);
 								SetCameraNearFar(0.01f, 2.f);
 								//コックピット
-								cocks.cockpit.DrawModel();
+								cocks[1].cockpit.DrawModel();
 								//UI
 								Hostpass2parts->UI_Screen.DrawGraph(0, 0, true);
 							}
@@ -1236,7 +1300,7 @@ public:
 						{
 							//スコープ
 							{
-								cam_s.Rot = std::clamp(cam_s.Rot + GetMouseWheelRotVol(), 0, ADS);
+								cam_s.Rot = std::clamp(cam_s.Rot + GetMouseWheelRotVol(), 0, 3);
 								switch (cam_s.Rot) {
 								case 1:
 									range_p = 15.f;
@@ -1244,11 +1308,18 @@ public:
 								case 0:
 									range_p = 30.f;
 									break;
+								case 2:
+									fovs_p = 1.f;
+									break;
+								case 3:
+									fovs_p = 2.f;
+									break;
 								default:
 									cam_s.Rot = ADS;
 									break;
 								}
 								easing_set(&range, range_p, 0.9f);
+								easing_set(&fovs, fovs_p, 0.9f);
 							}
 							//選択
 							{
@@ -1285,14 +1356,14 @@ public:
 						{
 							if (sel_l == 0 && ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0)) {
 								cam_s = *tcam;
-								cam_s.cam.fov = deg2rad(45);
+								cam_s.cam.fov = deg2rad(45.f / fovs);
 							}
 							else {
 								auto& veh = chara[sel_l].vehicle;
 								//cam_s.cam
 								{
 									//campos,camvec,camup取得
-									if (cam_s.Rot == ADS) {
+									if (cam_s.Rot >= ADS) {
 										cam_easy.camvec -= cam_easy.campos;
 										cam_easy.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
 										cam_easy.campos.y(std::max(cam_easy.campos.y(), 5.f));
@@ -1337,11 +1408,11 @@ public:
 										}
 									}
 									//near取得
-									cam_easy.near_ = (cam_s.Rot == ADS) ? (5.f + 25.f * (cam_easy.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
+									cam_easy.near_ = (cam_s.Rot >= ADS) ? (5.f + 25.f * (cam_easy.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
 									//far取得
 									cam_easy.far_ = 6000.f;
 									//fov
-									cam_easy.fov = deg2rad(45);
+									cam_easy.fov = deg2rad(45.f / fovs);
 
 									cam_s.cam = cam_easy;
 								}
@@ -1373,6 +1444,23 @@ public:
 								c.se_cockpit.SetPosition(c.vehicle.pos);
 								c.se_hit.SetPosition(c.vehicle.pos);
 								c.se_gun.SetPosition(c.vehicle.pos);
+								MV1SetAttachAnimBlendRate(veh.obj.get(), c.p_anime_geardown.first, c.p_anime_geardown.second);
+								//舵
+								for (int i = 0; i < c.p_animes_rudder.size(); i++) {
+									MV1SetAttachAnimBlendRate(veh.obj.get(), c.p_animes_rudder[i].first, c.p_animes_rudder[i].second);
+								}
+								//バーナー
+								veh.wheel_Left += veh.wheel_Leftadd;  // -veh.yradadd * 5.f;
+								veh.wheel_Right += veh.wheel_Rightadd; // +veh.yradadd * 5.f;
+
+
+								for (auto& f : veh.use_veh.wheelframe_nospring) {
+									veh.obj.SetFrameLocalMatrix(f.frame.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(VGet(0.f, 0.f, 0.f), MV1GetFrameLocalMatrix(veh.obj.get(), f.frame.first + 1)), (f.frame.second.x() >= 0) ? veh.wheel_Left : veh.wheel_Right) *MATRIX_ref::Mtrans(f.frame.second));
+								}
+								for (auto& be : c.p_burner) {
+									veh.obj.SetFrameLocalMatrix(be.first, MATRIX_ref::Scale(VGet(1.f, 1.f, std::clamp(veh.speed / veh.use_veh.mid_speed_limit, 0.1f, 1.f))) * MATRIX_ref::Mtrans(be.second));
+								}
+
 								/*effect*/
 								{
 									int i = 0;
@@ -1463,17 +1551,17 @@ public:
 								Hostpass2parts->bloom(255);//ブルーム
 							}
 							//コックピット演算
-							if (cam_s.Rot == ADS) {
-								cocks.ready_(chara[sel_l]);
+							if (cam_s.Rot >= ADS) {
+								cocks[sel_l].ready_(chara[sel_l]);
 							}
 							//VRに移す
 							outScreen2.SetDraw_Screen(cam_s.cam.campos, cam_s.cam.camvec, cam_s.cam.camup, cam_s.cam.fov, cam_s.cam.near_, cam_s.cam.far_);
 							{
 								Hostpass2parts->MAIN_Screen.DrawGraph(0, 0, true);
 								//コックピット
-								if (cam_s.Rot == ADS) {
+								if (cam_s.Rot >= ADS) {
 									SetCameraNearFar(0.01f, 2.f);
-									cocks.cockpit.DrawModel();
+									cocks[sel_l].cockpit.DrawModel();
 								}
 								//UI
 								Hostpass2parts->UI_Screen.DrawGraph(0, 0, true);
