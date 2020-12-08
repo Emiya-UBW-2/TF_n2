@@ -777,6 +777,7 @@ public:
 		VECTOR_ref winpos;
 		SoundHandle se_cockpit;
 		SoundHandle se_gun;
+		SoundHandle se_missile;
 		SoundHandle se_hit;
 		//ƒZƒbƒg
 		void set_human(const std::vector<Mainclass::Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
