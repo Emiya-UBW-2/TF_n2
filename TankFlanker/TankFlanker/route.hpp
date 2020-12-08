@@ -210,7 +210,19 @@ public:
 					{
 						//スコープ
 						if (Drawparts->use_vr) {
-							cam_s.Rot = ADS;
+							cam_s.Rot = std::clamp(cam_s.Rot + GetMouseWheelRotVol(), 2, 3);
+							switch (cam_s.Rot) {
+							case 2:
+								fovs_p = 1.f;
+								break;
+							case 3:
+								fovs_p = 2.f;
+								break;
+							default:
+								cam_s.Rot = ADS;
+								break;
+							}
+							easing_set(&fovs, fovs_p, 0.9f);
 						}
 						else {
 							cam_s.Rot = std::clamp(cam_s.Rot + GetMouseWheelRotVol(), 0, 3);
@@ -334,11 +346,11 @@ public:
 										//サブ武器
 										mine.key[1] = mine.key[1] || ((ptr_LEFTHAND.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_IndexController_B)) != 0);
 										//ピッチ
-										mine.key[2] = mine.key[2] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(28)));
-										mine.key[3] = mine.key[3] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-28)));
+										mine.key[2] = mine.key[2] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(24)));
+										mine.key[3] = mine.key[3] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-18)));
 										//ロール
-										mine.key[4] = mine.key[4] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(24)));
-										mine.key[5] = mine.key[5] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-24)));
+										mine.key[4] = mine.key[4] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(20)));
+										mine.key[5] = mine.key[5] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-20)));
 										if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
 											//ヨー
 											mine.key[6] = mine.key[6] || (ptr_LEFTHAND.touch.x() > 0.5f);
@@ -356,11 +368,11 @@ public:
 										//精密操作
 										{
 											//ピッチ
-											mine.key[12] = mine.key[12] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(22)));
-											mine.key[13] = mine.key[13] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-22)));
+											mine.key[12] = mine.key[12] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(14)));
+											mine.key[13] = mine.key[13] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-8)));
 											//ロール
-											mine.key[14] = mine.key[14] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(14)));
-											mine.key[15] = mine.key[15] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-14)));
+											mine.key[14] = mine.key[14] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(12)));
+											mine.key[15] = mine.key[15] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-12)));
 											if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
 												//ヨー
 												mine.key[16] = mine.key[16] || (ptr_LEFTHAND.touch.x() > 0.45f);
@@ -400,8 +412,8 @@ public:
 							GetMousePoint(&mousex, &mousey);
 							SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 
-							float y = atan2f(eyevec.x(), eyevec.z()) + deg2rad(float(mousex - Drawparts->disp_x / 2) * 0.1f);
-							float x = atan2f(eyevec.y(), std::hypotf(eyevec.x(), eyevec.z())) + deg2rad(float(mousey - Drawparts->disp_y / 2) * 0.1f);
+							float y = atan2f(eyevec.x(), eyevec.z()) + deg2rad(float(mousex - Drawparts->disp_x / 2) * 0.1f / fovs);
+							float x = atan2f(eyevec.y(), std::hypotf(eyevec.x(), eyevec.z())) + deg2rad(float(mousey - Drawparts->disp_y / 2) * 0.1f / fovs);
 							x = std::clamp(x, deg2rad(-45), deg2rad(45));
 							eyevec = VGet(cos(x) * std::sin(y), std::sin(x), std::cos(x) * std::cos(y));
 						}

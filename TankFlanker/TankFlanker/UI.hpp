@@ -411,7 +411,7 @@ public:
 
 					if (veh.over_heat) {
 						font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accer);
-						if ((GetNowHiPerformanceCount() / 100000) % 10 <= 5) {
+						if ((GetNowHiPerformanceCount() / 100000) % 5 <= 2) {
 							font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 2, GetColor(255, 0, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
 						}
 					}
