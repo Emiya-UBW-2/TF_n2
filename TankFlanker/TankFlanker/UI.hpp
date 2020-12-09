@@ -321,6 +321,9 @@ public:
 		const Mainclass::Chara& chara,
 		const char& overrider = -1
 	) {
+		int xs = 0, xp = 0, ys = 0, yp = 0;
+
+
 		//オートエイム
 		int xxx = 0, yyy = 0;
 		if (overrider != -1) {
@@ -347,7 +350,6 @@ public:
 			{
 				//弾薬
 				{
-					int xp = 0, xs = 0, yp = 0, ys = 0;
 					if (!(use_vr && overrider == -1)) {
 						xs = x_r(200, out_disp_x);
 						xp = x_r(20, out_disp_x);
@@ -449,7 +451,6 @@ public:
 				}
 				//HP
 				{
-					int xs = 0, xp = 0, ys = 0, yp = 0;
 					if (!(use_vr && overrider == -1)) {
 						xs = x_r(200, out_disp_x);
 						xp = disp_x - x_r(20, out_disp_x) - xs;
@@ -503,9 +504,9 @@ public:
 				//ピッチ、ロール
 				{
 					int size = y_r(10, disp_y);
-					int ys = disp_y / 3 - y_r(240, out_disp_y);
-					int xp = disp_x / 2 + ys / 2;
-					int yp = disp_y / 2 + ys / 2;
+					ys = disp_y / 3 - y_r(240, out_disp_y);
+					xp = disp_x / 2 + ys / 2;
+					yp = disp_y / 2 + ys / 2;
 
 					int y_pos = int(float(size) * std::clamp(vr_sys_yvec_y / sin(deg2rad(20)), -2.f, 2.f));//ピッチ
 					int x_pos = int(float(size) * std::clamp(vr_sys_yvec_x / sin(deg2rad(20)), -2.f, 2.f));//ロール
@@ -523,9 +524,9 @@ public:
 				}
 				//ヨー
 				{
-					int xs = disp_y / 5 - y_r(144, out_disp_y);
-					int xp = disp_x / 2 - xs / 2;
-					int yp = disp_y / 2 + disp_y / 6 - y_r(220 / 2, out_disp_y);
+					xs = disp_y / 5 - y_r(144, out_disp_y);
+					xp = disp_x / 2 - xs / 2;
+					yp = disp_y / 2 + disp_y / 6 - y_r(220 / 2, out_disp_y);
 					int z_pos = int(float(xs / 4) * std::clamp(vr_sys_touch_x / 0.5f, -1.5f, 1.5f));//ヨー
 
 					for (int i = 0; i < 2; i++) {
@@ -559,7 +560,6 @@ public:
 			*/
 			//速度計
 			{
-				int xp = 0, xs = 0, yp = 0, ys = 0;
 				if (!(use_vr && overrider == -1)) {
 					xs = x_r(200, out_disp_x);
 					xp = disp_x / 3;
@@ -598,7 +598,6 @@ public:
 			}
 			//高度計
 			{
-				int xp = 0, xs = 0, yp = 0, ys = 0;
 				if (!(use_vr && overrider == -1)) {
 					xs = x_r(200, out_disp_x);
 					xp = disp_x * 2 / 3;
@@ -646,10 +645,10 @@ public:
 					siz = int(42.f);
 					DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), GetColor(255, 0, 0), FALSE);
 
-					int xp = int(c.winpos.x()) - y_r(siz, out_disp_y);
-					int yp = int(c.winpos.y()) + y_r(siz, out_disp_y);
-					int xs = y_r(siz * 2, out_disp_y);
-					int ys = y_r(8, out_disp_y);
+					xp = int(c.winpos.x()) - y_r(siz, out_disp_y);
+					yp = int(c.winpos.y()) + y_r(siz, out_disp_y);
+					xs = y_r(siz * 2, out_disp_y);
+					ys = y_r(8, out_disp_y);
 					DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + xs, yp + ys / 2 + ys * 2 / 3, GetColor(255, 0, 0), TRUE);
 					DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + xs * int(c.vehicle.HP) / int(c.vehicle.use_veh.HP), yp + ys / 2 + ys * 2 / 3, GetColor(0, 255, 0), TRUE);
 

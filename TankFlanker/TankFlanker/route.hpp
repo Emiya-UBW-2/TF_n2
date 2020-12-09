@@ -428,7 +428,7 @@ public:
 							easing_set(&veh.yradadd_left, (c.key[6] ? -rad_spec / 24.f : (c.key[16] ? -rad_spec / 72.f : 0.f)), 0.95f);
 							easing_set(&veh.yradadd_right, (c.key[7] ? rad_spec / 24.f : (c.key[17] ? rad_spec / 72.f : 0.f)), 0.95f);
 							//ƒXƒƒbƒgƒ‹
-							if (veh.over_heat & veh.accer >= 80.f) {
+							if (veh.over_heat & (veh.accer >= 80.f)) {
 								easing_set(&veh.accer_ad, -200.f / fps, 0.95f);
 							}
 							else {
