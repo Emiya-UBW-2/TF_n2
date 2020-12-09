@@ -1030,6 +1030,10 @@ if (&ptr_LEFTHAND != nullptr) {
 							}
 							//
 							Set3DSoundListenerPosAndFrontPosAndUpVec(cam_s.cam.campos.get(), cam_s.cam.camvec.get(), cam_s.cam.camup.get());
+							//コックピット演算
+							if (cam_s.Rot >= ADS) {
+								cocks[0].ready_(mine);
+							}
 							//UI
 							Hostpassparts->UI_Screen.SetDraw_Screen();
 							{
@@ -1046,10 +1050,6 @@ if (&ptr_LEFTHAND != nullptr) {
 							Hostpassparts->MAIN_Screen.SetDraw_Screen();
 							{
 								Hostpassparts->bloom(255);//ブルーム
-							}
-							//コックピット演算
-							if (cam_s.Rot >= ADS) {
-								cocks[0].ready_(mine);
 							}
 							//VRに移す
 							Drawparts->draw_VR(
@@ -1110,6 +1110,10 @@ if (&ptr_LEFTHAND != nullptr) {
 								//fov
 								cam_s.cam.fov = deg2rad(45.f / fovs);
 							}
+							//コックピット演算
+							{
+								cocks[1].ready_(ct);
+							}
 							//UI
 							Hostpass2parts->UI_Screen.SetDraw_Screen();
 							{
@@ -1126,10 +1130,6 @@ if (&ptr_LEFTHAND != nullptr) {
 							Hostpass2parts->MAIN_Screen.SetDraw_Screen();
 							{
 								Hostpass2parts->bloom(255);//ブルーム
-							}
-							//コックピット演算
-							{
-								cocks[1].ready_(ct);
 							}
 							//Screen2に移す
 							outScreen2.SetDraw_Screen(cam_s.cam.campos, cam_s.cam.camvec, cam_s.cam.camup, cam_s.cam.fov, cam_s.cam.near_, cam_s.cam.far_);
@@ -1520,6 +1520,10 @@ if (&ptr_LEFTHAND != nullptr) {
 							}
 							, VGet(200.f, 200.f, 200.f), VGet(2000.f, 2000.f, 2000.f));
 							Set3DSoundListenerPosAndFrontPosAndUpVec(cam_s.cam.campos.get(), cam_s.cam.camvec.get(), cam_s.cam.camup.get());
+							//コックピット演算
+							if (cam_s.Rot >= ADS) {
+								cocks[sel_l].ready_(chara[sel_l]);
+							}
 							//UI
 							Hostpass2parts->UI_Screen.SetDraw_Screen();
 							{
@@ -1536,10 +1540,6 @@ if (&ptr_LEFTHAND != nullptr) {
 							Hostpass2parts->MAIN_Screen.SetDraw_Screen();
 							{
 								Hostpass2parts->bloom(255);//ブルーム
-							}
-							//コックピット演算
-							if (cam_s.Rot >= ADS) {
-								cocks[sel_l].ready_(chara[sel_l]);
 							}
 							//VRに移す
 							outScreen2.SetDraw_Screen(cam_s.cam.campos, cam_s.cam.camvec, cam_s.cam.camup, cam_s.cam.fov, cam_s.cam.near_, cam_s.cam.far_);
