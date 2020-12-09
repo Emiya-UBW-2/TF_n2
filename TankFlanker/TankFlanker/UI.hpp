@@ -15,7 +15,6 @@ private:
 	GraphHandle HP_per;
 	float ber = 0;
 	GraphHandle HP_ber;
-
 	GraphHandle bufScreen;
 	//font
 	FontHandle font36;
@@ -27,19 +26,15 @@ private:
 	MV1 sea;
 	GraphHandle SkyScreen;
 	//
-	float siz_autoaim = 0.f;
-	float siz_autoaim_pic = 0.f;
-	int out_disp_x = 1920;
-	int out_disp_y = 1080;
-	int disp_x = 1920;
-	int disp_y = 1080;
+	int out_disp_x = deskx;
+	int out_disp_y = desky;
+	int disp_x = deskx;
+	int disp_y = desky;
 	bool use_vr = false;
 public:
-	UI(const int& o_xd, const int& o_yd, const int& xd, const int& yd, const bool& use_vr_) {
-		out_disp_x = o_xd;
-		out_disp_y = o_yd;
-		disp_x = xd;
-		disp_y = yd;
+	UI(const bool& use_vr_) {
+		out_disp_x = deskx;
+		out_disp_y = desky;
 		use_vr = use_vr_;
 
 		lock = GraphHandle::Load("data/UI/battle_lock.bmp");
@@ -50,7 +45,7 @@ public:
 		HP_per = GraphHandle::Load("data/UI/battle_hp_bar_max.bmp");
 		HP_ber = GraphHandle::Load("data/UI/battle_hp_bar.bmp");
 		CamScreen = GraphHandle::Make(240, 240, true);
-		bufScreen = GraphHandle::Make(disp_x, disp_y, true);
+		bufScreen = GraphHandle::Make(out_disp_x, out_disp_y, true);
 
 		font36 = FontHandle::Create(y_r(36, out_disp_y), DX_FONTTYPE_EDGE);
 		font18 = FontHandle::Create(y_r(18, out_disp_y), DX_FONTTYPE_EDGE);
@@ -58,7 +53,7 @@ public:
 		MV1::Load("data/model/garage/model.mv1", &garage, false);
 		MV1::Load("data/model/sky/model.mv1", &sky, false);
 		MV1::Load("data/model/sea/model.mv1", &sea, true);
-		SkyScreen = GraphHandle::Make(disp_x, disp_y);
+		SkyScreen = GraphHandle::Make(out_disp_x, out_disp_y);
 	}
 	~UI() {
 	}
@@ -315,27 +310,35 @@ public:
 	}
 
 	void draw(
-		const std::vector<Mainclass::Chara>& charas,
-		const VECTOR_ref& aimpos,
+		std::vector<Mainclass::Chara>& charas,
+		GraphHandle& MAIN_Screen,
+		Mainclass::CAMS& cam_s,
+		Mainclass::cockpits & cocks,
 		const DXDraw::system_VR& vr_sys,
 		const Mainclass::Chara& chara,
 		const char& overrider = -1
 	) {
 		int xs = 0, xp = 0, ys = 0, yp = 0;
-
-
-		//オートエイム
-		int xxx = 0, yyy = 0;
-		if (overrider != -1) {
-			xxx = disp_x;
-			yyy = disp_y;
-			disp_x = out_disp_x;
-			disp_y = out_disp_y;
-		}
+		VECTOR_ref aimpos;
+		//照準座標取得
 		{
-			siz_autoaim = float(disp_x);
-			siz_autoaim_pic = 100.f;
+			auto scr = GetDrawScreen();
+			MAIN_Screen.SetDraw_Screen(cam_s.cam.campos, cam_s.cam.camvec, cam_s.cam.camup, cam_s.cam.fov, 0.01f, 5000.0f);
+			{
+				VECTOR_ref aimp = (VECTOR_ref)(chara.vehicle.pos) + chara.vehicle.mat.zvec() * (-1000.f);
+				//mapparts->map_col_line_nearest(chara.vehicle.pos, &aimp);				//地形
+				aimpos = ConvWorldPosToScreenPos(aimp.get());
+				for (auto& c : charas) {
+					c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
+				}
+				if (cam_s.Rot >= ADS) {
+					cocks.cockpit.frame(cocks.accel_f.first);
+				}
+			}
+			SetDrawScreen(scr);
 		}
+		//オーバーライド
+		MAIN_Screen.GetSize(&disp_x, &disp_y);
 		//照準
 		{
 			int siz = int(64.f);
@@ -412,18 +415,18 @@ public:
 					font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 0, GetColor(255, 255, 255), "%4.0f km/h", veh.speed * 3.6f);
 
 					if (veh.over_heat) {
-						font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accer);
+						font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accel);
 						if ((GetNowHiPerformanceCount() / 100000) % 5 <= 2) {
 							font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 2, GetColor(255, 0, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
 						}
 					}
 					else {
-						if (veh.accer >= 100.f) {
-							font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 255, 0), "POWER %03.0f%%", veh.accer);
+						if (veh.accel >= 100.f) {
+							font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 255, 0), "POWER %03.0f%%", veh.accel);
 							font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 2, GetColor(255, 255, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
 						}
 						else {
-							font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 255, 255), "POWER %03.0f%%", veh.accer);
+							font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 255, 255), "POWER %03.0f%%", veh.accel);
 						}
 					}
 				}
@@ -661,11 +664,6 @@ public:
 		if (chara.vehicle.KILL_ID != -1) {
 			font->DrawStringFormat(disp_x / 4, disp_y / 3, GetColor(255, 0, 0), "KILL : %d", chara.vehicle.KILL);
 			font->DrawStringFormat(disp_x / 4, disp_y / 3 + y_r(18, out_disp_y), GetColor(255, 0, 0), "KILL ID : %d", chara.vehicle.KILL_ID);
-		}
-
-		if (overrider != -1) {
-			disp_x = xxx;
-			disp_y = yyy;
 		}
 	}
 };

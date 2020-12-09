@@ -418,14 +418,14 @@ private:
 		MATRIX_ref mat_start;					      //車体回転行列(初期配置)
 		VECTOR_ref add;							      //車体加速度
 		std::vector<Guns> Gun_;						      /**/
-		float accer = 0.f, accer_ad = 0.f;
+		float accel = 0.f, accel_add = 0.f;
 		float WIP_timer_limit = 0.f;
 		float WIP_timer = 0.f;
 		bool over_heat = false;
 		float speed = 0.f, speed_add = 0.f;		      /**/
-		float xrad = 0.f, xradadd = 0.f, xradadd_left = 0.f, xradadd_right = 0.f; /**/
-		float yrad = 0.f, yradadd = 0.f, yradadd_left = 0.f, yradadd_right = 0.f;	    /**/
-		float zrad = 0.f, zradadd = 0.f, zradadd_left = 0.f, zradadd_right = 0.f; /**/
+		float xradadd_left = 0.f, xradadd_right = 0.f; /**/
+		float yradadd_left = 0.f, yradadd_right = 0.f;	    /**/
+		float zradadd_left = 0.f, zradadd_right = 0.f; /**/
 		std::vector<MV1_COLL_RESULT_POLY> hitres;			      /*確保*/
 		std::vector<int16_t> HP_m;					      /*ライフ*/
 		std::array<Hit, 24> hit_obj;					      /*弾痕*/
@@ -433,8 +433,83 @@ private:
 		float wheel_Left = 0.f, wheel_Right = 0.f;			      //転輪回転
 		float wheel_Leftadd = 0.f, wheel_Rightadd = 0.f;		      //転輪回転
 		std::vector<pair_hit> hitssort;					      /*フレームに当たった順番*/
+
+		void reset() {
+			this->xradadd_right = 0.f;
+			this->xradadd_left = 0.f;
+			this->yradadd_left = 0.f;
+			this->yradadd_right = 0.f;
+			this->zradadd_right = 0.f;
+			this->zradadd_left = 0.f;
+
+			this->WIP_timer_limit = 0.f;
+			this->WIP_timer = 0.f;
+
+			this->over_heat = false;
+
+			this->accel_add = 0.f;
+			this->accel = 0.f;
+			this->speed_add = 0.f;
+			this->speed = 0.f;
+
+			this->add.clear();
+		}
 	public:
-		void init() {
+		void init(const Mainclass::Vehcs& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
+			//
+			this->Dispose();
+			//
+			this->use_veh.into(vehcs);
+			//
+			this->obj = vehcs.obj.Duplicate();
+			this->col = vehcs.col.Duplicate();
+			//コリジョン
+			for (int j = 0; j < this->col.mesh_num(); j++) {
+				this->col.SetupCollInfo(8, 8, 8, -1, j);
+			}
+			this->hitres.resize(this->col.mesh_num());   //モジュールごとの当たり判定結果を確保
+			this->hitssort.resize(this->col.mesh_num()); //モジュールごとの当たり判定順序を確保
+			//弾痕
+			for (auto& h : this->hit_obj) {
+				h.flug = false;
+				h.pic = hit_pic.Duplicate();
+				h.use = 0;
+				h.mat.clear();
+				h.pos.clear();
+			}
+			for (int j = 0; j < this->obj.material_num(); ++j) {
+				MV1SetMaterialSpcColor(this->obj.get(), j, GetColorF(0.85f, 0.82f, 0.78f, 0.1f));
+				MV1SetMaterialSpcPower(this->obj.get(), j, 50.0f);
+			}
+			//モジュール耐久
+			this->HP_m.resize(this->col.mesh_num());
+			//迷彩
+			if (this->use_veh.camog.size() > 0) {
+				this->camo_sel %= this->use_veh.camog.size();
+				//GraphBlend(MV1GetTextureGraphHandle(this->obj.get(), this->use_veh.camo_tex), this->use_veh.camog[this->camo_sel], 255, DX_GRAPH_BLEND_NORMAL);
+				MV1SetTextureGraphHandle(this->obj.get(), this->use_veh.camo_tex, this->use_veh.camog[this->camo_sel], FALSE);
+			}
+			//砲
+			this->Gun_.resize(this->use_veh.gunframe.size());
+			for (auto& cg : this->Gun_) {
+				size_t index = &cg - &this->Gun_[0];
+				cg.gun_info = this->use_veh.gunframe[index];
+				//使用砲弾
+				cg.Spec.resize(cg.Spec.size() + 1);
+				for (auto& pa : Ammo_) {
+					if (pa.name_a.find(cg.gun_info.useammo[0]) != std::string::npos) {
+						cg.Spec.back() = pa;
+						break;
+					}
+				}
+				for (auto& p : cg.bullet) {
+					p.color = GetColor(255, 255, 172);
+					p.spec = cg.Spec[0];
+				}
+			}
+			spawn(VGet(0, 0, 0), MGetIdent());
+		}
+		void Dispose() {
 			this->obj.Dispose();
 			this->col.Dispose();
 			this->hit_check = false;
@@ -443,57 +518,38 @@ private:
 			this->KILL_ID = -1;						      /*体力*/
 			this->DEATH = 0;						      /*体力*/
 			this->DEATH_ID = -1;						      /*体力*/
-			this->accer = 0.f;
-			this->WIP_timer_limit = 0.f;
-			this->WIP_timer = 0.f;
-			this->over_heat = false;
-			this->accer_ad = 0.f;
-			this->speed_add = 0.f;
-			this->speed = 0.f;
-			this->add.clear();
+
 			this->hitres.clear();
 			this->HP_m.clear();
 			this->wheel_Left = 0.f;
 			this->wheel_Right = 0.f;
 			this->wheel_Leftadd = 0.f;
 			this->wheel_Rightadd = 0.f;
-			this->xrad = 0.f;
-			this->xradadd = 0.f;
-			this->xradadd_left = 0.f;
-			this->xradadd_right = 0.f;
-			this->yrad = 0.f;
-			this->yradadd = 0.f;
-			this->yradadd_left = 0.f;
-			this->yradadd_right = 0.f;
-			this->zrad = 0.f;
-			this->zradadd = 0.f;
-			this->zradadd_left = 0.f;
-			this->zradadd_right = 0.f;
 			for (auto& h : this->hit_obj) { h.clear(); }
 			for (auto& cg : this->Gun_) { cg.clear(); }
 			this->Gun_.clear();
 			for (auto& h : this->hitssort) { h.clear(); }
 			this->hitssort.clear();
+
+			this->reset();
 		}
 		void spawn(const VECTOR_ref& pos_, const MATRIX_ref& mat_) {
-			this->HP = this->use_veh.HP;
+			this->reset();
+
+			//リセット
 			this->pos = pos_;
 			this->mat = mat_;
 			this->mat_start = this->mat;
-			this->xradadd_right = 0.f;
-			this->xradadd_left = 0.f;
-			this->yradadd_left = 0.f;
-			this->yradadd_right = 0.f;
-			this->zradadd_right = 0.f;
-			this->zradadd_left = 0.f;
-			this->accer = 0.f;
-			this->WIP_timer_limit = 0.f;
-			this->WIP_timer = 0.f;
-			this->over_heat = false;
-			this->accer_ad = 0.f;
-			this->speed_add = 0.f;
-			this->speed = 0.f;
-			this->add.clear();
+			//砲
+			for (auto& cg : this->Gun_) {
+				cg.rounds = cg.gun_info.rounds;
+			}
+			//ヒットポイント
+			this->HP = this->use_veh.HP;
+			//モジュール耐久
+			for (auto& h : this->HP_m) {
+				h = 100;
+			}
 		}
 	};
 public:
@@ -781,90 +837,30 @@ public:
 		SoundHandle se_hit;
 		//セット
 		void set_human(const std::vector<Mainclass::Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
-			auto& c = *this;
+			std::fill(this->key.begin(), this->key.end(), false); //操作
+			auto& veh = this->vehicle;
+			//共通
 			{
-				std::fill(c.key.begin(), c.key.end(), false); //操作
-				//共通
+				veh.use_id = std::min<size_t>(veh.use_id, vehcs.size() - 1);
+				veh.init(vehcs[veh.use_id], Ammo_, hit_pic);
+			}
+			//飛行機
+			{
+				//追加アニメーション
 				{
-					auto& veh = c.vehicle;
-					{
-						veh.init();
-						veh.use_id = std::min<size_t>(veh.use_id, vehcs.size() - 1);
-						veh.use_veh.into(vehcs[veh.use_id]);
-						veh.obj = vehcs[veh.use_id].obj.Duplicate();
-						veh.col = vehcs[veh.use_id].col.Duplicate();
-						//コリジョン
-						for (int j = 0; j < veh.col.mesh_num(); j++) {
-							veh.col.SetupCollInfo(8, 8, 8, -1, j);
-						}
-						veh.hitres.resize(veh.col.mesh_num());   //モジュールごとの当たり判定結果を確保
-						veh.hitssort.resize(veh.col.mesh_num()); //モジュールごとの当たり判定順序を確保
-						//弾痕
-						for (auto& h : veh.hit_obj) {
-							h.flug = false;
-							h.pic = hit_pic.Duplicate();
-							h.use = 0;
-							h.mat.clear();
-							h.pos.clear();
-						}
-						for (int j = 0; j < veh.obj.material_num(); ++j) {
-							MV1SetMaterialSpcColor(veh.obj.get(), j, GetColorF(0.85f, 0.82f, 0.78f, 0.1f));
-							MV1SetMaterialSpcPower(veh.obj.get(), j, 50.0f);
-						}
-						//砲
-						veh.Gun_.resize(veh.use_veh.gunframe.size());
-						for (auto& cg : veh.Gun_) {
-							size_t index = &cg - &veh.Gun_[0];
-							cg.gun_info = veh.use_veh.gunframe[index];
-							cg.rounds = cg.gun_info.rounds;
-							//使用砲弾
-							cg.Spec.resize(cg.Spec.size() + 1);
-							for (auto& pa : Ammo_) {
-								if (pa.name_a.find(cg.gun_info.useammo[0]) != std::string::npos) {
-									cg.Spec.back() = pa;
-									break;
-								}
-							}
-							for (auto& p : cg.bullet) {
-								p.color = GetColor(255, 255, 172);
-								p.spec = cg.Spec[0];
-							}
-						}
-						//ヒットポイント
-						veh.HP = veh.use_veh.HP;
-						//モジュール耐久
-						veh.HP_m.resize(veh.col.mesh_num());
-						for (auto& h : veh.HP_m) {
-							h = 100;
-						}
-						//迷彩
-						if (veh.use_veh.camog.size() > 0) {
-							veh.camo_sel %= veh.use_veh.camog.size();
-							//GraphBlend(MV1GetTextureGraphHandle(veh.obj.get(), veh.use_veh.camo_tex), veh.use_veh.camog[veh.camo_sel], 255, DX_GRAPH_BLEND_NORMAL);
-							MV1SetTextureGraphHandle(veh.obj.get(), veh.use_veh.camo_tex, veh.use_veh.camog[veh.camo_sel], FALSE);
-						}
+					this->p_anime_geardown.first = MV1AttachAnim(veh.obj.get(), 1);
+					this->p_anime_geardown.second = 1.f;
+					this->changegear.first = true;
+					this->changegear.second = 2;
+					//舵
+					for (auto& r : this->p_animes_rudder) {
+						r.first = MV1AttachAnim(veh.obj.get(), 2 + (int)(&r - &this->p_animes_rudder[0]));
+						r.second = 0.f;
 					}
 				}
-				//飛行機
-				{
-					auto& veh = c.vehicle;
-					{
-						c.p_anime_geardown.first = MV1AttachAnim(veh.obj.get(), 1);
-						c.p_anime_geardown.second = 1.f;
-						MV1SetAttachAnimBlendRate(veh.obj.get(), c.p_anime_geardown.first, c.p_anime_geardown.second);
-						//舵
-						for (int i = 0; i < c.p_animes_rudder.size(); i++) {
-							c.p_animes_rudder[i].first = MV1AttachAnim(veh.obj.get(), 2 + i);
-							c.p_animes_rudder[i].second = 0.f;
-							MV1SetAttachAnimBlendRate(veh.obj.get(), c.p_animes_rudder[i].first, c.p_animes_rudder[i].second);
-						}
-					}
-					//エフェクト
-					for (auto& be : veh.use_veh.burner) {
-						c.p_burner.emplace_back(be);
-					}
-					c.changegear.first = true;
-					c.changegear.second = 2;
+				//エフェクト
+				for (auto& be : veh.use_veh.burner) {
+					this->p_burner.emplace_back(be);
 				}
 			}
 		}
@@ -1201,15 +1197,16 @@ public:
 			float px = (c.p_animes_rudder[1].second - c.p_animes_rudder[0].second)*deg2rad(30);
 			float pz = (c.p_animes_rudder[2].second - c.p_animes_rudder[3].second)*deg2rad(30);
 			float py = (c.p_animes_rudder[5].second - c.p_animes_rudder[4].second)*deg2rad(20);
-
+			//操縦桿
 			cockpit.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
 			cockpit.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
 			cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
+			//ジャイロコンパス
 			cockpit.SetFrameLocalMatrix(compass_f.first, c.vehicle.mat.Inverse() * MATRIX_ref::Mtrans(compass_f.second));
 			cockpit.SetFrameLocalMatrix(compass2_f.first, c.vehicle.mat.Inverse() * MATRIX_ref::Mtrans(compass2_f.second));
-
+			//スロットル
 			{
-				float accel_ = c.vehicle.accer;
+				float accel_ = c.vehicle.accel;
 				cockpit.SetFrameLocalMatrix(accel_f.first, MATRIX_ref::RotX(deg2rad(30.f - (accel_ / 100.f)*60.f)) * MATRIX_ref::Mtrans(accel_f.second));
 			}
 			//速度計
@@ -1235,52 +1232,49 @@ public:
 					cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-spd2_fp) * MATRIX_ref::Mtrans(spd2_f.second));
 					cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-spd1_fp) * MATRIX_ref::Mtrans(spd1_f.second));
 				}
+				//高度計
 				{
 					float alt_buf = c.vehicle.pos.y();
-					easing_set(&alt4_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1000.f)), 0.9f);
-					easing_set(&alt3_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 100.f)), 0.9f);
-					easing_set(&alt2_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 10.f)), 0.9f);
-					easing_set(&alt1_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1.f)), 0.9f);
+					{
+						easing_set(&alt4_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1000.f)), 0.9f);
+						easing_set(&alt3_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 100.f)), 0.9f);
+						easing_set(&alt2_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 10.f)), 0.9f);
+						easing_set(&alt1_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1.f)), 0.9f);
 
-					cockpit.SetFrameLocalMatrix(alt4_f.first, MATRIX_ref::RotX(-alt4_fp) * MATRIX_ref::Mtrans(alt4_f.second));
-					cockpit.SetFrameLocalMatrix(alt3_f.first, MATRIX_ref::RotX(-alt3_fp) * MATRIX_ref::Mtrans(alt3_f.second));
-					cockpit.SetFrameLocalMatrix(alt2_f.first, MATRIX_ref::RotX(-alt2_fp) * MATRIX_ref::Mtrans(alt2_f.second));
-					cockpit.SetFrameLocalMatrix(alt1_f.first, MATRIX_ref::RotX(-alt1_fp) * MATRIX_ref::Mtrans(alt1_f.second));
+						cockpit.SetFrameLocalMatrix(alt4_f.first, MATRIX_ref::RotX(-alt4_fp) * MATRIX_ref::Mtrans(alt4_f.second));
+						cockpit.SetFrameLocalMatrix(alt3_f.first, MATRIX_ref::RotX(-alt3_fp) * MATRIX_ref::Mtrans(alt3_f.second));
+						cockpit.SetFrameLocalMatrix(alt2_f.first, MATRIX_ref::RotX(-alt2_fp) * MATRIX_ref::Mtrans(alt2_f.second));
+						cockpit.SetFrameLocalMatrix(alt1_f.first, MATRIX_ref::RotX(-alt1_fp) * MATRIX_ref::Mtrans(alt1_f.second));
+					}
+					{
+						cockpit.frame_reset(alt_1000_f.first);
+						cockpit.SetFrameLocalMatrix(alt_1000_f.first, MATRIX_ref::RotAxis(alt_1000_2_f.second, -deg2rad(360.f *alt_buf / 1000)) * MATRIX_ref::Mtrans(alt_1000_f.second));
+						cockpit.frame_reset(alt_100_f.first);
+						cockpit.SetFrameLocalMatrix(alt_100_f.first, MATRIX_ref::RotAxis(alt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(alt_100_f.second));
+					}
+					{
+						easing_set(&salt4_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1000.f)), 0.9f);
+						easing_set(&salt3_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 100.f)), 0.9f);
+						easing_set(&salt2_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 10.f)), 0.9f);
+						easing_set(&salt1_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1.f)), 0.9f);
+
+						cockpit.SetFrameLocalMatrix(salt4_f.first, MATRIX_ref::RotX(-salt4_fp) * MATRIX_ref::Mtrans(salt4_f.second));
+						cockpit.SetFrameLocalMatrix(salt3_f.first, MATRIX_ref::RotX(-salt3_fp) * MATRIX_ref::Mtrans(salt3_f.second));
+						cockpit.SetFrameLocalMatrix(salt2_f.first, MATRIX_ref::RotX(-salt2_fp) * MATRIX_ref::Mtrans(salt2_f.second));
+						cockpit.SetFrameLocalMatrix(salt1_f.first, MATRIX_ref::RotX(-salt1_fp) * MATRIX_ref::Mtrans(salt1_f.second));
+					}
+					{
+						cockpit.frame_reset(salt_1000_f.first);
+						cockpit.SetFrameLocalMatrix(salt_1000_f.first, MATRIX_ref::RotAxis(salt_1000_2_f.second, -deg2rad(360.f *alt_buf / 1000)) * MATRIX_ref::Mtrans(salt_1000_f.second));
+						cockpit.frame_reset(salt_100_f.first);
+						cockpit.SetFrameLocalMatrix(salt_100_f.first, MATRIX_ref::RotAxis(salt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(salt_100_f.second));
+					}
 				}
 				{
-					float alt_buf = c.vehicle.pos.y();
-					easing_set(&salt4_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1000.f)), 0.9f);
-					easing_set(&salt3_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 100.f)), 0.9f);
-					easing_set(&salt2_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 10.f)), 0.9f);
-					easing_set(&salt1_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1.f)), 0.9f);
-
-					cockpit.SetFrameLocalMatrix(salt4_f.first, MATRIX_ref::RotX(-salt4_fp) * MATRIX_ref::Mtrans(salt4_f.second));
-					cockpit.SetFrameLocalMatrix(salt3_f.first, MATRIX_ref::RotX(-salt3_fp) * MATRIX_ref::Mtrans(salt3_f.second));
-					cockpit.SetFrameLocalMatrix(salt2_f.first, MATRIX_ref::RotX(-salt2_fp) * MATRIX_ref::Mtrans(salt2_f.second));
-					cockpit.SetFrameLocalMatrix(salt1_f.first, MATRIX_ref::RotX(-salt1_fp) * MATRIX_ref::Mtrans(salt1_f.second));
-				}
-				{
-					float alt_buf = c.vehicle.pos.y();
-
-					cockpit.frame_reset(alt_1000_f.first);
-					cockpit.SetFrameLocalMatrix(alt_1000_f.first, MATRIX_ref::RotAxis(alt_1000_2_f.second, -deg2rad(360.f *alt_buf / 1000)) * MATRIX_ref::Mtrans(alt_1000_f.second));
-					cockpit.frame_reset(alt_100_f.first);
-					cockpit.SetFrameLocalMatrix(alt_100_f.first, MATRIX_ref::RotAxis(alt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(alt_100_f.second));
-				}
-				{
-					float alt_buf = c.vehicle.pos.y();
-
-					cockpit.frame_reset(salt_1000_f.first);
-					cockpit.SetFrameLocalMatrix(salt_1000_f.first, MATRIX_ref::RotAxis(salt_1000_2_f.second, -deg2rad(360.f *alt_buf / 1000)) * MATRIX_ref::Mtrans(salt_1000_f.second));
-					cockpit.frame_reset(salt_100_f.first);
-					cockpit.SetFrameLocalMatrix(salt_100_f.first, MATRIX_ref::RotAxis(salt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(salt_100_f.second));
-				}
-
-				{
-					float alt_buf = 1.f;
+					float fuel_buf = 1.f;
 
 					cockpit.frame_reset(fuel_f.first);
-					cockpit.SetFrameLocalMatrix(fuel_f.first, MATRIX_ref::RotAxis(fuel_2_f.second, -deg2rad(300.f * alt_buf)) * MATRIX_ref::Mtrans(fuel_f.second));
+					cockpit.SetFrameLocalMatrix(fuel_f.first, MATRIX_ref::RotAxis(fuel_2_f.second, -deg2rad(300.f * fuel_buf)) * MATRIX_ref::Mtrans(fuel_f.second));
 				}
 
 			}

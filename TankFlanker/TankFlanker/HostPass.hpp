@@ -12,8 +12,8 @@ private:
 	int EXTEND = 4;
 	bool dof_flag = true;
 	bool bloom_flag = true;
-	int disp_x = 1920;
-	int disp_y = 1080;
+	int disp_x = deskx;
+	int disp_y = desky;
 public:
 	GraphHandle MAIN_Screen;	//•`‰æƒXƒNƒŠ[ƒ“
 	GraphHandle SkyScreen;		//‹ó•`‰æ

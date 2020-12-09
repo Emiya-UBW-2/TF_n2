@@ -8,7 +8,6 @@ class main_c : Mainclass {
 	DXDraw::cam_info cam_easy;
 	std::list<Mainclass::CAMS> rep_cam;
 	VECTOR_ref eyevec, eyevec2;																	//視点
-	VECTOR_ref aimposout;																		//UIに出力
 	FontHandle font12;
 	GraphHandle outScreen2;
 	MV1 hit_pic;	//弾痕
@@ -48,12 +47,12 @@ public:
 			FileRead_close(mdata);
 		}
 		//
-		auto Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);													/*汎用クラス*/
-		auto UIparts = std::make_unique<UI>(Drawparts->out_disp_x, Drawparts->out_disp_y, Drawparts->disp_x, Drawparts->disp_y, Drawparts->use_vr);	/*UI*/
-		auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);																						/*デバッグ*/
-		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);								/*ホストパスエフェクト*/
-		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->out_disp_x, Drawparts->out_disp_y);						/*ホストパスエフェクト*/
-		auto mapparts = std::make_unique<Mapclass>();																								/*map*/
+		auto Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);								/*汎用クラス*/
+		auto UIparts = std::make_unique<UI>(Drawparts->use_vr);																	/*UI*/
+		auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);																	/*デバッグ*/
+		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);			/*ホストパスエフェクト*/
+		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->out_disp_x, Drawparts->out_disp_y);	/*ホストパスエフェクト*/
+		auto mapparts = std::make_unique<Mapclass>();																			/*map*/
 		//
 		font12 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 		outScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//描画スクリーン
@@ -458,16 +457,16 @@ if (&ptr_LEFTHAND != nullptr) {
 							easing_set(&veh.yradadd_left, (c.key[6] ? -rad_spec / 24.f : (c.key[16] ? -rad_spec / 72.f : 0.f)), 0.95f);
 							easing_set(&veh.yradadd_right, (c.key[7] ? rad_spec / 24.f : (c.key[17] ? rad_spec / 72.f : 0.f)), 0.95f);
 							//スロットル
-							if (veh.over_heat & (veh.accer >= 80.f)) {
-								easing_set(&veh.accer_ad, -200.f / fps, 0.95f);
+							if (veh.over_heat & (veh.accel >= 80.f)) {
+								easing_set(&veh.accel_add, -200.f, 0.95f);
 							}
 							else {
-								easing_set(&veh.accer_ad, (c.key[8] ? (25.0f / fps) : (c.key[9] ? (-25.0f / fps) : 0.f)), 0.95f);
+								easing_set(&veh.accel_add, (c.key[8] ? 25.0f : (c.key[9] ? -25.0f : 0.f)), 0.95f);
 							}
 
-							veh.accer = std::clamp(veh.accer + veh.accer_ad, 0.f, 110.f);
+							veh.accel = std::clamp(veh.accel + veh.accel_add / fps, 0.f, 110.f);
 
-							if (veh.accer >= 100.f) {
+							if (veh.accel >= 100.f) {
 								//WIP
 								easing_set(&veh.speed_add, (0.6f / 3.6f), 0.95f);//0.1km/h
 
@@ -488,20 +487,20 @@ if (&ptr_LEFTHAND != nullptr) {
 									}
 								}
 
-								if (veh.accer <= 50.f) {
-									if (veh.speed <= ((veh.use_veh.mid_speed_limit*(veh.accer / 10.f) + veh.use_veh.min_speed_limit*0.5f *(5.f - (veh.accer / 10.f))) / 5.f)) {
-										easing_set(&veh.speed_add, (((0.05f*(veh.accer / 10.f) + 0.2f *(5.f - (veh.accer / 10.f))) / 5.f) / 3.6f), 0.95f);//0.1km/h
+								if (veh.accel <= 50.f) {
+									if (veh.speed <= ((veh.use_veh.mid_speed_limit*(veh.accel / 10.f) + veh.use_veh.min_speed_limit*0.5f *(5.f - (veh.accel / 10.f))) / 5.f)) {
+										easing_set(&veh.speed_add, (((0.05f*(veh.accel / 10.f) + 0.2f *(5.f - (veh.accel / 10.f))) / 5.f) / 3.6f), 0.95f);//0.1km/h
 									}
 									else {
-										easing_set(&veh.speed_add, (-((0.5f*(veh.accer / 10.f) + 0.85f *(5.f - (veh.accer / 10.f))) / 5.f) / 3.6f), 0.975f);//-0.05km/h
+										easing_set(&veh.speed_add, (-((0.5f*(veh.accel / 10.f) + 0.85f *(5.f - (veh.accel / 10.f))) / 5.f) / 3.6f), 0.975f);//-0.05km/h
 									}
 								}
 								else if (veh.speed >= ((veh.use_veh.mid_speed_limit*4.f + veh.use_veh.min_speed_limit*0.5f) / 5.f)) {
-									if (veh.speed <= ((veh.use_veh.max_speed_limit*(veh.accer / 10.f - 5.f) + veh.use_veh.mid_speed_limit *(5.f - (veh.accer / 10.f - 5.f))) / 5.f)) {
-										easing_set(&veh.speed_add, (((0.2f*(veh.accer / 10.f - 5.f) + 0.15f *(5.f - (veh.accer / 10.f - 5.f))) / 5.f) / 3.6f), 0.95f);//0.1km/h
+									if (veh.speed <= ((veh.use_veh.max_speed_limit*(veh.accel / 10.f - 5.f) + veh.use_veh.mid_speed_limit *(5.f - (veh.accel / 10.f - 5.f))) / 5.f)) {
+										easing_set(&veh.speed_add, (((0.2f*(veh.accel / 10.f - 5.f) + 0.15f *(5.f - (veh.accel / 10.f - 5.f))) / 5.f) / 3.6f), 0.95f);//0.1km/h
 									}
 									else {
-										easing_set(&veh.speed_add, (-((0.75f*(veh.accer / 10.f - 5.f) + 1.35f *(5.f - (veh.accer / 10.f - 5.f))) / 5.f) / 3.6f), 0.975f);//-0.05km/h
+										easing_set(&veh.speed_add, (-((0.75f*(veh.accel / 10.f - 5.f) + 1.35f *(5.f - (veh.accel / 10.f - 5.f))) / 5.f) / 3.6f), 0.975f);//-0.05km/h
 									}
 								}
 								else {//離昇出力
@@ -529,9 +528,10 @@ if (&ptr_LEFTHAND != nullptr) {
 							easing_set(&c.p_anime_geardown.second, float(c.changegear.first), 0.95f);
 							MV1SetAttachAnimBlendRate(veh.obj.get(), c.p_anime_geardown.first, c.p_anime_geardown.second);
 							//舵
-							for (int i = 0; i < c.p_animes_rudder.size(); i++) {
-								easing_set(&c.p_animes_rudder[i].second, float(c.key[i + 2] + c.key[i + 12])*0.5f, 0.95f);
-								MV1SetAttachAnimBlendRate(veh.obj.get(), c.p_animes_rudder[i].first, c.p_animes_rudder[i].second);
+							for (auto& r : c.p_animes_rudder) {
+								auto i = (size_t)(&r - &c.p_animes_rudder[0]);
+								easing_set(&r.second, float(c.key[i + 2] + c.key[i + 12])*0.5f, 0.95f);
+								MV1SetAttachAnimBlendRate(veh.obj.get(), r.first, r.second);
 							}
 							//
 							{
@@ -580,8 +580,8 @@ if (&ptr_LEFTHAND != nullptr) {
 										easing_set(&veh.wheel_Leftadd, 0.f, 0.9f);
 										easing_set(&veh.wheel_Rightadd, 0.f, 0.9f);
 									}
-									veh.wheel_Left += veh.wheel_Leftadd;  // -veh.yradadd * 5.f;
-									veh.wheel_Right += veh.wheel_Rightadd; // +veh.yradadd * 5.f;
+									veh.wheel_Left += veh.wheel_Leftadd;
+									veh.wheel_Right += veh.wheel_Rightadd;
 
 
 									for (auto& f : veh.use_veh.wheelframe_nospring) {
@@ -631,13 +631,7 @@ if (&ptr_LEFTHAND != nullptr) {
 							}
 							if (hitb) {
 								size_t index = &c - &chara[0];
-								veh.spawn(
-									VGet(
-										float(30 * (index / 3))*sin(deg2rad(-130)),
-										10.f,
-										float(30 * (index / 3))*cos(deg2rad(-130)) + float(30 * (index % 3))
-									),
-									MATRIX_ref::RotY(deg2rad(-130)));
+								veh.spawn(VGet(float(30 * (index / 3))*sin(deg2rad(-130)), 10.f, float(30 * (index / 3))*cos(deg2rad(-130)) + float(30 * (index % 3))), MATRIX_ref::RotY(deg2rad(-130)));
 								c.p_anime_geardown.second = 1.f;
 								c.changegear.first = true;
 							}
@@ -1034,25 +1028,12 @@ if (&ptr_LEFTHAND != nullptr) {
 
 								cam_s.cam = cam_easy;
 							}
-							//照準座標取得
-							{
-								Hostpassparts->MAIN_Screen.SetDraw_Screen(cam_s.cam.campos, cam_s.cam.camvec, cam_s.cam.camup, cam_s.cam.fov, 0.01f, 5000.0f);
-								{
-									VECTOR_ref aimpos = mine.vehicle.pos + mine.vehicle.mat.zvec() * (-1000.f);
-									//地形
-									mapparts->map_col_line_nearest(mine.vehicle.pos, &aimpos);
-									aimposout = ConvWorldPosToScreenPos(aimpos.get());
-									for (auto& c : chara) {
-										c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
-									}
-								}
-							}
 							//
 							Set3DSoundListenerPosAndFrontPosAndUpVec(cam_s.cam.campos.get(), cam_s.cam.camvec.get(), cam_s.cam.camup.get());
 							//UI
 							Hostpassparts->UI_Screen.SetDraw_Screen();
 							{
-								UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), mine);
+								UIparts->draw(chara, Hostpassparts->MAIN_Screen, cam_s, cocks[0], *Drawparts->get_device_hand1(), mine);
 							}
 							//sky
 							Hostpassparts->SkyScreen.SetDraw_Screen(cam_s.cam.campos - cam_s.cam.camvec, VGet(0, 0, 0), cam_s.cam.camup, cam_s.cam.fov, 1.0f, 50.0f);
@@ -1129,24 +1110,10 @@ if (&ptr_LEFTHAND != nullptr) {
 								//fov
 								cam_s.cam.fov = deg2rad(45.f / fovs);
 							}
-							//照準座標取得
-							{
-								Hostpass2parts->MAIN_Screen.SetDraw_Screen(cam_s.cam.campos, cam_s.cam.camvec, cam_s.cam.camup, cam_s.cam.fov, 0.01f, 5000.0f);
-								{
-									VECTOR_ref aimpos2 = ct.vehicle.pos + ct.vehicle.mat.zvec() * (-1000.f);
-									//地形
-									mapparts->map_col_line_nearest(ct.vehicle.pos, &aimpos2);
-									aimposout = ConvWorldPosToScreenPos(aimpos2.get());
-									for (auto& c : chara) {
-										auto& veht = c.vehicle;
-										c.winpos = ConvWorldPosToScreenPos(veht.pos.get());
-									}
-								}
-							}
 							//UI
 							Hostpass2parts->UI_Screen.SetDraw_Screen();
 							{
-								UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), ct, 0);
+								UIparts->draw(chara, Hostpass2parts->MAIN_Screen, cam_s, cocks[1], *Drawparts->get_device_hand1(), ct, 0);
 							}
 							//sky
 							Hostpass2parts->SkyScreen.SetDraw_Screen(cam_s.cam.campos - cam_s.cam.camvec, VGet(0, 0, 0), cam_s.cam.camup, cam_s.cam.fov, 1.0f, 50.0f);
@@ -1486,8 +1453,8 @@ if (&ptr_LEFTHAND != nullptr) {
 									MV1SetAttachAnimBlendRate(veh.obj.get(), c.p_animes_rudder[i].first, c.p_animes_rudder[i].second);
 								}
 								//バーナー
-								veh.wheel_Left += veh.wheel_Leftadd;  // -veh.yradadd * 5.f;
-								veh.wheel_Right += veh.wheel_Rightadd; // +veh.yradadd * 5.f;
+								veh.wheel_Left += veh.wheel_Leftadd;
+								veh.wheel_Right += veh.wheel_Rightadd;
 
 
 								for (auto& f : veh.use_veh.wheelframe_nospring) {
@@ -1552,27 +1519,11 @@ if (&ptr_LEFTHAND != nullptr) {
 								mapparts->map_drawtree();
 							}
 							, VGet(200.f, 200.f, 200.f), VGet(2000.f, 2000.f, 2000.f));
-
-							//照準座標取得
-							{
-								auto& veh = chara[sel_l].vehicle;
-								Hostpass2parts->MAIN_Screen.SetDraw_Screen(cam_s.cam.campos, cam_s.cam.camvec, cam_s.cam.camup, cam_s.cam.fov, 0.01f, 5000.0f);
-								{
-									VECTOR_ref aimpos = veh.pos + veh.mat.zvec() * (-1000.f);
-									//地形
-									mapparts->map_col_line_nearest(veh.pos, &aimpos);
-									aimposout = ConvWorldPosToScreenPos(aimpos.get());
-									for (auto& c : chara) {
-										auto& veht = c.vehicle;
-										c.winpos = ConvWorldPosToScreenPos(veht.pos.get());
-									}
-								}
-							}
 							Set3DSoundListenerPosAndFrontPosAndUpVec(cam_s.cam.campos.get(), cam_s.cam.camvec.get(), cam_s.cam.camup.get());
 							//UI
 							Hostpass2parts->UI_Screen.SetDraw_Screen();
 							{
-								UIparts->draw(chara, aimposout, *Drawparts->get_device_hand1(), chara[sel_l], 0);
+								UIparts->draw(chara, Hostpass2parts->MAIN_Screen, cam_s, cocks[sel_l], *Drawparts->get_device_hand1(), chara[sel_l], 0);
 							}
 							//sky
 							Hostpass2parts->SkyScreen.SetDraw_Screen(cam_s.cam.campos - cam_s.cam.camvec, VGet(0, 0, 0), cam_s.cam.camup, cam_s.cam.fov, 1.0f, 50.0f);
@@ -1647,7 +1598,7 @@ if (&ptr_LEFTHAND != nullptr) {
 					for (auto& t : veh.use_veh.wheelframe) {
 						t.gndsmkeffcs.handle.Dispose();
 					}
-					veh.init();
+					veh.Dispose();
 				}
 				chara.clear();
 				mapparts->delete_map();
