@@ -27,7 +27,9 @@ class main_c : Mainclass {
 	std::vector<Mainclass::Vehcs> Vehicles;	/*車輛データ*/
 	SoundHandle se_cockpit;
 	SoundHandle se_gun;
+	SoundHandle se_missile;
 	SoundHandle se_hit;
+	SoundHandle se_alert;
 	//
 	bool oldv = false;
 	bool start_c = true;
@@ -60,8 +62,10 @@ public:
 		SetCreate3DSoundFlag(TRUE);
 		se_cockpit = SoundHandle::Load("data/audio/fighter-cockpit1.wav");
 		se_gun = SoundHandle::Load("data/audio/hit.wav");
-		se_hit = SoundHandle::Load("data/audio/hit.wav");
+		se_missile = SoundHandle::Load("data/audio/rolling_rocket.wav");
+		se_hit = SoundHandle::Load("data/audio/destruction.wav");
 		SetCreate3DSoundFlag(FALSE);
+		se_alert = SoundHandle::Load("data/audio/alert.wav");
 		//
 		MV1::Load("data/model/hit/model.mv1", &hit_pic, true);			//弾痕
 		Mainclass::Vehcs::set_vehicles_pre("data/plane/", &Vehicles, true);
@@ -84,6 +88,7 @@ public:
 			for (auto& c : chara) {
 				c.se_cockpit = se_cockpit.Duplicate();
 				c.se_gun = se_gun.Duplicate();
+				c.se_missile = se_missile.Duplicate();
 				c.se_hit = se_hit.Duplicate();
 			}
 			//キャラ選択
@@ -185,10 +190,12 @@ public:
 				for (auto& c : chara) {
 					Set3DRadiusSoundMem(600.0f, c.se_cockpit.get()); //gun
 					Set3DRadiusSoundMem(300.0f, c.se_gun.get()); //gun
+					Set3DRadiusSoundMem(300.0f, c.se_missile.get()); //gun
 					Set3DRadiusSoundMem(900.0f, c.se_hit.get()); //gun
 					c.se_cockpit.play(DX_PLAYTYPE_LOOP, TRUE);
 					c.se_cockpit.vol(64);
 				}
+				se_alert.vol(64);
 				SetMouseDispFlag(FALSE);
 				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 				while (ProcessMessage() == 0) {
@@ -210,7 +217,19 @@ public:
 					{
 						//スコープ
 						if (Drawparts->use_vr) {
-							cam_s.Rot = ADS;
+							cam_s.Rot = std::clamp(cam_s.Rot + GetMouseWheelRotVol(), 2, 3);
+							switch (cam_s.Rot) {
+							case 2:
+								fovs_p = 1.f;
+								break;
+							case 3:
+								fovs_p = 2.f;
+								break;
+							default:
+								cam_s.Rot = ADS;
+								break;
+							}
+							easing_set(&fovs, fovs_p, 0.9f);
 						}
 						else {
 							cam_s.Rot = std::clamp(cam_s.Rot + GetMouseWheelRotVol(), 0, 3);
@@ -306,70 +325,70 @@ public:
 								mine.key[1] = false; //マシンガン
 								mine.key[2] = false;
 								mine.key[3] = false;
-								mine.key[4] = false;
-								mine.key[5] = false;
-								//ヨー
-								mine.key[6] = false;
-								mine.key[7] = false;
-								//スロットル
-								mine.key[8] = false;
-								mine.key[9] = false;
-								//脚
-								mine.key[10] = false;
-								//ブレーキ
-								mine.key[11] = false;
-								//精密操作
-								mine.key[12] = false;
-								mine.key[13] = false;
-								mine.key[14] = false;
-								mine.key[15] = false;
-								mine.key[16] = false;
-								mine.key[17] = false;
+mine.key[4] = false;
+mine.key[5] = false;
+//ヨー
+mine.key[6] = false;
+mine.key[7] = false;
+//スロットル
+mine.key[8] = false;
+mine.key[9] = false;
+//脚
+mine.key[10] = false;
+//ブレーキ
+mine.key[11] = false;
+//精密操作
+mine.key[12] = false;
+mine.key[13] = false;
+mine.key[14] = false;
+mine.key[15] = false;
+mine.key[16] = false;
+mine.key[17] = false;
 
-								auto& ptr_LEFTHAND = *Drawparts->get_device_hand1();
-								if (&ptr_LEFTHAND != nullptr) {
-									if (ptr_LEFTHAND.turn && ptr_LEFTHAND.now) {
-										//メイン武器
-										mine.key[0] = mine.key[0] || ((ptr_LEFTHAND.on[0] & BUTTON_TRIGGER) != 0);
-										//サブ武器
-										mine.key[1] = mine.key[1] || ((ptr_LEFTHAND.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_IndexController_B)) != 0);
-										//ピッチ
-										mine.key[2] = mine.key[2] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(28)));
-										mine.key[3] = mine.key[3] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-28)));
-										//ロール
-										mine.key[4] = mine.key[4] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(24)));
-										mine.key[5] = mine.key[5] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-24)));
-										if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
-											//ヨー
-											mine.key[6] = mine.key[6] || (ptr_LEFTHAND.touch.x() > 0.5f);
-											mine.key[7] = mine.key[7] || (ptr_LEFTHAND.touch.x() < -0.5f);
-											//スロットル
-											mine.key[8] = mine.key[8] || (ptr_LEFTHAND.touch.y() > 0.5f);
-											mine.key[9] = mine.key[9] || (ptr_LEFTHAND.touch.y() < -0.5f);
-											//ブレーキ
-											if ((ptr_LEFTHAND.touch.x() >= -0.5f) && (ptr_LEFTHAND.touch.x() <= 0.5f) && (ptr_LEFTHAND.touch.y() >= -0.5f) && (ptr_LEFTHAND.touch.y() <= 0.5f)) {
-												mine.key[11] = mine.key[11] || true;
-											}
-										}
-										//脚
-										mine.key[10] = false;
-										//精密操作
-										{
-											//ピッチ
-											mine.key[12] = mine.key[12] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(22)));
-											mine.key[13] = mine.key[13] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-22)));
-											//ロール
-											mine.key[14] = mine.key[14] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(14)));
-											mine.key[15] = mine.key[15] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-14)));
-											if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
-												//ヨー
-												mine.key[16] = mine.key[16] || (ptr_LEFTHAND.touch.x() > 0.45f);
-												mine.key[17] = mine.key[17] || (ptr_LEFTHAND.touch.x() < -0.45f);
-											}
-										}
-										//
-									}
-								}
+auto& ptr_LEFTHAND = *Drawparts->get_device_hand1();
+if (&ptr_LEFTHAND != nullptr) {
+	if (ptr_LEFTHAND.turn && ptr_LEFTHAND.now) {
+		//メイン武器
+		mine.key[0] = mine.key[0] || ((ptr_LEFTHAND.on[0] & BUTTON_TRIGGER) != 0);
+		//サブ武器
+		mine.key[1] = mine.key[1] || ((ptr_LEFTHAND.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_IndexController_B)) != 0);
+		//ピッチ
+		mine.key[2] = mine.key[2] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(24)));
+		mine.key[3] = mine.key[3] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-18)));
+		//ロール
+		mine.key[4] = mine.key[4] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(20)));
+		mine.key[5] = mine.key[5] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-20)));
+		if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
+			//ヨー
+			mine.key[6] = mine.key[6] || (ptr_LEFTHAND.touch.x() > 0.5f);
+			mine.key[7] = mine.key[7] || (ptr_LEFTHAND.touch.x() < -0.5f);
+			//スロットル
+			mine.key[8] = mine.key[8] || (ptr_LEFTHAND.touch.y() > 0.5f);
+			mine.key[9] = mine.key[9] || (ptr_LEFTHAND.touch.y() < -0.5f);
+			//ブレーキ
+			if ((ptr_LEFTHAND.touch.x() >= -0.5f) && (ptr_LEFTHAND.touch.x() <= 0.5f) && (ptr_LEFTHAND.touch.y() >= -0.5f) && (ptr_LEFTHAND.touch.y() <= 0.5f)) {
+				mine.key[11] = mine.key[11] || true;
+			}
+		}
+		//脚
+		mine.key[10] = false;
+		//精密操作
+		{
+			//ピッチ
+			mine.key[12] = mine.key[12] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(14)));
+			mine.key[13] = mine.key[13] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-8)));
+			//ロール
+			mine.key[14] = mine.key[14] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(12)));
+			mine.key[15] = mine.key[15] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-12)));
+			if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
+				//ヨー
+				mine.key[16] = mine.key[16] || (ptr_LEFTHAND.touch.x() > 0.45f);
+				mine.key[17] = mine.key[17] || (ptr_LEFTHAND.touch.x() < -0.45f);
+			}
+		}
+		//
+	}
+}
 							}
 						}
 						//マウスと視点角度をリンク
@@ -400,10 +419,21 @@ public:
 							GetMousePoint(&mousex, &mousey);
 							SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 
-							float y = atan2f(eyevec.x(), eyevec.z()) + deg2rad(float(mousex - Drawparts->disp_x / 2) * 0.1f);
-							float x = atan2f(eyevec.y(), std::hypotf(eyevec.x(), eyevec.z())) + deg2rad(float(mousey - Drawparts->disp_y / 2) * 0.1f);
+							float y = atan2f(eyevec.x(), eyevec.z()) + deg2rad(float(mousex - Drawparts->disp_x / 2) * 0.1f / fovs);
+							float x = atan2f(eyevec.y(), std::hypotf(eyevec.x(), eyevec.z())) + deg2rad(float(mousey - Drawparts->disp_y / 2) * 0.1f / fovs);
 							x = std::clamp(x, deg2rad(-45), deg2rad(45));
 							eyevec = VGet(cos(x) * std::sin(y), std::sin(x), std::cos(x) * std::cos(y));
+						}
+					}
+					{
+						//アラート
+						if (mine.vehicle.pos.y() <= 30.f) {
+							if (CheckSoundMem(se_alert.get()) != TRUE) {
+								se_alert.play(DX_PLAYTYPE_LOOP, TRUE);
+							}
+						}
+						else {
+							se_alert.stop();
 						}
 					}
 					{
@@ -623,7 +653,6 @@ public:
 								auto& u = cg.bullet[cg.usebullet];
 								++cg.usebullet %= cg.bullet.size();
 								//ココだけ変化
-								c.se_gun.play(DX_PLAYTYPE_BACK, TRUE);
 								u.spec = cg.Spec[0];
 								u.spec.speed_a *= float(75 + GetRand(50)) / 100.f;
 								u.pos = veh.obj.frame(cg.gun_info.frame2.first);
@@ -647,12 +676,15 @@ public:
 										c.effcs_gun[c.gun_effcnt].count = 0.f;
 										++c.gun_effcnt %= c.effcs_gun.size();
 									}
+									c.se_gun.play(DX_PLAYTYPE_BACK, TRUE);
 								}
 								else {
 									c.effcs_missile[c.missile_effcnt].first.set(veh.obj.frame(cg.gun_info.frame3.first), u.vec);
 									c.effcs_missile[c.missile_effcnt].second = &u;
 									c.effcs_missile[c.missile_effcnt].count = 0.f;
 									++c.missile_effcnt %= c.effcs_missile.size();
+
+									c.se_missile.play(DX_PLAYTYPE_BACK, TRUE);
 								}
 							}
 							cg.loadcnt = std::max(cg.loadcnt - 1.f / fps, 0.f);
@@ -922,6 +954,7 @@ public:
 						c.se_cockpit.SetPosition(c.vehicle.pos);
 						c.se_hit.SetPosition(c.vehicle.pos);
 						c.se_gun.SetPosition(c.vehicle.pos);
+						c.se_missile.SetPosition(c.vehicle.pos);
 					}
 					//影用意
 					Drawparts->Ready_Shadow(cam_s.cam.campos,
@@ -1189,6 +1222,7 @@ public:
 				for (auto& c : chara) {
 					c.se_cockpit.stop(); //gun
 					c.se_gun.stop(); //gun
+					c.se_missile.stop();
 					c.se_hit.stop(); //gun
 				}
 			}
@@ -1281,9 +1315,10 @@ public:
 				eyevec2 = chara[sel_l].vehicle.mat.zvec() * -1.f;
 				eye_pos_ads = VGet(0, 0.58f, 0);
 				for (auto& c : chara) {
-					Set3DRadiusSoundMem(600.0f, c.se_cockpit.get()); //gun
-					Set3DRadiusSoundMem(300.0f, c.se_gun.get()); //gun
-					Set3DRadiusSoundMem(900.0f, c.se_hit.get()); //gun
+					c.se_cockpit.Radius(600.f);
+					c.se_gun.Radius(300.f);
+					c.se_missile.Radius(300.f);
+					c.se_hit.Radius(900.f);
 					c.se_cockpit.play(DX_PLAYTYPE_LOOP, TRUE);
 					c.se_cockpit.vol(64);
 				}
@@ -1444,6 +1479,7 @@ public:
 								c.se_cockpit.SetPosition(c.vehicle.pos);
 								c.se_hit.SetPosition(c.vehicle.pos);
 								c.se_gun.SetPosition(c.vehicle.pos);
+								c.se_missile.SetPosition(c.vehicle.pos);
 								MV1SetAttachAnimBlendRate(veh.obj.get(), c.p_anime_geardown.first, c.p_anime_geardown.second);
 								//舵
 								for (int i = 0; i < c.p_animes_rudder.size(); i++) {
