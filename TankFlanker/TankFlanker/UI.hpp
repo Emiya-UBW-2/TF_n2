@@ -33,6 +33,7 @@ private:
 	bool use_vr = false;
 
 	VECTOR_ref aimpos;
+	VECTOR_ref aimpos_2;
 	VECTOR_ref altpos;
 	VECTOR_ref spdpos;
 
@@ -338,6 +339,9 @@ public:
 				if (cam_s.Rot >= ADS) {
 					altpos = ConvWorldPosToScreenPos((cocks.cockpit.frame(cocks.alt_100_f.first) - (cocks.cockpit.frame(cocks.alt_100_2_f.first) - cocks.cockpit.frame(cocks.alt_100_f.first)).Norm()*0.05f).get());
 					spdpos = ConvWorldPosToScreenPos((cocks.cockpit.frame(cocks.speed_f.first) - (cocks.cockpit.frame(cocks.speed2_f.first) - cocks.cockpit.frame(cocks.speed_f.first)).Norm()*0.05f).get());
+
+					auto& veh = chara.vehicle;
+					aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
 				}
 			}
 			SetDrawScreen(scr);
@@ -414,9 +418,9 @@ public:
 					{
 						if (cam_s.Rot >= ADS) {
 							if (spdpos.z() >= 0.f && spdpos.z() <= 1.f) {
-								xp = spdpos.x();
-								yp = spdpos.y();
-								font->DrawStringFormat_RIGHT(xp, yp + y_r(36, out_disp_y) * 0, GetColor(255, 255, 255), "%4.0f km/h", veh.speed * 3.6f);
+								xp = (int)(spdpos.x());
+								yp = (int)(spdpos.y());
+								font->DrawStringFormat_RIGHT(xp, yp + y_r(36, out_disp_y) * 0, GetColor(0, 255, 0), "%4.0f km/h", veh.speed * 3.6f);
 
 								if (veh.over_heat) {
 									font->DrawStringFormat_RIGHT(xp, yp + y_r(36, out_disp_y) * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accel);
@@ -430,34 +434,35 @@ public:
 										font->DrawStringFormat_RIGHT(xp, yp + y_r(36, out_disp_y) * 2, GetColor(255, 255, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
 									}
 									else {
-										font->DrawStringFormat_RIGHT(xp, yp + y_r(36, out_disp_y) * 1, GetColor(255, 255, 255), "POWER %03.0f%%", veh.accel);
+										font->DrawStringFormat_RIGHT(xp, yp + y_r(36, out_disp_y) * 1, GetColor(0, 255, 0), "POWER %03.0f%%", veh.accel);
 									}
 								}
 							}
 						}
 						else {
-							int xp1;
 							if (!(use_vr && overrider == -1)) {
-								xp1 = disp_x / 3;
+								xp = disp_x / 3;
+								yp = disp_y / 2;
 							}
 							else {
-								xp1 = disp_x / 2 - disp_y / 6 + y_r(240 / 2, out_disp_y);
+								xp = disp_x / 2 - disp_y / 6 + y_r(240 / 2, out_disp_y);
+								yp = disp_y / 2;
 							}
-							font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 0, GetColor(255, 255, 255), "%4.0f km/h", veh.speed * 3.6f);
+							font->DrawStringFormat_RIGHT(xp, yp + y_r(36, out_disp_y) * 0, GetColor(255, 255, 255), "%4.0f km/h", veh.speed * 3.6f);
 
 							if (veh.over_heat) {
-								font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accel);
+								font->DrawStringFormat_RIGHT(xp, yp + y_r(36, out_disp_y) * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accel);
 								if ((GetNowHiPerformanceCount() / 100000) % 5 <= 2) {
-									font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 2, GetColor(255, 0, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
+									font->DrawStringFormat_RIGHT(xp, yp + y_r(36, out_disp_y) * 2, GetColor(255, 0, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
 								}
 							}
 							else {
 								if (veh.accel >= 100.f) {
-									font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 255, 0), "POWER %03.0f%%", veh.accel);
-									font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 2, GetColor(255, 255, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
+									font->DrawStringFormat_RIGHT(xp, yp + y_r(36, out_disp_y) * 1, GetColor(255, 255, 0), "POWER %03.0f%%", veh.accel);
+									font->DrawStringFormat_RIGHT(xp, yp + y_r(36, out_disp_y) * 2, GetColor(255, 255, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
 								}
 								else {
-									font->DrawStringFormat_RIGHT(xp1, disp_y / 2 + 36 * 1, GetColor(255, 255, 255), "POWER %03.0f%%", veh.accel);
+									font->DrawStringFormat_RIGHT(xp, yp + y_r(36, out_disp_y) * 1, GetColor(255, 255, 255), "POWER %03.0f%%", veh.accel);
 								}
 							}
 						}
@@ -467,8 +472,8 @@ public:
 						//
 						if (cam_s.Rot >= ADS) {
 							if (altpos.z() >= 0.f && altpos.z() <= 1.f) {
-								xp = altpos.x();
-								yp = altpos.y();
+								xp = (int)(altpos.x());
+								yp = (int)(altpos.y());
 								font->DrawStringFormat(xp, yp, GetColor(0, 255, 0), " %4d m", int(veh.pos.y()));
 							}
 						}
@@ -487,22 +492,52 @@ public:
 					}
 					//ƒAƒ‰[ƒg
 					{
-						int yp3;
-						if (!(use_vr && overrider == -1)) {
-							yp3 = disp_y / 3;
+						//
+						if (cam_s.Rot >= ADS) {
+							if (aimpos_2.z() >= 0.f && aimpos_2.z() <= 1.f) {
+								xp = (int)(aimpos_2.x());
+								yp = (int)(aimpos_2.y());
+								int ccc = 0;
+								if (veh.speed < veh.use_veh.min_speed_limit) {
+									if ((GetNowHiPerformanceCount() / 100000) % 4 <= 2) {
+										font->DrawString(xp, yp + y_r(36, out_disp_y) * ccc, "STALL", GetColor(255, 0, 0));
+									}
+									ccc++;
+								}
+								if (veh.pos.y() <= 30.f) {
+									font->DrawString(xp, yp + y_r(36, out_disp_y) * ccc, "GPWS", GetColor(255, 255, 0));
+									ccc++;
+								}
+								if (chara.p_anime_geardown.second > 0.5f) {
+									font->DrawString(xp, yp + y_r(36, out_disp_y) * ccc, "GEAR DOWN", GetColor(255, 255, 0));
+									ccc++;
+								}
+							}
 						}
 						else {
-							yp3 = disp_y / 2 - disp_y / 6 + y_r(60, out_disp_y);
+							if (!(use_vr && overrider == -1)) {
+								xp = disp_x / 2;
+								yp = disp_y / 3;
+							}
+							else {
+								xp = disp_x / 2;
+								yp = disp_y / 2 - disp_y / 6 + y_r(60, out_disp_y);
+							}
+							int ccc = 0;
+							if (veh.speed < veh.use_veh.min_speed_limit) {
+								font->DrawString_MID(xp, yp + y_r(36, out_disp_y) * ccc, "STALL", GetColor(255, 0, 0));
+								ccc++;
+							}
+							if (veh.pos.y() <= 30.f) {
+								font->DrawString_MID(xp, yp + y_r(36, out_disp_y) * ccc, "GPWS", GetColor(255, 255, 0));
+								ccc++;
+							}
+							if (chara.p_anime_geardown.second > 0.5f) {
+								font->DrawString_MID(xp, yp + y_r(36, out_disp_y) * ccc, "GEAR DOWN", GetColor(255, 255, 0));
+								ccc++;
+							}
 						}
-						if (veh.speed < veh.use_veh.min_speed_limit) {
-							font->DrawString(disp_x / 2 - font->GetDrawWidth("STALL") / 2, yp3 - y_r(72, out_disp_y), "STALL", GetColor(255, 0, 0));
-						}
-						if (veh.pos.y() <= 30.f) {
-							font->DrawString(disp_x / 2 - font->GetDrawWidth("GPWS") / 2, yp3 - y_r(36, out_disp_y), "GPWS", GetColor(255, 255, 0));
-						}
-						if (chara.p_anime_geardown.second > 0.5f) {
-							font->DrawString(disp_x / 2 - font->GetDrawWidth("GEAR DOWN") / 2, yp3, "GEAR DOWN", GetColor(255, 255, 0));
-						}
+
 					}
 					//HP
 					{
