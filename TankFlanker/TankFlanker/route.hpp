@@ -170,6 +170,10 @@ public:
 			//木セット
 			mapparts->map_settree();
 			//
+//#define REPLAY
+#ifdef REPLAY
+
+
 			{
 				//通信開始
 				{
@@ -324,70 +328,70 @@ public:
 								mine.key[1] = false; //マシンガン
 								mine.key[2] = false;
 								mine.key[3] = false;
-mine.key[4] = false;
-mine.key[5] = false;
-//ヨー
-mine.key[6] = false;
-mine.key[7] = false;
-//スロットル
-mine.key[8] = false;
-mine.key[9] = false;
-//脚
-mine.key[10] = false;
-//ブレーキ
-mine.key[11] = false;
-//精密操作
-mine.key[12] = false;
-mine.key[13] = false;
-mine.key[14] = false;
-mine.key[15] = false;
-mine.key[16] = false;
-mine.key[17] = false;
+								mine.key[4] = false;
+								mine.key[5] = false;
+								//ヨー
+								mine.key[6] = false;
+								mine.key[7] = false;
+								//スロットル
+								mine.key[8] = false;
+								mine.key[9] = false;
+								//脚
+								mine.key[10] = false;
+								//ブレーキ
+								mine.key[11] = false;
+								//精密操作
+								mine.key[12] = false;
+								mine.key[13] = false;
+								mine.key[14] = false;
+								mine.key[15] = false;
+								mine.key[16] = false;
+								mine.key[17] = false;
 
-auto& ptr_LEFTHAND = *Drawparts->get_device_hand1();
-if (&ptr_LEFTHAND != nullptr) {
-	if (ptr_LEFTHAND.turn && ptr_LEFTHAND.now) {
-		//メイン武器
-		mine.key[0] = mine.key[0] || ((ptr_LEFTHAND.on[0] & BUTTON_TRIGGER) != 0);
-		//サブ武器
-		mine.key[1] = mine.key[1] || ((ptr_LEFTHAND.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_IndexController_B)) != 0);
-		//ピッチ
-		mine.key[2] = mine.key[2] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(24)));
-		mine.key[3] = mine.key[3] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-18)));
-		//ロール
-		mine.key[4] = mine.key[4] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(20)));
-		mine.key[5] = mine.key[5] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-20)));
-		if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
-			//ヨー
-			mine.key[6] = mine.key[6] || (ptr_LEFTHAND.touch.x() > 0.5f);
-			mine.key[7] = mine.key[7] || (ptr_LEFTHAND.touch.x() < -0.5f);
-			//スロットル
-			mine.key[8] = mine.key[8] || (ptr_LEFTHAND.touch.y() > 0.5f);
-			mine.key[9] = mine.key[9] || (ptr_LEFTHAND.touch.y() < -0.5f);
-			//ブレーキ
-			if ((ptr_LEFTHAND.touch.x() >= -0.5f) && (ptr_LEFTHAND.touch.x() <= 0.5f) && (ptr_LEFTHAND.touch.y() >= -0.5f) && (ptr_LEFTHAND.touch.y() <= 0.5f)) {
-				mine.key[11] = mine.key[11] || true;
-			}
-		}
-		//脚
-		mine.key[10] = false;
-		//精密操作
-		{
-			//ピッチ
-			mine.key[12] = mine.key[12] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(14)));
-			mine.key[13] = mine.key[13] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-8)));
-			//ロール
-			mine.key[14] = mine.key[14] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(12)));
-			mine.key[15] = mine.key[15] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-12)));
-			if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
-				//ヨー
-				mine.key[16] = mine.key[16] || (ptr_LEFTHAND.touch.x() > 0.45f);
-				mine.key[17] = mine.key[17] || (ptr_LEFTHAND.touch.x() < -0.45f);
-			}
-		}
-		//
-	}
-}
+								auto& ptr_LEFTHAND = *Drawparts->get_device_hand1();
+								if (&ptr_LEFTHAND != nullptr) {
+									if (ptr_LEFTHAND.turn && ptr_LEFTHAND.now) {
+										//メイン武器
+										mine.key[0] = mine.key[0] || ((ptr_LEFTHAND.on[0] & BUTTON_TRIGGER) != 0);
+										//サブ武器
+										mine.key[1] = mine.key[1] || ((ptr_LEFTHAND.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_IndexController_B)) != 0);
+										//ピッチ
+										mine.key[2] = mine.key[2] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(24)));
+										mine.key[3] = mine.key[3] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-18)));
+										//ロール
+										mine.key[4] = mine.key[4] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(20)));
+										mine.key[5] = mine.key[5] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-20)));
+										if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
+											//ヨー
+											mine.key[6] = mine.key[6] || (ptr_LEFTHAND.touch.x() > 0.5f);
+											mine.key[7] = mine.key[7] || (ptr_LEFTHAND.touch.x() < -0.5f);
+											//スロットル
+											mine.key[8] = mine.key[8] || (ptr_LEFTHAND.touch.y() > 0.5f);
+											mine.key[9] = mine.key[9] || (ptr_LEFTHAND.touch.y() < -0.5f);
+											//ブレーキ
+											if ((ptr_LEFTHAND.touch.x() >= -0.5f) && (ptr_LEFTHAND.touch.x() <= 0.5f) && (ptr_LEFTHAND.touch.y() >= -0.5f) && (ptr_LEFTHAND.touch.y() <= 0.5f)) {
+												mine.key[11] = mine.key[11] || true;
+											}
+										}
+										//脚
+										mine.key[10] = false;
+										//精密操作
+										{
+											//ピッチ
+											mine.key[12] = mine.key[12] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(14)));
+											mine.key[13] = mine.key[13] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-8)));
+											//ロール
+											mine.key[14] = mine.key[14] || (ptr_LEFTHAND.zvec.x() > sinf(deg2rad(12)));
+											mine.key[15] = mine.key[15] || (ptr_LEFTHAND.zvec.x() < sinf(deg2rad(-12)));
+											if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
+												//ヨー
+												mine.key[16] = mine.key[16] || (ptr_LEFTHAND.touch.x() > 0.45f);
+												mine.key[17] = mine.key[17] || (ptr_LEFTHAND.touch.x() < -0.45f);
+											}
+										}
+										//
+									}
+								}
 							}
 						}
 						//マウスと視点角度をリンク
@@ -1201,28 +1205,55 @@ if (&ptr_LEFTHAND != nullptr) {
 				auto tt = chara[0].rep.begin();
 				auto tt2 = chara[1].rep.begin();
 				auto tcam = rep_cam.begin();
-				while (true) {
+
+				const char mes[] = "";
+				float bar = 0.f;
+				int all = chara[0].rep.size();
+				int now = all;
+
+				while (ProcessMessage() == 0) {
+					const auto waits = GetNowHiPerformanceCount();
+					if (now > 0) {
+						{
+							tt->write(fout);
+							tt2->write(fout);
+							fout.write((char *)&tcam->cam, sizeof(tcam->cam));
+							fout.write((char *)&tcam->Rot, sizeof(tcam->Rot));
+						}
+						tt++;
+						if (tt == chara[0].rep.end()) {
+							break;
+						}
+						tt2++;
+						if (tt2 == chara[1].rep.end()) {
+							break;
+						}
+						tcam++;
+						if (tcam == rep_cam.end()) {
+							break;
+						}
+						now--;
+					}
+					SetDrawScreen(DX_SCREEN_BACK);
+					ClearDrawScreen();
 					{
-						tt->write(fout);
-						tt2->write(fout);
-						fout.write((char *)&tcam->cam, sizeof(tcam->cam));
-						fout.write((char *)&tcam->Rot, sizeof(tcam->Rot));
+						font12.DrawStringFormat(0, Drawparts->out_disp_y - y_r(70, Drawparts->out_disp_y), GetColor(0, 255, 0), " loading... : %04d/%04d  ", all - now, all);
+						font12.DrawStringFormat_RIGHT(Drawparts->out_disp_x, Drawparts->out_disp_y - y_r(70, Drawparts->out_disp_y), GetColor(0, 255, 0), "%s 読み込み中 ", mes);
+						DrawBox(0, Drawparts->out_disp_y - y_r(50, Drawparts->out_disp_y), int(float(Drawparts->out_disp_x) * bar / float(all)), Drawparts->out_disp_y - y_r(40, Drawparts->out_disp_y), GetColor(0, 255, 0), TRUE);
+						easing_set(&bar, float(all - now), 0.95f);
 					}
-					tt++;
-					if (tt == chara[0].rep.end()) {
-						break;
-					}
-					tt2++;
-					if (tt2 == chara[1].rep.end()) {
-						break;
-					}
-					tcam++;
-					if (tcam == rep_cam.end()) {
-						break;
+					Drawparts->Screen_Flip(waits);
+					if (now == 0) {
+						if (bar > float(all - now) * 0.95f) {
+							break;
+						}
 					}
 				}
 				fout.close();  //ファイルを閉じる
 			}
+
+#endif // REPLAY
+
 			//読み出し
 			//*
 			{
@@ -1260,6 +1291,72 @@ if (&ptr_LEFTHAND != nullptr) {
 					tt++;
 					tt2++;
 					tcam++;
+				}
+				fout.close();  //ファイルを閉じる
+			}
+			{
+				Mainclass::Chara::sendstat tmp_rep;
+				Mainclass::CAMS tmp_cam_rep;
+
+				std::ifstream fout;
+				fout.open("data/file.txt", std::ios::binary);
+				
+				fout.seekg(0, std::ios_base::end);				// 一番最後までseek
+				int filesize = fout.tellg();				// 現在のポインタ位置取得
+				fout.seekg(0, std::ios_base::beg);				// 一番先頭までseek
+				{
+					chara[0].rep.clear();
+					chara[1].rep.clear();
+					rep_cam.clear();
+					chara[0].rep.push_back(tmp_rep);
+					chara[1].rep.push_back(tmp_rep);
+					rep_cam.push_back(tmp_cam_rep);
+				}
+				auto tt = chara[0].rep.begin();
+				auto tt2 = chara[1].rep.begin();
+				auto tcam = rep_cam.begin();
+
+				const char mes[] = "";
+				float bar = 0.f;
+				int all = filesize / sizeof(tmp_rep);
+				int now = all;
+
+				while (ProcessMessage() == 0) {
+					const auto waits = GetNowHiPerformanceCount();
+					if (now > 0) {
+						{
+							tt->read(fout);
+							tt2->read(fout);
+							fout.read((char *)&tcam->cam, sizeof(tcam->cam));
+							fout.read((char *)&tcam->Rot, sizeof(tcam->Rot));
+						}
+						if (fout.eof()) {
+							break;
+						}
+						{
+							chara[0].rep.push_back(tmp_rep);
+							chara[1].rep.push_back(tmp_rep);
+							rep_cam.push_back(tmp_cam_rep);
+						}
+						tt++;
+						tt2++;
+						tcam++;
+						now--;
+					}
+					SetDrawScreen(DX_SCREEN_BACK);
+					ClearDrawScreen();
+					{
+						font12.DrawStringFormat(0, Drawparts->out_disp_y - y_r(70, Drawparts->out_disp_y), GetColor(0, 255, 0), " loading... : %04d/%04d  ", all - now, all);
+						font12.DrawStringFormat_RIGHT(Drawparts->out_disp_x, Drawparts->out_disp_y - y_r(70, Drawparts->out_disp_y), GetColor(0, 255, 0), "%s 読み込み中 ", mes);
+						DrawBox(0, Drawparts->out_disp_y - y_r(50, Drawparts->out_disp_y), int(float(Drawparts->out_disp_x) * bar / float(all)), Drawparts->out_disp_y - y_r(40, Drawparts->out_disp_y), GetColor(0, 255, 0), TRUE);
+						easing_set(&bar, float(all - now), 0.95f);
+					}
+					Drawparts->Screen_Flip(waits);
+					if (now == 0) {
+						if (bar > float(all - now) * 0.95f) {
+							break;
+						}
+					}
 				}
 				fout.close();  //ファイルを閉じる
 			}

@@ -448,3 +448,4 @@ MigrationBackup/
 
 
 /TankFlanker/TankFlanker/data/file.txt
+*.txt
