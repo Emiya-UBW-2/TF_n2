@@ -8,7 +8,7 @@ class main_c : Mainclass {
 	DXDraw::cam_info cam_easy;
 	std::list<Mainclass::CAMS> rep_cam;
 	VECTOR_ref eyevec, eyevec2;																	//視点
-	FontHandle font12;
+	FontHandle font18;
 	GraphHandle outScreen2;
 	MV1 hit_pic;	//弾痕
 	//操作
@@ -21,9 +21,9 @@ class main_c : Mainclass {
 	VECTOR_ref rec_HMD;
 	//データ
 	std::vector <Mainclass::cockpits> cocks;	//コックピット
-	std::vector<Mainclass::Chara> chara;	/*キャラ*/
-	std::vector<Mainclass::Ammos> Ammo;		/*弾薬*/
-	std::vector<Mainclass::Vehcs> Vehicles;	/*車輛データ*/
+	std::vector<Mainclass::Chara> chara;	//キャラ
+	std::vector<Mainclass::Ammos> Ammo;		//弾薬
+	std::vector<Mainclass::Vehcs> Vehicles;	//車輛データ
 	SoundHandle se_cockpit;
 	SoundHandle se_gun;
 	SoundHandle se_missile;
@@ -38,7 +38,7 @@ public:
 	main_c() {
 		//設定読み込み
 		{
-			SetOutApplicationLogValidFlag(FALSE);	/*log*/
+			SetOutApplicationLogValidFlag(FALSE);	//log
 			int mdata = FileRead_open("data/setting.txt", FALSE);
 			dof_e = getparams::_bool(mdata);
 			bloom_e = getparams::_bool(mdata);
@@ -47,14 +47,14 @@ public:
 			FileRead_close(mdata);
 		}
 		//
-		auto Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);								/*汎用クラス*/
-		auto UIparts = std::make_unique<UI>(Drawparts->use_vr);																	/*UI*/
-		auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);																	/*デバッグ*/
-		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);			/*ホストパスエフェクト*/
-		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->out_disp_x, Drawparts->out_disp_y);	/*ホストパスエフェクト*/
-		auto mapparts = std::make_unique<Mapclass>();																			/*map*/
+		auto Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);								//汎用クラス
+		auto UIparts = std::make_unique<UI>(Drawparts->use_vr);																	//UI
+		auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);																	//デバッグ
+		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);			//ホストパスエフェクト
+		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->out_disp_x, Drawparts->out_disp_y);	//ホストパスエフェクト
+		auto mapparts = std::make_unique<Mapclass>();																			//map
 		//
-		font12 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
+		font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 		outScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//描画スクリーン
 	//その他
 		//
@@ -170,10 +170,8 @@ public:
 			//木セット
 			mapparts->map_settree();
 			//
-//#define REPLAY
+#define REPLAY
 #ifdef REPLAY
-
-
 			{
 				//通信開始
 				{
@@ -1206,10 +1204,11 @@ public:
 				auto tt2 = chara[1].rep.begin();
 				auto tcam = rep_cam.begin();
 
-				const char mes[] = "";
 				float bar = 0.f;
 				int all = chara[0].rep.size();
 				int now = all;
+
+				ClearDrawScreen();
 
 				while (ProcessMessage() == 0) {
 					const auto waits = GetNowHiPerformanceCount();
@@ -1234,20 +1233,17 @@ public:
 						}
 						now--;
 					}
+					else {
+						break;
+					}
 					SetDrawScreen(DX_SCREEN_BACK);
-					ClearDrawScreen();
 					{
-						font12.DrawStringFormat(0, Drawparts->out_disp_y - y_r(70, Drawparts->out_disp_y), GetColor(0, 255, 0), " loading... : %04d/%04d  ", all - now, all);
-						font12.DrawStringFormat_RIGHT(Drawparts->out_disp_x, Drawparts->out_disp_y - y_r(70, Drawparts->out_disp_y), GetColor(0, 255, 0), "%s 読み込み中 ", mes);
+						DrawBox(Drawparts->out_disp_x - font18.GetDrawWidthFormat("リプレイデータ保存中… %04d/%04d  ", all - now, all), Drawparts->out_disp_y - y_r(70, Drawparts->out_disp_y), Drawparts->out_disp_x, Drawparts->out_disp_y - y_r(40, Drawparts->out_disp_y), GetColor(0, 0, 0), TRUE);
+						font18.DrawStringFormat_RIGHT(Drawparts->out_disp_x, Drawparts->out_disp_y - y_r(70, Drawparts->out_disp_y), GetColor(0, 255, 0), "リプレイデータ保存中… %04d/%04d  ", all - now, all);
 						DrawBox(0, Drawparts->out_disp_y - y_r(50, Drawparts->out_disp_y), int(float(Drawparts->out_disp_x) * bar / float(all)), Drawparts->out_disp_y - y_r(40, Drawparts->out_disp_y), GetColor(0, 255, 0), TRUE);
 						easing_set(&bar, float(all - now), 0.95f);
 					}
 					Drawparts->Screen_Flip(waits);
-					if (now == 0) {
-						if (bar > float(all - now) * 0.95f) {
-							break;
-						}
-					}
 				}
 				fout.close();  //ファイルを閉じる
 			}
@@ -1291,72 +1287,6 @@ public:
 					tt++;
 					tt2++;
 					tcam++;
-				}
-				fout.close();  //ファイルを閉じる
-			}
-			{
-				Mainclass::Chara::sendstat tmp_rep;
-				Mainclass::CAMS tmp_cam_rep;
-
-				std::ifstream fout;
-				fout.open("data/file.txt", std::ios::binary);
-				
-				fout.seekg(0, std::ios_base::end);				// 一番最後までseek
-				int filesize = fout.tellg();				// 現在のポインタ位置取得
-				fout.seekg(0, std::ios_base::beg);				// 一番先頭までseek
-				{
-					chara[0].rep.clear();
-					chara[1].rep.clear();
-					rep_cam.clear();
-					chara[0].rep.push_back(tmp_rep);
-					chara[1].rep.push_back(tmp_rep);
-					rep_cam.push_back(tmp_cam_rep);
-				}
-				auto tt = chara[0].rep.begin();
-				auto tt2 = chara[1].rep.begin();
-				auto tcam = rep_cam.begin();
-
-				const char mes[] = "";
-				float bar = 0.f;
-				int all = filesize / sizeof(tmp_rep);
-				int now = all;
-
-				while (ProcessMessage() == 0) {
-					const auto waits = GetNowHiPerformanceCount();
-					if (now > 0) {
-						{
-							tt->read(fout);
-							tt2->read(fout);
-							fout.read((char *)&tcam->cam, sizeof(tcam->cam));
-							fout.read((char *)&tcam->Rot, sizeof(tcam->Rot));
-						}
-						if (fout.eof()) {
-							break;
-						}
-						{
-							chara[0].rep.push_back(tmp_rep);
-							chara[1].rep.push_back(tmp_rep);
-							rep_cam.push_back(tmp_cam_rep);
-						}
-						tt++;
-						tt2++;
-						tcam++;
-						now--;
-					}
-					SetDrawScreen(DX_SCREEN_BACK);
-					ClearDrawScreen();
-					{
-						font12.DrawStringFormat(0, Drawparts->out_disp_y - y_r(70, Drawparts->out_disp_y), GetColor(0, 255, 0), " loading... : %04d/%04d  ", all - now, all);
-						font12.DrawStringFormat_RIGHT(Drawparts->out_disp_x, Drawparts->out_disp_y - y_r(70, Drawparts->out_disp_y), GetColor(0, 255, 0), "%s 読み込み中 ", mes);
-						DrawBox(0, Drawparts->out_disp_y - y_r(50, Drawparts->out_disp_y), int(float(Drawparts->out_disp_x) * bar / float(all)), Drawparts->out_disp_y - y_r(40, Drawparts->out_disp_y), GetColor(0, 255, 0), TRUE);
-						easing_set(&bar, float(all - now), 0.95f);
-					}
-					Drawparts->Screen_Flip(waits);
-					if (now == 0) {
-						if (bar > float(all - now) * 0.95f) {
-							break;
-						}
-					}
 				}
 				fout.close();  //ファイルを閉じる
 			}
@@ -1561,7 +1491,7 @@ public:
 									veh.obj.SetFrameLocalMatrix(be.first, MATRIX_ref::Scale(VGet(1.f, 1.f, std::clamp(veh.speed / veh.use_veh.mid_speed_limit, 0.1f, 1.f))) * MATRIX_ref::Mtrans(be.second));
 								}
 
-								/*effect*/
+								//effect
 								{
 									int i = 0;
 									for (auto& t : c.effcs) {
@@ -1573,7 +1503,6 @@ public:
 									t.gndsmkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), t.gndsmkeffcs.scale);
 								}
 								//銃砲
-								//*
 								for (auto& a : c.effcs_gun) {
 									a.first.put(Drawparts->get_effHandle(ef_smoke2));
 									if (a.n_l) {
@@ -1601,7 +1530,6 @@ public:
 										}
 									}
 								}
-								//*/
 							}
 						}
 						//描画
@@ -1654,12 +1582,12 @@ public:
 							GraphHandle::SetDraw_Screen(int(DX_SCREEN_BACK), false);
 							{
 								outScreen2.DrawGraph(0, 0, false);
-								font12.DrawString(10, 10, "REPLAY", GetColor(255, 0, 0));
+								font18.DrawString(10, 10, "REPLAY", GetColor(255, 0, 0));
 								if (start_stop.first) {
-									font12.DrawString(10, 10 + 20, "|>", GetColor(255, 0, 0));
+									font18.DrawString(10, 10 + 20, "|>", GetColor(255, 0, 0));
 								}
 								else {
-									font12.DrawString(10, 10 + 20, "||", GetColor(255, 0, 0));
+									font18.DrawString(10, 10 + 20, "||", GetColor(255, 0, 0));
 								}
 								Debugparts->end_way();
 								Debugparts->debug(10, 10, float(GetNowHiPerformanceCount() - waits) / 1000.f);
@@ -1682,7 +1610,7 @@ public:
 				for (auto& c : chara) {
 					c.rep.clear();
 					auto& veh = c.vehicle;
-					/*エフェクト*/
+					//エフェクト
 					for (auto& t : c.effcs_gun) {
 						t.first.handle.Dispose();
 					}

@@ -5,7 +5,7 @@ private:
 	MV1 tree_model, tree_far;				    //木
 	MV1 sky;	  //空
 	MV1 sea;	  //海
-	std::vector<treePats> tree;	/*壁をセット*/
+	std::vector<treePats> tree;	//壁をセット
 public:
 	Mapclass() {
 	}

@@ -44,12 +44,12 @@ private:
 		frames frame;
 		EffectS gndsmkeffcs;
 	};
-	struct Hit {		      /**/
-		bool flug{ false };   /*弾痕フラグ*/
-		int use{ 0 };	      /*使用フレーム*/
-		MV1 pic;	      /*弾痕モデル*/
-		VECTOR_ref pos;	      /*座標*/
-		MATRIX_ref mat;	      /**/
+	struct Hit {		      //
+		bool flug{ false };   //弾痕フラグ
+		int use{ 0 };	      //使用フレーム
+		MV1 pic;			//弾痕モデル
+		VECTOR_ref pos;	      //座標
+		MATRIX_ref mat;	      //
 		void clear() {
 			this->flug = false;
 			this->use = 0;
@@ -57,7 +57,7 @@ private:
 			this->pos = VGet(0, 0, 0);
 			this->mat.clear();
 		}
-	};								      /**/
+	};
 public:
 	//弾薬
 	class Ammos {
@@ -91,34 +91,34 @@ public:
 	class Vehcs {
 	public:
 		//共通
-		std::string name;				  /**/
-		MV1 obj, col;					  /**/
-		VECTOR_ref minpos, maxpos;			  /**/
-		std::vector<gun_frame> gunframe;			  /**/
-		std::vector<foot_frame> wheelframe;			  /**/
-		std::vector<foot_frame> wheelframe_nospring;		  /*誘導輪回転*/
-		uint16_t HP = 0;					  /**/
-		std::vector<std::pair<size_t, float>> armer_mesh; /*装甲ID*/
-		std::vector<size_t> space_mesh;			  /*装甲ID*/
-		std::vector<size_t> module_mesh;		  /*装甲ID*/
-		int camo_tex = 0;				  /**/
-		std::vector<int> camog;				  /**/
-		bool isfloat = false;			  /*浮くかどうか*/
-		float down_in_water = 0.f;			  /*沈む判定箇所*/
-		float max_speed_limit = 0.f;			  /*最高速度(km/h)*/
-		float mid_speed_limit = 0.f;			  /*巡行速度(km/h)*/
-		float min_speed_limit = 0.f;			  /*失速速度(km/h)*/
-		float flont_speed_limit = 0.f;			  /*前進速度(km/h)*/
-		float back_speed_limit = 0.f;			  /*後退速度(km/h)*/
-		float body_rad_limit = 0.f;			  /*旋回速度(度/秒)*/
-		float turret_rad_limit = 0.f;			  /*砲塔駆動速度(度/秒)*/
+		std::string name;				  //
+		MV1 obj, col;					  //
+		VECTOR_ref minpos, maxpos;			  //
+		std::vector<gun_frame> gunframe;			  //
+		std::vector<foot_frame> wheelframe;			  //
+		std::vector<foot_frame> wheelframe_nospring;		  //誘導輪回転
+		uint16_t HP = 0;					  //
+		std::vector<std::pair<size_t, float>> armer_mesh; //装甲ID
+		std::vector<size_t> space_mesh;			  //装甲ID
+		std::vector<size_t> module_mesh;		  //装甲ID
+		int camo_tex = 0;				  //
+		std::vector<int> camog;				  //
+		bool isfloat = false;			  //浮くかどうか
+		float down_in_water = 0.f;			  //沈む判定箇所
+		float max_speed_limit = 0.f;			  //最高速度(km/h)
+		float mid_speed_limit = 0.f;			  //巡行速度(km/h)
+		float min_speed_limit = 0.f;			  //失速速度(km/h)
+		float flont_speed_limit = 0.f;			  //前進速度(km/h)
+		float back_speed_limit = 0.f;			  //後退速度(km/h)
+		float body_rad_limit = 0.f;			  //旋回速度(度/秒)
+		float turret_rad_limit = 0.f;			  //砲塔駆動速度(度/秒)
 		frames fps_view;//コックピット
 		GraphHandle ui_pic;//シルエット
 		int pic_x, pic_y;//サイズ
 		//専門
 		std::array<int, 4> square{ 0 };//車輛の四辺
-		std::array<std::vector<frames>, 2> b2upsideframe; /*履帯上*/
-		std::array<std::vector<frames>, 2> b2downsideframe; /*履帯上*/
+		std::array<std::vector<frames>, 2> b2upsideframe; //履帯上
+		std::array<std::vector<frames>, 2> b2downsideframe; //履帯上
 		std::vector<frames> burner;//アフターバーナー
 		frames hook;//着艦フック
 
@@ -327,7 +327,7 @@ public:
 				//データ取得
 				{
 					int mdata = FileRead_open(("data/plane/" + t.name + "/data.txt").c_str(), FALSE);
-					char mstr[64]; /*tank*/
+					char mstr[64]; //tank
 					t.isfloat = getparams::_bool(mdata);
 					t.max_speed_limit = getparams::_float(mdata) / 3.6f;
 					t.mid_speed_limit = getparams::_float(mdata) / 3.6f;
@@ -375,15 +375,15 @@ public:
 		int Rot = 0;//
 	};
 private:
-	class Guns {							      /**/
+	class Guns {							      //
 	public:
-		size_t usebullet{};					      /*使用弾*/
-		std::array<ammos, 64> bullet;				      /*確保する弾*/
-		float loadcnt{ 0 };					      /*装てんカウンター*/
-		float fired{ 0.f };					      /*駐退数*/
-		int16_t rounds{ 0 };					      /*弾数*/
-		gun_frame gun_info;						      /**/
-		std::vector<Mainclass::Ammos> Spec;				      /**/
+		size_t usebullet{};					      //使用弾
+		std::array<ammos, 64> bullet;				      //確保する弾
+		float loadcnt{ 0 };					      //装てんカウンター
+		float fired{ 0.f };					      //駐退数
+		int16_t rounds{ 0 };					      //弾数
+		gun_frame gun_info;						      //
+		std::vector<Mainclass::Ammos> Spec;				      //
 		void clear() {
 			this->usebullet = 0;
 			this->loadcnt = 0.f;
@@ -391,8 +391,8 @@ private:
 			this->rounds = 0;
 			this->Spec.clear();
 		}
-	};								      /**/
-	class pair_hit {							      /**/
+	};								      //
+	class pair_hit {							      //
 	public:
 		size_t first = 0;
 		float second = 0.f;
@@ -403,36 +403,36 @@ private:
 	};
 	class vehicles {
 	public:
-		Vehcs use_veh;							      /*固有値*/
-		MV1 obj;							      /**/
-		MV1 col;							      /**/
+		Vehcs use_veh;							      //固有値
+		MV1 obj;							      //
+		MV1 col;							      //
 		bool hit_check = false;						      //当たり判定を取るかチェック
 		size_t use_id = 0;						      //使用する車両(機材)
-		uint16_t HP = 0;						      /*体力*/
-		uint16_t KILL = 0;						      /*体力*/
-		int KILL_ID = -1;						      /*体力*/
-		uint16_t DEATH = 0;						      /*体力*/
-		int DEATH_ID = -1;						      /*体力*/
+		uint16_t HP = 0;						      //体力
+		uint16_t KILL = 0;						      //体力
+		int KILL_ID = -1;						      //体力
+		uint16_t DEATH = 0;						      //体力
+		int DEATH_ID = -1;						      //体力
 		VECTOR_ref pos;							      //車体座標
 		MATRIX_ref mat;							      //車体回転行列
 		MATRIX_ref mat_start;					      //車体回転行列(初期配置)
 		VECTOR_ref add;							      //車体加速度
-		std::vector<Guns> Gun_;						      /**/
+		std::vector<Guns> Gun_;						      //
 		float accel = 0.f, accel_add = 0.f;
 		float WIP_timer_limit = 0.f;
 		float WIP_timer = 0.f;
 		bool over_heat = false;
-		float speed = 0.f, speed_add = 0.f;		      /**/
-		float xradadd_left = 0.f, xradadd_right = 0.f; /**/
-		float yradadd_left = 0.f, yradadd_right = 0.f;	    /**/
-		float zradadd_left = 0.f, zradadd_right = 0.f; /**/
-		std::vector<MV1_COLL_RESULT_POLY> hitres;			      /*確保*/
-		std::vector<int16_t> HP_m;					      /*ライフ*/
-		std::array<Hit, 24> hit_obj;					      /*弾痕*/
-		size_t camo_sel = 0;						      /**/
+		float speed = 0.f, speed_add = 0.f;		      //
+		float xradadd_left = 0.f, xradadd_right = 0.f; //
+		float yradadd_left = 0.f, yradadd_right = 0.f;	    //
+		float zradadd_left = 0.f, zradadd_right = 0.f; //
+		std::vector<MV1_COLL_RESULT_POLY> hitres;			      //確保
+		std::vector<int16_t> HP_m;					      //ライフ
+		std::array<Hit, 24> hit_obj;					      //弾痕
+		size_t camo_sel = 0;						      //
 		float wheel_Left = 0.f, wheel_Right = 0.f;			      //転輪回転
 		float wheel_Leftadd = 0.f, wheel_Rightadd = 0.f;		      //転輪回転
-		std::vector<pair_hit> hitssort;					      /*フレームに当たった順番*/
+		std::vector<pair_hit> hitssort;					      //フレームに当たった順番
 
 		void reset() {
 			this->xradadd_right = 0.f;
@@ -514,10 +514,10 @@ private:
 			this->col.Dispose();
 			this->hit_check = false;
 			this->HP = 0;
-			this->KILL = 0;						      /*体力*/
-			this->KILL_ID = -1;						      /*体力*/
-			this->DEATH = 0;						      /*体力*/
-			this->DEATH_ID = -1;						      /*体力*/
+			this->KILL = 0;						      //体力
+			this->KILL_ID = -1;						      //体力
+			this->DEATH = 0;						      //体力
+			this->DEATH_ID = -1;						      //体力
 
 			this->hitres.clear();
 			this->HP_m.clear();
@@ -569,19 +569,19 @@ public:
 			MATRIX_ref v_mat;
 			VECTOR_ref pos;
 			MATRIX_ref mat;
-			std::vector<Guns> Gun_;						      /**/
+			std::vector<Guns> Gun_;						      //
 			float speed;
 			struct eff_buf {
-				bool flug{ false };				 /**/
-				VECTOR_ref pos;					 /**/
-				VECTOR_ref nor;					 /**/
-				float scale = 1.f;				 /**/
+				bool flug{ false };				 //
+				VECTOR_ref pos;					 //
+				VECTOR_ref nor;					 //
+				float scale = 1.f;				 //
 			};
-			std::array<eff_buf, ef_size> effcs_; /*effect*/
-			std::array<ef_guns, 8> effcs_missile_; /*effect*/
-			std::array<ef_guns, 12> effcs_gun_;    /*effect*/
+			std::array<eff_buf, ef_size> effcs_; //effect
+			std::array<ef_guns, 8> effcs_missile_; //effect
+			std::array<ef_guns, 12> effcs_gun_;    //effect
 
-			std::array<float, 3> gndsmkeffcs_; /*effect*/
+			std::array<float, 3> gndsmkeffcs_; //effect
 
 			p_animes p_anime_geardown;		    //車輪アニメーション
 			std::array<p_animes, 6> p_animes_rudder;      //ラダーアニメーション
@@ -812,9 +812,9 @@ public:
 		};
 		std::list<sendstat> rep;
 		//====================================================
-		std::array<EffectS, ef_size> effcs; /*effect*/
-		std::array<ef_guns, 8> effcs_missile; /*effect*/
-		std::array<ef_guns, 12> effcs_gun;    /*effect*/
+		std::array<EffectS, ef_size> effcs; //effect
+		std::array<ef_guns, 8> effcs_missile; //effect
+		std::array<ef_guns, 12> effcs_gun;    //effect
 		size_t missile_effcnt = 0;
 		size_t gun_effcnt = 0;
 
@@ -822,7 +822,7 @@ public:
 		std::array<bool, 18> key{ false };    //キー
 		float view_xrad = 0.f, view_yrad = 0.f; //砲塔操作用ベクトル
 		//戦車//==================================================
-		int hitbuf = 0;		       /*使用弾痕*/
+		int hitbuf = 0;		       //使用弾痕
 		//飛行機//==================================================
 		p_animes p_anime_geardown;		    //車輪アニメーション
 		switchs changegear; //ギアアップスイッチ
