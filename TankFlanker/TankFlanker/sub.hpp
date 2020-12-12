@@ -69,17 +69,19 @@ public:
 		float speed_a = 0.f;
 		uint16_t damage_a = 0;
 
+		void set(int& mdata) {
+			this->name_a = getparams::_str(mdata);
+			this->type_a = uint16_t(getparams::_ulong(mdata)); //ap=0,he=1
+			this->caliber_a = getparams::_float(mdata);
+			this->pene_a = getparams::_float(mdata);
+			this->speed_a = getparams::_float(mdata);
+			this->damage_a = uint16_t(getparams::_ulong(mdata));
+		}
 		static void set_ammos(std::vector<Ammos>* Ammo_) {
-			auto& a = *Ammo_;
 			int mdata = FileRead_open("data/ammo/ammo.txt", FALSE);
 			while (true) {
-				a.resize(a.size() + 1);
-				a.back().name_a = getparams::_str(mdata);
-				a.back().type_a = uint16_t(getparams::_ulong(mdata)); //ap=0,he=1
-				a.back().caliber_a = getparams::_float(mdata);
-				a.back().pene_a = getparams::_float(mdata);
-				a.back().speed_a = getparams::_float(mdata);
-				a.back().damage_a = uint16_t(getparams::_ulong(mdata));
+				Ammo_->resize(Ammo_->size() + 1);
+				Ammo_->back().set(mdata);
 				if (getparams::get_str(mdata).find("end") != std::string::npos) {
 					break;
 				}
@@ -559,8 +561,243 @@ public:
 		MATRIX_ref mat;
 		VECTOR_ref pos;
 	};
-	//player
 	typedef std::pair<int, float> p_animes;
+	class Chara;
+	//コックピット
+	class cockpits {
+	public:
+		frames	stickx_f, sticky_f, stickz_f, compass_f, compass2_f, speed_f, speed2_f, cockpit_f, clock_h_f, clock_h2_f, clock_m_f, clock_m2_f, clock_s_f, clock_s2_f, subcompass_f, subcompass2_f
+			, spd3_f, spd2_f, spd1_f
+			, alt4_f, alt3_f, alt2_f, alt1_f
+			, salt4_f, salt3_f, salt2_f, salt1_f
+			, alt_1000_f, alt_1000_2_f, alt_100_f, alt_100_2_f
+			, salt_1000_f, salt_1000_2_f, salt_100_f, salt_100_2_f
+			, fuel_f, fuel_2_f
+			, accel_f;
+
+		float spd3_fp = 0.f, spd2_fp = 0.f, spd1_fp = 0.f
+			, alt4_fp = 0.f, alt3_fp = 0.f, alt2_fp = 0.f, alt1_fp = 0.f
+			, salt4_fp = 0.f, salt3_fp = 0.f, salt2_fp = 0.f, salt1_fp = 0.f;
+
+		MV1 obj;
+
+		void set_(const MV1& cocks) {
+			obj = cocks.Duplicate();
+			//
+			for (int i = 0; i < obj.frame_num(); i++) {
+				std::string p = obj.frame_name(i);
+				if (p.find("座席", 0) != std::string::npos) {
+					cockpit_f = { i,obj.frame(i) };
+				}
+				else if ((p.find("姿勢指示器", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					compass_f = { i,obj.frame(i) - obj.frame(int(obj.frame_parent(i))) };
+					//ジャイロコンパス
+				}
+				else if ((p.find("姿勢指示器", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
+					compass2_f = { i,obj.frame(i) - obj.frame(int(obj.frame_parent(i))) };
+					//ジャイロコンパス
+				}
+				else if ((p.find("予備コンパス", 0) != std::string::npos)) {
+					subcompass_f = { i,obj.frame(i) - obj.frame(int(obj.frame_parent(i))) };
+					subcompass2_f = { i + 1,obj.frame(i + 1) - obj.frame(i) };
+					//コンパス
+				}
+				else if (p.find("スティック縦", 0) != std::string::npos) {
+					stickx_f = { i,obj.frame(i) };
+					stickz_f = { i + 1,obj.frame(i + 1) - obj.frame(i) };
+				}
+				else if ((p.find("ペダル", 0) != std::string::npos) && (p.find("右", 0) == std::string::npos) && (p.find("左", 0) == std::string::npos)) {
+					sticky_f = { i,obj.frame(i) };
+				}
+				else if ((p.find("スロットル", 0) != std::string::npos)) {
+					accel_f = { i,obj.frame(i) };
+				}
+				else if ((p.find("速度計", 0) != std::string::npos)) {
+					speed_f = { i,obj.frame(i) };
+					speed2_f = { i + 1,obj.frame(i + 1) - obj.frame(i) };
+				}
+				else if ((p.find("速度100", 0) != std::string::npos)) {
+					spd3_f = { i,obj.frame(i) };
+				}
+				else if ((p.find("速度010", 0) != std::string::npos)) {
+					spd2_f = { i,obj.frame(i) };
+				}
+				else if ((p.find("速度001", 0) != std::string::npos)) {
+					spd1_f = { i,obj.frame(i) };
+				}
+
+				else if ((p.find("高度1000", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					alt4_f = { i,obj.frame(i) };
+				}
+				else if ((p.find("高度0100", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					alt3_f = { i,obj.frame(i) };
+				}
+				else if ((p.find("高度0010", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					alt2_f = { i,obj.frame(i) };
+				}
+				else if ((p.find("高度0001", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					alt1_f = { i,obj.frame(i) };
+				}
+
+				else if ((p.find("高度1000", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
+					salt4_f = { i,obj.frame(i) };
+				}
+				else if ((p.find("高度0100", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
+					salt3_f = { i,obj.frame(i) };
+				}
+				else if ((p.find("高度0010", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
+					salt2_f = { i,obj.frame(i) };
+				}
+				else if ((p.find("高度0001", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
+					salt1_f = { i,obj.frame(i) };
+				}
+
+				else if ((p.find("高度計", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					alt_1000_f = { i,obj.frame(i) };
+					alt_1000_2_f = { i + 1,obj.frame(i + 1) - obj.frame(i) };
+				}
+				else if ((p.find("高度長針", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
+					alt_100_f = { i,obj.frame(i) };
+					alt_100_2_f = { i + 1,obj.frame(i + 1) - obj.frame(i) };
+				}
+				else if ((p.find("高度計", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos) && (p.find("長針", 0) == std::string::npos)) {
+					salt_1000_f = { i,obj.frame(i) };
+					salt_1000_2_f = { i + 1,obj.frame(i + 1) - obj.frame(i) };
+				}
+				else if ((p.find("高度計長針", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
+					salt_100_f = { i,obj.frame(i) };
+					salt_100_2_f = { i + 1,obj.frame(i + 1) - obj.frame(i) };
+				}
+
+				else if ((p.find("燃料計", 0) != std::string::npos)) {
+					fuel_f = { i,obj.frame(i) };
+					fuel_2_f = { i + 1,obj.frame(i + 1) - obj.frame(i) };
+				}
+
+				else if ((p.find("時計", 0) != std::string::npos)) {
+					clock_h_f = { i,obj.frame(i) };
+					clock_h2_f = { i + 1,obj.frame(i + 1) - obj.frame(i) };
+				}
+				else if ((p.find("分針", 0) != std::string::npos)) {
+					clock_m_f = { i,obj.frame(i) };
+					clock_m2_f = { i + 1,obj.frame(i + 1) - obj.frame(i) };
+				}
+				else if ((p.find("秒針", 0) != std::string::npos)) {
+					clock_s_f = { i,obj.frame(i) };
+					clock_s2_f = { i + 1,obj.frame(i + 1) - obj.frame(i) };
+				}
+			}
+		}
+
+		void ready_(Chara& c) {
+			float px = (c.p_animes_rudder[1].second - c.p_animes_rudder[0].second)*deg2rad(30);
+			float pz = (c.p_animes_rudder[2].second - c.p_animes_rudder[3].second)*deg2rad(30);
+			float py = (c.p_animes_rudder[5].second - c.p_animes_rudder[4].second)*deg2rad(20);
+			//操縦桿
+			obj.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
+			obj.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
+			obj.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
+			//ジャイロコンパス
+			obj.SetFrameLocalMatrix(compass_f.first, c.vehicle.mat.Inverse() * MATRIX_ref::Mtrans(compass_f.second));
+			obj.SetFrameLocalMatrix(compass2_f.first, c.vehicle.mat.Inverse() * MATRIX_ref::Mtrans(compass2_f.second));
+			//スロットル
+			{
+				float accel_ = c.vehicle.accel;
+				obj.SetFrameLocalMatrix(accel_f.first, MATRIX_ref::RotX(deg2rad(30.f - (accel_ / 100.f)*60.f)) * MATRIX_ref::Mtrans(accel_f.second));
+			}
+			//速度計
+			{
+				{
+					float spd_buf = c.vehicle.speed*3.6f;
+					float spd = 0.f;
+					if (spd_buf <= 400.f) {
+						spd = 180.f*spd_buf / 440.f;
+					}
+					else {
+						spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
+					}
+					obj.frame_reset(speed_f.first);
+					obj.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(speed2_f.second, -deg2rad(spd)) * MATRIX_ref::Mtrans(speed_f.second));
+				}
+				{
+					float spd_buf = c.vehicle.speed*3.6f / 1224.f*100.f;
+					easing_set(&spd3_fp, deg2rad(360.f / 10.f*(int)(spd_buf / 100.f)), 0.9f);
+					easing_set(&spd2_fp, deg2rad(360.f / 10.f*(int)(spd_buf / 10.f)), 0.9f);
+					easing_set(&spd1_fp, deg2rad(360.f / 10.f*(int)(spd_buf / 1.f)), 0.9f);
+					obj.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-spd3_fp) * MATRIX_ref::Mtrans(spd3_f.second));
+					obj.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-spd2_fp) * MATRIX_ref::Mtrans(spd2_f.second));
+					obj.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-spd1_fp) * MATRIX_ref::Mtrans(spd1_f.second));
+				}
+				//高度計
+				{
+					float alt_buf = c.vehicle.pos.y();
+					{
+						easing_set(&alt4_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1000.f)), 0.9f);
+						easing_set(&alt3_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 100.f)), 0.9f);
+						easing_set(&alt2_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 10.f)), 0.9f);
+						easing_set(&alt1_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1.f)), 0.9f);
+
+						obj.SetFrameLocalMatrix(alt4_f.first, MATRIX_ref::RotX(-alt4_fp) * MATRIX_ref::Mtrans(alt4_f.second));
+						obj.SetFrameLocalMatrix(alt3_f.first, MATRIX_ref::RotX(-alt3_fp) * MATRIX_ref::Mtrans(alt3_f.second));
+						obj.SetFrameLocalMatrix(alt2_f.first, MATRIX_ref::RotX(-alt2_fp) * MATRIX_ref::Mtrans(alt2_f.second));
+						obj.SetFrameLocalMatrix(alt1_f.first, MATRIX_ref::RotX(-alt1_fp) * MATRIX_ref::Mtrans(alt1_f.second));
+					}
+					{
+						obj.frame_reset(alt_1000_f.first);
+						obj.SetFrameLocalMatrix(alt_1000_f.first, MATRIX_ref::RotAxis(alt_1000_2_f.second, -deg2rad(360.f *alt_buf / 1000)) * MATRIX_ref::Mtrans(alt_1000_f.second));
+						obj.frame_reset(alt_100_f.first);
+						obj.SetFrameLocalMatrix(alt_100_f.first, MATRIX_ref::RotAxis(alt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(alt_100_f.second));
+					}
+					{
+						easing_set(&salt4_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1000.f)), 0.9f);
+						easing_set(&salt3_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 100.f)), 0.9f);
+						easing_set(&salt2_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 10.f)), 0.9f);
+						easing_set(&salt1_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1.f)), 0.9f);
+
+						obj.SetFrameLocalMatrix(salt4_f.first, MATRIX_ref::RotX(-salt4_fp) * MATRIX_ref::Mtrans(salt4_f.second));
+						obj.SetFrameLocalMatrix(salt3_f.first, MATRIX_ref::RotX(-salt3_fp) * MATRIX_ref::Mtrans(salt3_f.second));
+						obj.SetFrameLocalMatrix(salt2_f.first, MATRIX_ref::RotX(-salt2_fp) * MATRIX_ref::Mtrans(salt2_f.second));
+						obj.SetFrameLocalMatrix(salt1_f.first, MATRIX_ref::RotX(-salt1_fp) * MATRIX_ref::Mtrans(salt1_f.second));
+					}
+					{
+						obj.frame_reset(salt_1000_f.first);
+						obj.SetFrameLocalMatrix(salt_1000_f.first, MATRIX_ref::RotAxis(salt_1000_2_f.second, -deg2rad(360.f *alt_buf / 1000)) * MATRIX_ref::Mtrans(salt_1000_f.second));
+						obj.frame_reset(salt_100_f.first);
+						obj.SetFrameLocalMatrix(salt_100_f.first, MATRIX_ref::RotAxis(salt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(salt_100_f.second));
+					}
+				}
+				{
+					float fuel_buf = 1.f;
+
+					obj.frame_reset(fuel_f.first);
+					obj.SetFrameLocalMatrix(fuel_f.first, MATRIX_ref::RotAxis(fuel_2_f.second, -deg2rad(300.f * fuel_buf)) * MATRIX_ref::Mtrans(fuel_f.second));
+				}
+
+			}
+			//時計
+			{
+				DATEDATA DateBuf;
+				GetDateTime(&DateBuf);
+				obj.frame_reset(clock_h_f.first);
+				obj.SetFrameLocalMatrix(clock_h_f.first, MATRIX_ref::RotAxis(clock_h2_f.second, -deg2rad(360.f *DateBuf.Hour / 12 + 360.f / 12.f*DateBuf.Min / 60)) * MATRIX_ref::Mtrans(clock_h_f.second));
+				obj.frame_reset(clock_m_f.first);
+				obj.SetFrameLocalMatrix(clock_m_f.first, MATRIX_ref::RotAxis(clock_m2_f.second, -deg2rad(360.f *DateBuf.Min / 60 + 360.f / 60.f*DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_m_f.second));
+				obj.frame_reset(clock_s_f.first);
+				obj.SetFrameLocalMatrix(clock_s_f.first, MATRIX_ref::RotAxis(clock_s2_f.second, -deg2rad(360.f *DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_s_f.second));
+			}
+			//コンパス
+			{
+				VECTOR_ref tmp = c.vehicle.mat.zvec();
+				tmp = VGet(tmp.x(), 0.f, tmp.z());
+				tmp = tmp.Norm();
+
+				obj.frame_reset(subcompass_f.first);
+				obj.SetFrameLocalMatrix(subcompass_f.first, MATRIX_ref::RotAxis(subcompass2_f.second, std::atan2f(tmp.z(), -tmp.x())) * MATRIX_ref::Mtrans(subcompass_f.second));
+			}
+			obj.SetMatrix(c.vehicle.mat*MATRIX_ref::Mtrans(c.vehicle.obj.frame(c.vehicle.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, c.vehicle.mat)));
+		}
+	};
+	//player
 	class Chara {
 	public:
 		class sendstat {
@@ -835,6 +1072,8 @@ public:
 		SoundHandle se_gun;
 		SoundHandle se_missile;
 		SoundHandle se_hit;
+
+		cockpits cocks;	//コックピット
 		//セット
 		void set_human(const std::vector<Mainclass::Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
 			std::fill(this->key.begin(), this->key.end(), false); //操作
@@ -1067,240 +1306,6 @@ public:
 				return (hitnear.has_value());
 			}
 			return false;
-		}
-	};
-	//コックピット
-	class cockpits {
-	public:
-		frames	stickx_f, sticky_f, stickz_f, compass_f, compass2_f, speed_f, speed2_f, cockpit_f, clock_h_f, clock_h2_f, clock_m_f, clock_m2_f, clock_s_f, clock_s2_f, subcompass_f, subcompass2_f
-			, spd3_f, spd2_f, spd1_f
-			, alt4_f, alt3_f, alt2_f, alt1_f
-			, salt4_f, salt3_f, salt2_f, salt1_f
-			, alt_1000_f, alt_1000_2_f, alt_100_f, alt_100_2_f
-			, salt_1000_f, salt_1000_2_f, salt_100_f, salt_100_2_f
-			, fuel_f, fuel_2_f
-			, accel_f;
-
-		float spd3_fp = 0.f, spd2_fp = 0.f, spd1_fp = 0.f
-			, alt4_fp = 0.f, alt3_fp = 0.f, alt2_fp = 0.f, alt1_fp = 0.f
-			, salt4_fp = 0.f, salt3_fp = 0.f, salt2_fp = 0.f, salt1_fp = 0.f;
-
-		MV1 cockpit;
-
-		void set_() {
-			MV1::Load("data/model/cockpit/model.mv1", &cockpit, false);
-			//
-			for (int i = 0; i < cockpit.frame_num(); i++) {
-				std::string p = cockpit.frame_name(i);
-				if (p.find("座席", 0) != std::string::npos) {
-					cockpit_f = { i,cockpit.frame(i) };
-				}
-				else if ((p.find("姿勢指示器", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
-					compass_f = { i,cockpit.frame(i) - cockpit.frame(int(cockpit.frame_parent(i))) };
-					//ジャイロコンパス
-				}
-				else if ((p.find("姿勢指示器", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
-					compass2_f = { i,cockpit.frame(i) - cockpit.frame(int(cockpit.frame_parent(i))) };
-					//ジャイロコンパス
-				}
-				else if ((p.find("予備コンパス", 0) != std::string::npos)) {
-					subcompass_f = { i,cockpit.frame(i) - cockpit.frame(int(cockpit.frame_parent(i))) };
-					subcompass2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-					//コンパス
-				}
-				else if (p.find("スティック縦", 0) != std::string::npos) {
-					stickx_f = { i,cockpit.frame(i) };
-					stickz_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-				}
-				else if ((p.find("ペダル", 0) != std::string::npos) && (p.find("右", 0) == std::string::npos) && (p.find("左", 0) == std::string::npos)) {
-					sticky_f = { i,cockpit.frame(i) };
-				}
-				else if ((p.find("スロットル", 0) != std::string::npos)) {
-					accel_f = { i,cockpit.frame(i) };
-				}
-				else if ((p.find("速度計", 0) != std::string::npos)) {
-					speed_f = { i,cockpit.frame(i) };
-					speed2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-				}
-				else if ((p.find("速度100", 0) != std::string::npos)) {
-					spd3_f = { i,cockpit.frame(i) };
-				}
-				else if ((p.find("速度010", 0) != std::string::npos)) {
-					spd2_f = { i,cockpit.frame(i) };
-				}
-				else if ((p.find("速度001", 0) != std::string::npos)) {
-					spd1_f = { i,cockpit.frame(i) };
-				}
-
-				else if ((p.find("高度1000", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
-					alt4_f = { i,cockpit.frame(i) };
-				}
-				else if ((p.find("高度0100", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
-					alt3_f = { i,cockpit.frame(i) };
-				}
-				else if ((p.find("高度0010", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
-					alt2_f = { i,cockpit.frame(i) };
-				}
-				else if ((p.find("高度0001", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
-					alt1_f = { i,cockpit.frame(i) };
-				}
-
-				else if ((p.find("高度1000", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
-					salt4_f = { i,cockpit.frame(i) };
-				}
-				else if ((p.find("高度0100", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
-					salt3_f = { i,cockpit.frame(i) };
-				}
-				else if ((p.find("高度0010", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
-					salt2_f = { i,cockpit.frame(i) };
-				}
-				else if ((p.find("高度0001", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
-					salt1_f = { i,cockpit.frame(i) };
-				}
-
-				else if ((p.find("高度計", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
-					alt_1000_f = { i,cockpit.frame(i) };
-					alt_1000_2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-				}
-				else if ((p.find("高度長針", 0) != std::string::npos) && (p.find("予備", 0) == std::string::npos)) {
-					alt_100_f = { i,cockpit.frame(i) };
-					alt_100_2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-				}
-				else if ((p.find("高度計", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos) && (p.find("長針", 0) == std::string::npos)) {
-					salt_1000_f = { i,cockpit.frame(i) };
-					salt_1000_2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-				}
-				else if ((p.find("高度計長針", 0) != std::string::npos) && (p.find("予備", 0) != std::string::npos)) {
-					salt_100_f = { i,cockpit.frame(i) };
-					salt_100_2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-				}
-
-				else if ((p.find("燃料計", 0) != std::string::npos)) {
-					fuel_f = { i,cockpit.frame(i) };
-					fuel_2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-				}
-
-				else if ((p.find("時計", 0) != std::string::npos)) {
-					clock_h_f = { i,cockpit.frame(i) };
-					clock_h2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-				}
-				else if ((p.find("分針", 0) != std::string::npos)) {
-					clock_m_f = { i,cockpit.frame(i) };
-					clock_m2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-				}
-				else if ((p.find("秒針", 0) != std::string::npos)) {
-					clock_s_f = { i,cockpit.frame(i) };
-					clock_s2_f = { i + 1,cockpit.frame(i + 1) - cockpit.frame(i) };
-				}
-			}
-		}
-
-		void ready_(Chara& c) {
-			float px = (c.p_animes_rudder[1].second - c.p_animes_rudder[0].second)*deg2rad(30);
-			float pz = (c.p_animes_rudder[2].second - c.p_animes_rudder[3].second)*deg2rad(30);
-			float py = (c.p_animes_rudder[5].second - c.p_animes_rudder[4].second)*deg2rad(20);
-			//操縦桿
-			cockpit.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
-			cockpit.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
-			cockpit.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
-			//ジャイロコンパス
-			cockpit.SetFrameLocalMatrix(compass_f.first, c.vehicle.mat.Inverse() * MATRIX_ref::Mtrans(compass_f.second));
-			cockpit.SetFrameLocalMatrix(compass2_f.first, c.vehicle.mat.Inverse() * MATRIX_ref::Mtrans(compass2_f.second));
-			//スロットル
-			{
-				float accel_ = c.vehicle.accel;
-				cockpit.SetFrameLocalMatrix(accel_f.first, MATRIX_ref::RotX(deg2rad(30.f - (accel_ / 100.f)*60.f)) * MATRIX_ref::Mtrans(accel_f.second));
-			}
-			//速度計
-			{
-				{
-					float spd_buf = c.vehicle.speed*3.6f;
-					float spd = 0.f;
-					if (spd_buf <= 400.f) {
-						spd = 180.f*spd_buf / 440.f;
-					}
-					else {
-						spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
-					}
-					cockpit.frame_reset(speed_f.first);
-					cockpit.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(speed2_f.second, -deg2rad(spd)) * MATRIX_ref::Mtrans(speed_f.second));
-				}
-				{
-					float spd_buf = c.vehicle.speed*3.6f / 1224.f*100.f;
-					easing_set(&spd3_fp, deg2rad(360.f / 10.f*(int)(spd_buf / 100.f)), 0.9f);
-					easing_set(&spd2_fp, deg2rad(360.f / 10.f*(int)(spd_buf / 10.f)), 0.9f);
-					easing_set(&spd1_fp, deg2rad(360.f / 10.f*(int)(spd_buf / 1.f)), 0.9f);
-					cockpit.SetFrameLocalMatrix(spd3_f.first, MATRIX_ref::RotX(-spd3_fp) * MATRIX_ref::Mtrans(spd3_f.second));
-					cockpit.SetFrameLocalMatrix(spd2_f.first, MATRIX_ref::RotX(-spd2_fp) * MATRIX_ref::Mtrans(spd2_f.second));
-					cockpit.SetFrameLocalMatrix(spd1_f.first, MATRIX_ref::RotX(-spd1_fp) * MATRIX_ref::Mtrans(spd1_f.second));
-				}
-				//高度計
-				{
-					float alt_buf = c.vehicle.pos.y();
-					{
-						easing_set(&alt4_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1000.f)), 0.9f);
-						easing_set(&alt3_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 100.f)), 0.9f);
-						easing_set(&alt2_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 10.f)), 0.9f);
-						easing_set(&alt1_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1.f)), 0.9f);
-
-						cockpit.SetFrameLocalMatrix(alt4_f.first, MATRIX_ref::RotX(-alt4_fp) * MATRIX_ref::Mtrans(alt4_f.second));
-						cockpit.SetFrameLocalMatrix(alt3_f.first, MATRIX_ref::RotX(-alt3_fp) * MATRIX_ref::Mtrans(alt3_f.second));
-						cockpit.SetFrameLocalMatrix(alt2_f.first, MATRIX_ref::RotX(-alt2_fp) * MATRIX_ref::Mtrans(alt2_f.second));
-						cockpit.SetFrameLocalMatrix(alt1_f.first, MATRIX_ref::RotX(-alt1_fp) * MATRIX_ref::Mtrans(alt1_f.second));
-					}
-					{
-						cockpit.frame_reset(alt_1000_f.first);
-						cockpit.SetFrameLocalMatrix(alt_1000_f.first, MATRIX_ref::RotAxis(alt_1000_2_f.second, -deg2rad(360.f *alt_buf / 1000)) * MATRIX_ref::Mtrans(alt_1000_f.second));
-						cockpit.frame_reset(alt_100_f.first);
-						cockpit.SetFrameLocalMatrix(alt_100_f.first, MATRIX_ref::RotAxis(alt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(alt_100_f.second));
-					}
-					{
-						easing_set(&salt4_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1000.f)), 0.9f);
-						easing_set(&salt3_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 100.f)), 0.9f);
-						easing_set(&salt2_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 10.f)), 0.9f);
-						easing_set(&salt1_fp, deg2rad(360.f / 10.f*(int)(alt_buf / 1.f)), 0.9f);
-
-						cockpit.SetFrameLocalMatrix(salt4_f.first, MATRIX_ref::RotX(-salt4_fp) * MATRIX_ref::Mtrans(salt4_f.second));
-						cockpit.SetFrameLocalMatrix(salt3_f.first, MATRIX_ref::RotX(-salt3_fp) * MATRIX_ref::Mtrans(salt3_f.second));
-						cockpit.SetFrameLocalMatrix(salt2_f.first, MATRIX_ref::RotX(-salt2_fp) * MATRIX_ref::Mtrans(salt2_f.second));
-						cockpit.SetFrameLocalMatrix(salt1_f.first, MATRIX_ref::RotX(-salt1_fp) * MATRIX_ref::Mtrans(salt1_f.second));
-					}
-					{
-						cockpit.frame_reset(salt_1000_f.first);
-						cockpit.SetFrameLocalMatrix(salt_1000_f.first, MATRIX_ref::RotAxis(salt_1000_2_f.second, -deg2rad(360.f *alt_buf / 1000)) * MATRIX_ref::Mtrans(salt_1000_f.second));
-						cockpit.frame_reset(salt_100_f.first);
-						cockpit.SetFrameLocalMatrix(salt_100_f.first, MATRIX_ref::RotAxis(salt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(salt_100_f.second));
-					}
-				}
-				{
-					float fuel_buf = 1.f;
-
-					cockpit.frame_reset(fuel_f.first);
-					cockpit.SetFrameLocalMatrix(fuel_f.first, MATRIX_ref::RotAxis(fuel_2_f.second, -deg2rad(300.f * fuel_buf)) * MATRIX_ref::Mtrans(fuel_f.second));
-				}
-
-			}
-			//時計
-			{
-				DATEDATA DateBuf;
-				GetDateTime(&DateBuf);
-				cockpit.frame_reset(clock_h_f.first);
-				cockpit.SetFrameLocalMatrix(clock_h_f.first, MATRIX_ref::RotAxis(clock_h2_f.second, -deg2rad(360.f *DateBuf.Hour / 12 + 360.f / 12.f*DateBuf.Min / 60)) * MATRIX_ref::Mtrans(clock_h_f.second));
-				cockpit.frame_reset(clock_m_f.first);
-				cockpit.SetFrameLocalMatrix(clock_m_f.first, MATRIX_ref::RotAxis(clock_m2_f.second, -deg2rad(360.f *DateBuf.Min / 60 + 360.f / 60.f*DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_m_f.second));
-				cockpit.frame_reset(clock_s_f.first);
-				cockpit.SetFrameLocalMatrix(clock_s_f.first, MATRIX_ref::RotAxis(clock_s2_f.second, -deg2rad(360.f *DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_s_f.second));
-			}
-			//コンパス
-			{
-				VECTOR_ref tmp = c.vehicle.mat.zvec();
-				tmp = VGet(tmp.x(), 0.f, tmp.z());
-				tmp = tmp.Norm();
-
-				cockpit.frame_reset(subcompass_f.first);
-				cockpit.SetFrameLocalMatrix(subcompass_f.first, MATRIX_ref::RotAxis(subcompass2_f.second, std::atan2f(tmp.z(), -tmp.x())) * MATRIX_ref::Mtrans(subcompass_f.second));
-			}
-			cockpit.SetMatrix(c.vehicle.mat*MATRIX_ref::Mtrans(c.vehicle.obj.frame(c.vehicle.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, c.vehicle.mat)));
 		}
 	};
 	//

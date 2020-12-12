@@ -11,6 +11,7 @@ class main_c : Mainclass {
 	FontHandle font18;
 	GraphHandle outScreen2;
 	MV1 hit_pic;	//弾痕
+	MV1 cockpit;	//コックピット
 	//操作
 	Mainclass::CAMS cam_s;
 	float range = 0.f, range_p = 30.f;
@@ -20,7 +21,6 @@ class main_c : Mainclass {
 	MATRIX_ref HMDmat;
 	VECTOR_ref rec_HMD;
 	//データ
-	std::vector <Mainclass::cockpits> cocks;	//コックピット
 	std::vector<Mainclass::Chara> chara;	//キャラ
 	std::vector<Mainclass::Ammos> Ammo;		//弾薬
 	std::vector<Mainclass::Vehcs> Vehicles;	//車輛データ
@@ -34,6 +34,8 @@ class main_c : Mainclass {
 	bool start_c = true;
 	bool start_c2 = true;
 	bool ending = true;
+
+	float fov_pc = 45.f;
 public:
 	main_c() {
 		//設定読み込み
@@ -57,7 +59,6 @@ public:
 		font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 		outScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//描画スクリーン
 	//その他
-		//
 		SetCreate3DSoundFlag(TRUE);
 		se_cockpit = SoundHandle::Load("data/audio/fighter-cockpit1.wav");
 		se_gun = SoundHandle::Load("data/audio/hit.wav");
@@ -68,15 +69,13 @@ public:
 		//
 		MV1::Load("data/model/hit/model.mv1", &hit_pic, true);			//弾痕
 		Mainclass::Vehcs::set_vehicles_pre("data/plane/", &Vehicles, true);
+		MV1::Load("data/model/cockpit/model.mv1", &cockpit, true);
 		//
 		UIparts->load_window("車両モデル");					//ロード画面
 		//
-		cocks.resize(2);
-		cocks[0].set_();			//コックピット
-		cocks[1].set_();			//コックピット
 		Mainclass::Ammos::set_ammos(&Ammo);							//弾薬
 		Mainclass::Vehcs::set_vehicles(&Vehicles);					//車輛
-		//ココから繰り返し読み込み//-------------------------------------------------------------------
+	//ココから繰り返し読み込み//-------------------------------------------------------------------
 		do {
 			oldv = false;
 			start_c = true;
@@ -106,18 +105,13 @@ public:
 				for (auto& c : chara) {
 					size_t i = &c - &chara[0];
 					auto& veh = c.vehicle;
-					veh.spawn(
-						VGet(
-							float(30 * (i / 3))*sin(deg2rad(-130)),
-							10.f,
-							float(30 * (i / 3))*cos(deg2rad(-130)) + float(30 * (i % 3))
-						),
-						MATRIX_ref::RotY(deg2rad(-130)));
+					veh.spawn(VGet(float(30 * (i / 3))*sin(deg2rad(-130)), 10.f, float(30 * (i / 3))*cos(deg2rad(-130)) + float(30 * (i % 3))), MATRIX_ref::RotY(deg2rad(-130)));
 				}
 			}
 			//キャラ設定
 			for (auto& c : chara) {
-				c.set_human(Vehicles, Ammo, hit_pic);//
+				c.set_human(Vehicles, Ammo, hit_pic);	//
+				c.cocks.set_(cockpit);					//コックピット
 			}
 			//ラムダ
 			auto ram_draw = [&]() {
@@ -166,6 +160,16 @@ public:
 					SetFogEnable(TRUE);
 				}
 				);
+			};
+			auto mouse_aim = [&](VECTOR_ref& eyevec_tmp) {
+				int mousex, mousey;
+				GetMousePoint(&mousex, &mousey);
+				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
+
+				float y = atan2f(eyevec_tmp.x(), eyevec_tmp.z()) + deg2rad(float(mousex - Drawparts->disp_x / 2) * 0.1f / fovs);
+				float x = atan2f(eyevec_tmp.y(), std::hypotf(eyevec_tmp.x(), eyevec_tmp.z())) + deg2rad(float(mousey - Drawparts->disp_y / 2) * 0.1f / fovs);
+				x = std::clamp(x, deg2rad(-80), deg2rad(45));
+				eyevec_tmp = VGet(cos(x) * std::sin(y), std::sin(x), std::cos(x) * std::cos(y));
 			};
 			//木セット
 			mapparts->map_settree();
@@ -416,14 +420,7 @@ public:
 							eyevec = HMDmat.zvec();
 						}
 						else {
-							int mousex, mousey;
-							GetMousePoint(&mousex, &mousey);
-							SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
-
-							float y = atan2f(eyevec.x(), eyevec.z()) + deg2rad(float(mousex - Drawparts->disp_x / 2) * 0.1f / fovs);
-							float x = atan2f(eyevec.y(), std::hypotf(eyevec.x(), eyevec.z())) + deg2rad(float(mousey - Drawparts->disp_y / 2) * 0.1f / fovs);
-							x = std::clamp(x, deg2rad(-45), deg2rad(45));
-							eyevec = VGet(cos(x) * std::sin(y), std::sin(x), std::cos(x) * std::cos(y));
+							mouse_aim(eyevec);
 						}
 					}
 					{
@@ -1026,7 +1023,7 @@ public:
 								//far取得
 								cam_easy.far_ = 6000.f;
 								//fov
-								cam_easy.fov = deg2rad(Drawparts->use_vr ? 90 : 45.f / fovs);
+								cam_easy.fov = deg2rad(Drawparts->use_vr ? 90 : fov_pc / fovs);
 
 								cam_s.cam = cam_easy;
 							}
@@ -1034,12 +1031,12 @@ public:
 							Set3DSoundListenerPosAndFrontPosAndUpVec(cam_s.cam.campos.get(), cam_s.cam.camvec.get(), cam_s.cam.camup.get());
 							//コックピット演算
 							if (cam_s.Rot >= ADS) {
-								cocks[0].ready_(mine);
+								mine.cocks.ready_(mine);
 							}
 							//UI
 							Hostpassparts->UI_Screen.SetDraw_Screen();
 							{
-								UIparts->draw(chara, Hostpassparts->MAIN_Screen, cam_s, cocks[0], *Drawparts->get_device_hand1(), mine);
+								UIparts->draw(chara, Hostpassparts->MAIN_Screen, cam_s, mine.cocks, *Drawparts->get_device_hand1(), mine);
 							}
 							//sky
 							Hostpassparts->SkyScreen.SetDraw_Screen(cam_s.cam.campos - cam_s.cam.camvec, VGet(0, 0, 0), cam_s.cam.camup, cam_s.cam.fov, 1.0f, 50.0f);
@@ -1064,7 +1061,7 @@ public:
 								SetWriteZBuffer3D(TRUE);											//zbufwrite
 								//コックピット
 								if (cam_s.Rot >= ADS) {
-									cocks[0].cockpit.DrawModel();
+									mine.cocks.obj.DrawModel();
 								}
 								//UI
 								SetUseZBuffer3D(FALSE);												//zbufuse
@@ -1075,7 +1072,7 @@ public:
 								//Hostpassparts->UI_Screen.DrawGraph(0, 0, true);
 							}, cam_s.cam);
 						}
-						//自機リプレイ
+						//カメラリプレイ
 						{
 							rep_cam.push_back(cam_s);
 						}
@@ -1086,16 +1083,7 @@ public:
 							//cam_s.cam
 							{
 								//campos,camvec,camup取得
-								{
-									int mousex, mousey;
-									GetMousePoint(&mousex, &mousey);
-									SetMousePoint(Drawparts->out_disp_x / 2, Drawparts->out_disp_y / 2);
-
-									float y = atan2f(eyevec2.x(), eyevec2.z()) + deg2rad(float(mousex - Drawparts->out_disp_x / 2) * 0.1f);
-									float x = atan2f(eyevec2.y(), std::hypotf(eyevec2.x(), eyevec2.z())) + deg2rad(float(mousey - Drawparts->out_disp_y / 2) * 0.1f);
-									x = std::clamp(x, deg2rad(-45), deg2rad(45));
-									eyevec2 = VGet(cos(x) * std::sin(y), std::sin(x), std::cos(x) * std::cos(y));
-								}
+								mouse_aim(eyevec2);
 								{
 									cam_s.cam.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(0, 0.58f, 0), veh.mat);
 									cam_s.cam.campos.y(std::max(cam_s.cam.campos.y(), 5.f));
@@ -1110,16 +1098,16 @@ public:
 								//far取得
 								cam_s.cam.far_ = 4000.f;
 								//fov
-								cam_s.cam.fov = deg2rad(45.f / fovs);
+								cam_s.cam.fov = deg2rad(fov_pc / fovs);
 							}
 							//コックピット演算
 							{
-								cocks[1].ready_(ct);
+								ct.cocks.ready_(ct);
 							}
 							//UI
 							Hostpass2parts->UI_Screen.SetDraw_Screen();
 							{
-								UIparts->draw(chara, Hostpass2parts->MAIN_Screen, cam_s, cocks[1], *Drawparts->get_device_hand1(), ct, 0);
+								UIparts->draw(chara, Hostpass2parts->MAIN_Screen, cam_s, ct.cocks, *Drawparts->get_device_hand1(), ct, 0);
 							}
 							//sky
 							Hostpass2parts->SkyScreen.SetDraw_Screen(cam_s.cam.campos - cam_s.cam.camvec, VGet(0, 0, 0), cam_s.cam.camup, cam_s.cam.fov, 1.0f, 50.0f);
@@ -1139,7 +1127,7 @@ public:
 								Hostpass2parts->MAIN_Screen.DrawGraph(0, 0, true);
 								SetCameraNearFar(0.01f, 2.f);
 								//コックピット
-								cocks[1].cockpit.DrawModel();
+								ct.cocks.obj.DrawModel();
 								//UI
 								Hostpass2parts->UI_Screen.DrawGraph(0, 0, true);
 							}
@@ -1205,7 +1193,7 @@ public:
 				auto tcam = rep_cam.begin();
 
 				float bar = 0.f;
-				int all = chara[0].rep.size();
+				int all = (int)(chara[0].rep.size());
 				int now = all;
 
 				ClearDrawScreen();
@@ -1365,16 +1353,7 @@ public:
 								chara[sel_l].view_xrad = 0.f;
 							}
 							//マウスと視点角度をリンク
-							{
-								int mousex, mousey;
-								GetMousePoint(&mousex, &mousey);
-								SetMousePoint(Drawparts->out_disp_x / 2, Drawparts->out_disp_y / 2);
-
-								float y = atan2f(eyevec2.x(), eyevec2.z()) + deg2rad(float(mousex - Drawparts->out_disp_x / 2) * 0.1f);
-								float x = atan2f(eyevec2.y(), std::hypotf(eyevec2.x(), eyevec2.z())) + deg2rad(float(mousey - Drawparts->out_disp_y / 2) * 0.1f);
-								x = std::clamp(x, deg2rad(-45), deg2rad(45));
-								eyevec2 = VGet(cos(x) * std::sin(y), std::sin(x), std::cos(x) * std::cos(y));
-							}
+							mouse_aim(eyevec2);
 						}
 						//
 						{
@@ -1385,7 +1364,7 @@ public:
 						{
 							if (sel_l == 0 && ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0)) {
 								cam_s = *tcam;
-								cam_s.cam.fov = deg2rad(45.f / fovs);
+								cam_s.cam.fov = deg2rad(fov_pc);
 							}
 							else {
 								auto& veh = chara[sel_l].vehicle;
@@ -1441,7 +1420,7 @@ public:
 									//far取得
 									cam_easy.far_ = 6000.f;
 									//fov
-									cam_easy.fov = deg2rad(45.f / fovs);
+									cam_easy.fov = deg2rad(fov_pc / fovs);
 
 									cam_s.cam = cam_easy;
 								}
@@ -1547,12 +1526,12 @@ public:
 							Set3DSoundListenerPosAndFrontPosAndUpVec(cam_s.cam.campos.get(), cam_s.cam.camvec.get(), cam_s.cam.camup.get());
 							//コックピット演算
 							if (cam_s.Rot >= ADS) {
-								cocks[sel_l].ready_(chara[sel_l]);
+								chara[sel_l].cocks.ready_(chara[sel_l]);
 							}
 							//UI
 							Hostpass2parts->UI_Screen.SetDraw_Screen();
 							{
-								UIparts->draw(chara, Hostpass2parts->MAIN_Screen, cam_s, cocks[sel_l], *Drawparts->get_device_hand1(), chara[sel_l], 0);
+								UIparts->draw(chara, Hostpass2parts->MAIN_Screen, cam_s, chara[sel_l].cocks, *Drawparts->get_device_hand1(), chara[sel_l], 0);
 							}
 							//sky
 							Hostpass2parts->SkyScreen.SetDraw_Screen(cam_s.cam.campos - cam_s.cam.camvec, VGet(0, 0, 0), cam_s.cam.camup, cam_s.cam.fov, 1.0f, 50.0f);
@@ -1573,7 +1552,7 @@ public:
 								//コックピット
 								if (cam_s.Rot >= ADS) {
 									SetCameraNearFar(0.01f, 2.f);
-									cocks[sel_l].cockpit.DrawModel();
+									chara[sel_l].cocks.obj.DrawModel();
 								}
 								//UI
 								Hostpass2parts->UI_Screen.DrawGraph(0, 0, true);

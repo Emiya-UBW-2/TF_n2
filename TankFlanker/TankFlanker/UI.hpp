@@ -337,8 +337,8 @@ public:
 					c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
 				}
 				if (cam_s.Rot >= ADS) {
-					altpos = ConvWorldPosToScreenPos((cocks.cockpit.frame(cocks.alt_100_f.first) - (cocks.cockpit.frame(cocks.alt_100_2_f.first) - cocks.cockpit.frame(cocks.alt_100_f.first)).Norm()*0.05f).get());
-					spdpos = ConvWorldPosToScreenPos((cocks.cockpit.frame(cocks.speed_f.first) - (cocks.cockpit.frame(cocks.speed2_f.first) - cocks.cockpit.frame(cocks.speed_f.first)).Norm()*0.05f).get());
+					altpos = ConvWorldPosToScreenPos((cocks.obj.frame(cocks.alt_100_f.first) - (cocks.obj.frame(cocks.alt_100_2_f.first) - cocks.obj.frame(cocks.alt_100_f.first)).Norm()*0.05f).get());
+					spdpos = ConvWorldPosToScreenPos((cocks.obj.frame(cocks.speed_f.first) - (cocks.obj.frame(cocks.speed2_f.first) - cocks.obj.frame(cocks.speed_f.first)).Norm()*0.05f).get());
 
 					auto& veh = chara.vehicle;
 					aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
