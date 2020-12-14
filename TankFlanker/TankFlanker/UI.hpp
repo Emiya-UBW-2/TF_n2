@@ -353,8 +353,27 @@ public:
 			int siz = int(64.f);
 			if (aimpos.z() >= 0.f && aimpos.z() <= 1.f) {
 				circle.DrawExtendGraph(int(aimpos.x()) - y_r(siz, out_disp_y), int(aimpos.y()) - y_r(siz, out_disp_y), int(aimpos.x()) + y_r(siz, out_disp_y), int(aimpos.y()) + y_r(siz, out_disp_y), TRUE);
+
+				VECTOR_ref tmp = cam_s.cam.camup;
+				VECTOR_ref tmp_t = VGet(0, 1.f, 0);
+
+				VECTOR_ref tmp_t2 = VGet(tmp.x(),0.f,tmp.z());
+				tmp_t2 = tmp_t2.Norm();
+
+				float y_t = tmp.dot(tmp_t);
+				float x_t = tmp.cross(tmp_t).size();
+
+				//tmp.cross(tmp_t2);
+
+				float rad_t = std::atan2f(x_t, y_t);
+				//*
+				if (tmp.cross(cam_s.cam.camvec - cam_s.cam.campos).y() >= 0.f) {
+				}
+				//*/
+				DrawRotaGraph(int(aimpos.x()), int(aimpos.y()), y_r(siz, out_disp_y) / 100.f, rad_t, aim.get(), TRUE);
+
+				font18.DrawStringFormat(int(aimpos.x()), int(aimpos.y()), ((tmp.cross(cam_s.cam.camvec - cam_s.cam.campos).y() >= 0.f) ? GetColor(0, 255, 0) : GetColor(255, 0, 0)), "%d", int(rad2deg(rad_t)));
 			}
-			aim.DrawExtendGraph(disp_x / 2 - y_r(siz, out_disp_y), disp_y / 2 - y_r(siz, out_disp_y), disp_x / 2 + y_r(siz, out_disp_y), disp_y / 2 + y_r(siz, out_disp_y), TRUE);
 		}
 		//
 		FontHandle* font = (!(use_vr && overrider == -1)) ? &font18 : &font36;
@@ -741,7 +760,7 @@ public:
 					ys = y_r(8, out_disp_y);
 					DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + xs, yp + ys / 2 + ys * 2 / 3, GetColor(255, 0, 0), TRUE);
 					DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + xs * int(c.vehicle.HP) / int(c.vehicle.use_veh.HP), yp + ys / 2 + ys * 2 / 3, GetColor(0, 255, 0), TRUE);
-					if (c.p_anime_geardown.second <= 0.5f) {
+					if (c.p_anime_geardown.second >= 0.5f) {
 						DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + xs, yp + ys / 2 + ys * 2 / 3, GetColor(127, 127, 127), TRUE);
 					}
 

@@ -23,7 +23,8 @@ enum Effect {
 	ef_smoke1 = 6, //ミサイル炎
 	ef_smoke2 = 7, //銃の軌跡
 	ef_gndsmoke = 8,//地面の軌跡
-	ef_size = 9
+	ef_smoke3 = 9, //飛行機の軌跡
+	ef_size = 10
 };
 
 //要改善
@@ -40,24 +41,7 @@ private:
 		std::vector<std::string> useammo;
 		uint16_t rounds = 0;
 	};
-	struct foot_frame {
-		frames frame;
-		EffectS gndsmkeffcs;
-	};
-	struct Hit {		      //
-		bool flug{ false };   //弾痕フラグ
-		int use{ 0 };	      //使用フレーム
-		MV1 pic;			//弾痕モデル
-		VECTOR_ref pos;	      //座標
-		MATRIX_ref mat;	      //
-		void clear() {
-			this->flug = false;
-			this->use = 0;
-			this->pic.Dispose();
-			this->pos = VGet(0, 0, 0);
-			this->mat.clear();
-		}
-	};
+
 public:
 	//弾薬
 	class Ammos {
@@ -90,8 +74,51 @@ public:
 		}
 	};
 	//車輛
+	class Chara;
+
 	class Vehcs {
 	public:
+
+		class foot_frame {
+		public:
+			frames frame;
+			EffectS gndsmkeffcs;
+			void init() {
+				this->gndsmkeffcs.scale = 0.1f;
+			}
+			template<class Y, class D>
+			void math(std::unique_ptr<Y, D>& mapparts , Chara* c,bool *hit_f) {
+				auto& veh = c->vehicle;
+				easing_set(&this->gndsmkeffcs.scale, 0.01f, 0.9f);
+				auto tmp = veh.obj.frame(int(this->frame.first + 1)) - VGet(0.f, 0.2f, 0.f);
+				//地面
+				{
+					auto hp = mapparts->map_col_line(tmp + (veh.mat.yvec() * (0.5f)), tmp, 0);
+					if (hp.HitFlag == TRUE) {
+						veh.add = (VECTOR_ref(hp.HitPosition) - tmp);
+						{
+							auto normal = veh.mat.yvec();
+							easing_set(&normal, hp.Normal, 0.95f);
+							veh.mat *= MATRIX_ref::RotVec2(veh.mat.yvec(), normal);
+						}
+						this->gndsmkeffcs.scale = std::clamp(veh.speed * 3.6f / 50.f, 0.1f, 1.f);
+						if (!*hit_f) {
+							if (veh.speed >= 0.f && (c->key[11])) {
+								veh.speed += -1.f / 3.6f * 60.f / GetFPS();
+							}
+							if (veh.speed <= 0.f) {
+								easing_set(&veh.speed, 0.f, 0.9f);
+							}
+							*hit_f = true;
+						}
+					}
+				}
+			}
+		};
+		struct wing_frame {
+			frames frame;
+			EffectS smkeffcs;
+		};
 		//共通
 		std::string name;				  //
 		MV1 obj, col;					  //
@@ -99,6 +126,7 @@ public:
 		std::vector<gun_frame> gunframe;			  //
 		std::vector<foot_frame> wheelframe;			  //
 		std::vector<foot_frame> wheelframe_nospring;		  //誘導輪回転
+		std::vector< wing_frame> wingframe;
 		uint16_t HP = 0;					  //
 		std::vector<std::pair<size_t, float>> armer_mesh; //装甲ID
 		std::vector<size_t> space_mesh;			  //装甲ID
@@ -138,6 +166,11 @@ public:
 				this->wheelframe_nospring.resize(this->wheelframe_nospring.size() + 1);
 				this->wheelframe_nospring.back().frame = p.frame;
 			}
+			this->wingframe.clear();
+			for (auto& p : t.wingframe) {
+				this->wingframe.resize(this->wingframe.size() + 1);
+				this->wingframe.back().frame = p.frame;
+			}
 			this->name = t.name;
 			this->minpos = t.minpos;
 			this->maxpos = t.maxpos;
@@ -172,7 +205,7 @@ public:
 			this->pic_y = t.pic_y;
 		}
 		//事前読み込み
-		static void set_vehicles_pre(const char* name, std::vector<Mainclass::Vehcs>* veh_, const bool& Async) {
+		static void set_vehicles_pre(const char* name, std::vector<Vehcs>* veh_, const bool& Async) {
 			WIN32_FIND_DATA win32fdt;
 			HANDLE hFind;
 			hFind = FindFirstFile((std::string(name) + "*").c_str(), &win32fdt);
@@ -192,7 +225,7 @@ public:
 			}
 		}
 		//メイン読み込み
-		static void set_vehicles(std::vector<Mainclass::Vehcs>* vehcs) {
+		static void set_vehicles(std::vector<Vehcs>* vehcs) {
 			using namespace std::literals;
 			//共通
 			for (auto& t : *vehcs) {
@@ -278,6 +311,11 @@ public:
 					else if (p.find("視点", 0) != std::string::npos) {
 						t.fps_view.first = i;
 						t.fps_view.second = t.obj.frame(t.fps_view.first);
+					}	
+					else if (p.find("センター", 0) != std::string::npos) {
+						t.wingframe.resize(t.wingframe.size() + 1);
+						t.wingframe.back().frame.first = i;
+						t.wingframe.back().frame.second = t.obj.frame(t.wingframe.back().frame.first);
 					}
 				}
 				//メッシュ
@@ -355,46 +393,326 @@ public:
 			}
 		}
 	};
-public:
+	//
 	struct ammos {
 		bool hit{ false };
 		bool flug{ false };
 		float count = 0.f;
 		unsigned int color = 0;
-		Mainclass::Ammos spec;
+		Ammos spec;
 		float yadd = 0.f;
 		VECTOR_ref pos, repos, vec;
 	};
-	struct ef_guns {
-		EffectS first;
-		ammos* second = nullptr;
-		bool n_l;
-		bool flug;
-		float count = -1.f;
+	//
+public:
+	class Chara;
+
+	struct Hit {			//
+		bool flug{ false };//弾痕フラグ
+		int use{ 0 };		//使用フレーム
+		MV1 pic;			//弾痕モデル
+		VECTOR_ref pos;		//座標
+		MATRIX_ref mat;		//
+		void clear() {
+			this->flug = false;
+			this->use = 0;
+			this->pic.Dispose();
+			this->pos = VGet(0, 0, 0);
+			this->mat.clear();
+		}
+		void init(const MV1& hit_pic) {
+			this->clear();
+			this->pic = hit_pic.Duplicate();
+		}
+		void set(const ammos& c, const Chara& tgt,const VECTOR_ref& position, const VECTOR_ref& normal) {
+			float asize = c.spec.caliber_a * 100.f;
+			auto scale = VGet(asize / std::abs(c.vec.Norm().dot(normal)), asize, asize);
+			auto y_vec = MATRIX_ref::Vtrans(normal, tgt.vehicle.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
+			auto z_vec = MATRIX_ref::Vtrans(normal.cross(c.vec), tgt.vehicle.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
+
+			this->mat = MATRIX_ref::Scale(scale)* MATRIX_ref::Axis1(y_vec.cross(z_vec), y_vec, z_vec);
+			this->pos = MATRIX_ref::Vtrans((VECTOR_ref)position - tgt.vehicle.pos, tgt.vehicle.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180))) + y_vec * 0.02f;
+			this->flug = true;
+		}
+
+		void put(const Chara& c) {
+			if (this->flug) {
+				this->pic.SetMatrix(this->mat* c.vehicle.mat*MATRIX_ref::Mtrans((VECTOR_ref)c.vehicle.pos + MATRIX_ref::Vtrans(this->pos, c.vehicle.mat)));
+			}
+		}
+		void draw() {
+			if (this->flug) {
+				this->pic.DrawFrame(this->use);
+			}
+		}
 	};
-	struct CAMS {
-		DXDraw::cam_info cam;
-		int Rot = 0;//
-	};
+
+public:
+	class Chara;
 private:
-	class Guns {							      //
+	class vehicles;
+
+	class Guns {							//
+		std::vector<Ammos> Spec;				//
 	public:
-		size_t usebullet{};					      //使用弾
-		std::array<ammos, 64> bullet;				      //確保する弾
-		float loadcnt{ 0 };					      //装てんカウンター
-		float fired{ 0.f };					      //駐退数
-		int16_t rounds{ 0 };					      //弾数
-		gun_frame gun_info;						      //
-		std::vector<Mainclass::Ammos> Spec;				      //
+		size_t usebullet{};					//使用弾
+		int16_t rounds{ 0 };					//弾数
+		gun_frame gun_info;						//
+		float loadcnt{ 0 };					//装てんカウンター
+		std::array<ammos, 64> bullet;				//確保する弾
+
 		void clear() {
 			this->usebullet = 0;
 			this->loadcnt = 0.f;
-			this->fired = 0.f;
 			this->rounds = 0;
 			this->Spec.clear();
 		}
-	};								      //
-	class pair_hit {							      //
+		void init(const gun_frame& gunf, const std::vector<Ammos>& Ammo_) {
+			this->gun_info = gunf;
+			//使用砲弾
+			this->Spec.clear();
+			for (auto& pa : Ammo_) {
+				if (pa.name_a.find(this->gun_info.useammo[0]) != std::string::npos) {
+					this->Spec.emplace_back(pa);
+					break;
+				}
+			}
+			for (auto& p : this->bullet) {
+				p.color = GetColor(255, 255, 172);
+				p.spec = this->Spec[0];
+			}
+		}
+		void set() {
+			this->rounds = this->gun_info.rounds;
+		}
+		void draw(const VECTOR_ref& position) {
+			for (auto& a : this->bullet) {
+				if (a.flug) {
+					DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - position).size() / 24.f))*4.5f, a.color, GetColor(255, 255, 255));
+				}
+			}
+		}
+		void math(const bool& key,Chara* c) {
+			if (key && this->loadcnt == 0 && this->rounds > 0) {
+				auto& u = this->bullet[this->usebullet];
+				++this->usebullet %= this->bullet.size();
+				//ココだけ変化
+				u.spec = this->Spec[0];
+				u.spec.speed_a *= float(75 + GetRand(50)) / 100.f;
+				u.pos = c->vehicle.obj.frame(this->gun_info.frame2.first);
+				u.vec = (c->vehicle.obj.frame(this->gun_info.frame3.first) - c->vehicle.obj.frame(this->gun_info.frame2.first)).Norm();
+				//
+				this->loadcnt = this->gun_info.load_time;
+				this->rounds = std::max<uint16_t>(this->rounds - 1, 0);
+				u.hit = false;
+				u.flug = true;
+				u.count = 0.f;
+				u.yadd = 0.f;
+				u.repos = u.pos;
+				if (u.spec.type_a != 2) {
+					c->effcs[ef_fire].set(c->vehicle.obj.frame(this->gun_info.frame3.first), u.vec, u.spec.caliber_a / 0.1f);
+					if (u.spec.caliber_a >= 0.017f) {
+						c->effcs_gun[c->gun_effcnt].first.set(c->vehicle.obj.frame(this->gun_info.frame3.first), u.vec);
+						c->effcs_gun[c->gun_effcnt].second = &u;
+						c->effcs_gun[c->gun_effcnt].count = 0.f;
+						++c->gun_effcnt %= c->effcs_gun.size();
+					}
+					c->se_gun.play(DX_PLAYTYPE_BACK, TRUE);
+				}
+				else {
+					c->effcs_missile[c->missile_effcnt].first.set(c->vehicle.obj.frame(this->gun_info.frame3.first), u.vec);
+					c->effcs_missile[c->missile_effcnt].second = &u;
+					c->effcs_missile[c->missile_effcnt].count = 0.f;
+					++c->missile_effcnt %= c->effcs_missile.size();
+
+					c->se_missile.play(DX_PLAYTYPE_BACK, TRUE);
+				}
+			}
+			this->loadcnt = std::max(this->loadcnt - 1.f / GetFPS(), 0.f);
+		}
+		//要改善
+		template<class Y, class D>
+		void math_reco(std::unique_ptr<Y, D>& mapparts,Chara* c, std::vector<Chara>* chara) {
+			for (auto& a : this->bullet) {
+				float size = 3.f;
+				for (int z = 0; z < int(size); z++) {
+					if (a.flug) {
+						a.repos = a.pos;
+						a.pos += a.vec * (a.spec.speed_a / GetFPS() / size);
+						//判定
+						{
+							bool ground_hit = false;
+							VECTOR_ref normal;
+							//機体以外に当たる
+							for (int i = 0; i < mapparts->map_col_get().mesh_num(); i++) {
+								auto hps = mapparts->map_col_line(a.repos, a.pos, i);
+								if (hps.HitFlag) {
+									a.pos = hps.HitPosition;
+									normal = hps.Normal;
+									ground_hit = true;
+								}
+							}
+							//必要な時に当たり判定をリフレッシュする
+							for (auto& t : *chara) {
+								auto& veh_t = t.vehicle;
+								if (c == &t || veh_t.hit_check) {
+									continue;
+								}
+								if ((Segment_Point_MinLen(a.pos, a.repos, veh_t.pos) > 5.f)) {
+									continue;
+								}
+								veh_t.col.SetMatrix((MATRIX_ref)(veh_t.mat) * MATRIX_ref::Mtrans(veh_t.pos));
+								for (int i = 0; i < veh_t.col.mesh_num(); i++) {
+									veh_t.col.RefreshCollInfo(-1, i);
+								}
+								veh_t.hit_check = true;
+							}
+							//飛行機にあたる
+							auto hitplane = c->get_reco(*chara, a);
+							//その後処理
+							if (!hitplane) {
+								if (ground_hit) {
+									if (a.spec.caliber_a >= 0.020f) {
+										c->effcs[ef_gndhit].set(a.pos + normal * (0.1f), normal);
+									}
+									else {
+										c->effcs[ef_gndhit2].set(a.pos + normal * (0.1f), normal);
+									}
+									switch (a.spec.type_a) {
+									case 0: //AP
+										if ((a.vec.Norm().dot(normal)) <= cos(deg2rad(60))) {
+											a.flug = false;
+										}
+										else {
+											a.vec += normal * ((a.vec.dot(normal)) * -2.f);
+											a.vec = a.vec.Norm();
+											a.pos += a.vec * (0.01f);
+											a.spec.pene_a /= 2.f;
+										}
+										break;
+									case 1: //HE
+										a.flug = false;
+										break;
+									case 2: //ミサイル
+										a.flug = false;
+										break;
+									default:
+										break;
+									}
+								}
+							}
+							if (a.flug) {
+								switch (a.spec.type_a) {
+								case 0: //AP
+								{
+									a.spec.pene_a -= 1.0f / GetFPS() / size;
+									a.spec.speed_a -= 5.f / GetFPS() / size;
+									a.pos += VGet(0.f, a.yadd / size, 0.f);
+								}
+								break;
+								case 1: //HE
+								{
+									a.spec.speed_a -= 5.f / GetFPS() / size;
+									a.pos += VGet(0.f, a.yadd / size, 0.f);
+									//
+									size_t id = chara->size();
+									VECTOR_ref pos;
+									float dist = (std::numeric_limits<float>::max)();
+									for (auto& t : *chara) {
+										//弾関連
+										if (c == &t) {
+											continue;
+										}
+										auto p = (t.vehicle.pos - a.pos).size();
+										if (dist > p) {
+											dist = p;
+											id = &t - &(*chara)[0];
+											pos = t.vehicle.pos;
+										}
+									}
+									if (id != chara->size()) {
+										//反映
+										auto vec_a = (a.pos - pos).Norm();
+										auto vec_z = a.vec;
+										if (vec_a.dot(vec_z) < 0 && (a.pos - pos).size() <= 500.f) {
+											float z_hyp = std::hypotf(vec_z.x(), vec_z.z());
+											float a_hyp = std::hypotf(vec_a.x(), vec_a.z());
+											float cost = (vec_a.z() * vec_z.x() - vec_a.x() * vec_z.z()) / (a_hyp * z_hyp);
+											float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cos取得2D
+											float view_xrad = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
+											{
+												float limit = deg2rad(2.5f) / GetFPS();
+												float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad, -limit, limit);
+												float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad, -limit, limit);
+												a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
+											}
+										}
+									}
+								}
+								break;
+								case 2: //ミサイル
+								{
+									size_t id = chara->size();
+									VECTOR_ref pos;
+									float dist = (std::numeric_limits<float>::max)();
+									for (auto& t : *chara) {
+										//弾関連
+										if (c == &t) {
+											continue;
+										}
+										auto p = (t.vehicle.pos - a.pos).size();
+										if (dist > p) {
+											dist = p;
+											id = &t - &(*chara)[0];
+											pos = t.vehicle.pos;
+										}
+									}
+									if (id != chara->size()) {
+										//反映
+										auto vec_a = (a.pos - pos).Norm();
+										auto vec_z = a.vec;
+										if (vec_a.dot(vec_z) < 0 && (a.pos - pos).size() <= 2000.f) {
+											float z_hyp = std::hypotf(vec_z.x(), vec_z.z());
+											float a_hyp = std::hypotf(vec_a.x(), vec_a.z());
+											float cost = (vec_a.z() * vec_z.x() - vec_a.x() * vec_z.z()) / (a_hyp * z_hyp);
+											float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cos取得2D
+											float view_xrad = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
+											{
+												float limit = deg2rad(25.f) / GetFPS();
+												float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad, -limit, limit);
+												float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad, -limit, limit);
+												a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
+											}
+										}
+									}
+								}
+								break;
+								default:
+									break;
+								}
+							}
+						}
+
+						//消す(2秒たった、スピードが100以下、貫通が0以下)
+						if (a.count >= 2.5f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
+							a.flug = false;
+						}
+						if (!a.flug) {
+							for (auto& b : c->effcs_gun) {
+								if (b.second == &a) {
+									b.first.handle.SetPos(b.second->pos);
+									break;
+								}
+							}
+						}
+					}
+				}
+				a.yadd += M_GR / powf(GetFPS(), 2.f);
+				a.count += 1.f / GetFPS();
+			}
+		}
+	};								//
+	class pair_hit {							//
 	public:
 		size_t first = 0;
 		float second = 0.f;
@@ -403,38 +721,45 @@ private:
 			this->second = 0.f;
 		}
 	};
+	class hit_data {							//
+	public:
+		MV1_COLL_RESULT_POLY res;
+		pair_hit sort;
+	};
 	class vehicles {
 	public:
-		Vehcs use_veh;							      //固有値
-		MV1 obj;							      //
-		MV1 col;							      //
-		bool hit_check = false;						      //当たり判定を取るかチェック
-		size_t use_id = 0;						      //使用する車両(機材)
-		uint16_t HP = 0;						      //体力
-		uint16_t KILL = 0;						      //体力
-		int KILL_ID = -1;						      //体力
-		uint16_t DEATH = 0;						      //体力
-		int DEATH_ID = -1;						      //体力
-		VECTOR_ref pos;							      //車体座標
-		MATRIX_ref mat;							      //車体回転行列
-		MATRIX_ref mat_start;					      //車体回転行列(初期配置)
-		VECTOR_ref add;							      //車体加速度
-		std::vector<Guns> Gun_;						      //
+		Vehcs use_veh;						//固有値
+		MV1 obj;							//
+		MV1 col;							//
+		bool hit_check = false;						//当たり判定を取るかチェック
+		size_t use_id = 0;						//使用する車両(機材)
+		uint16_t HP = 0;						//体力
+		uint16_t KILL = 0;						//体力
+		int KILL_ID = -1;						//体力
+		uint16_t DEATH = 0;						//体力
+		int DEATH_ID = -1;						//体力
+		VECTOR_ref pos;							//車体座標
+		MATRIX_ref mat;							//車体回転行列
+		MATRIX_ref mat_start;					//車体回転行列(初期配置)
+		VECTOR_ref add;							//車体加速度
+		std::vector<Guns> Gun_;						//
 		float accel = 0.f, accel_add = 0.f;
 		float WIP_timer_limit = 0.f;
 		float WIP_timer = 0.f;
 		bool over_heat = false;
-		float speed = 0.f, speed_add = 0.f;		      //
+		float speed = 0.f, speed_add = 0.f;		//
 		float xradadd_left = 0.f, xradadd_right = 0.f; //
 		float yradadd_left = 0.f, yradadd_right = 0.f;	    //
 		float zradadd_left = 0.f, zradadd_right = 0.f; //
-		std::vector<MV1_COLL_RESULT_POLY> hitres;			      //確保
-		std::vector<int16_t> HP_m;					      //ライフ
-		std::array<Hit, 24> hit_obj;					      //弾痕
-		size_t camo_sel = 0;						      //
-		float wheel_Left = 0.f, wheel_Right = 0.f;			      //転輪回転
-		float wheel_Leftadd = 0.f, wheel_Rightadd = 0.f;		      //転輪回転
-		std::vector<pair_hit> hitssort;					      //フレームに当たった順番
+		std::vector<int16_t> HP_m;					//ライフ
+		std::array<Hit, 24> hit_obj;					//弾痕
+		size_t camo_sel = 0;						//
+		float wheel_Left = 0.f, wheel_Right = 0.f;			//転輪回転
+		float wheel_Leftadd = 0.f, wheel_Rightadd = 0.f;		//転輪回転
+
+		std::vector<hit_data> hits;
+		//std::vector<MV1_COLL_RESULT_POLY> hitres;			//確保
+		//std::vector<pair_hit> hitssort;					//フレームに当たった順番
 
 		void reset() {
 			this->xradadd_right = 0.f;
@@ -457,7 +782,7 @@ private:
 			this->add.clear();
 		}
 	public:
-		void init(const Mainclass::Vehcs& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
+		void init(const Vehcs& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
 			//
 			this->Dispose();
 			//
@@ -469,16 +794,9 @@ private:
 			for (int j = 0; j < this->col.mesh_num(); j++) {
 				this->col.SetupCollInfo(8, 8, 8, -1, j);
 			}
-			this->hitres.resize(this->col.mesh_num());   //モジュールごとの当たり判定結果を確保
-			this->hitssort.resize(this->col.mesh_num()); //モジュールごとの当たり判定順序を確保
+			this->hits.resize(this->col.mesh_num());
 			//弾痕
-			for (auto& h : this->hit_obj) {
-				h.flug = false;
-				h.pic = hit_pic.Duplicate();
-				h.use = 0;
-				h.mat.clear();
-				h.pos.clear();
-			}
+			for (auto& h : this->hit_obj) { h.init(hit_pic); }
 			for (int j = 0; j < this->obj.material_num(); ++j) {
 				MV1SetMaterialSpcColor(this->obj.get(), j, GetColorF(0.85f, 0.82f, 0.78f, 0.1f));
 				MV1SetMaterialSpcPower(this->obj.get(), j, 50.0f);
@@ -494,20 +812,7 @@ private:
 			//砲
 			this->Gun_.resize(this->use_veh.gunframe.size());
 			for (auto& cg : this->Gun_) {
-				size_t index = &cg - &this->Gun_[0];
-				cg.gun_info = this->use_veh.gunframe[index];
-				//使用砲弾
-				cg.Spec.resize(cg.Spec.size() + 1);
-				for (auto& pa : Ammo_) {
-					if (pa.name_a.find(cg.gun_info.useammo[0]) != std::string::npos) {
-						cg.Spec.back() = pa;
-						break;
-					}
-				}
-				for (auto& p : cg.bullet) {
-					p.color = GetColor(255, 255, 172);
-					p.spec = cg.Spec[0];
-				}
+				cg.init(this->use_veh.gunframe[&cg - &this->Gun_[0]], Ammo_);
 			}
 			spawn(VGet(0, 0, 0), MGetIdent());
 		}
@@ -516,12 +821,15 @@ private:
 			this->col.Dispose();
 			this->hit_check = false;
 			this->HP = 0;
-			this->KILL = 0;						      //体力
-			this->KILL_ID = -1;						      //体力
-			this->DEATH = 0;						      //体力
-			this->DEATH_ID = -1;						      //体力
+			this->KILL = 0;						//体力
+			this->KILL_ID = -1;						//体力
+			this->DEATH = 0;						//体力
+			this->DEATH_ID = -1;						//体力
 
-			this->hitres.clear();
+			for (auto& hz : this->hits) {
+				hz.sort.clear();
+			}
+			this->hits.clear();
 			this->HP_m.clear();
 			this->wheel_Left = 0.f;
 			this->wheel_Right = 0.f;
@@ -530,8 +838,6 @@ private:
 			for (auto& h : this->hit_obj) { h.clear(); }
 			for (auto& cg : this->Gun_) { cg.clear(); }
 			this->Gun_.clear();
-			for (auto& h : this->hitssort) { h.clear(); }
-			this->hitssort.clear();
 
 			this->reset();
 		}
@@ -544,7 +850,7 @@ private:
 			this->mat_start = this->mat;
 			//砲
 			for (auto& cg : this->Gun_) {
-				cg.rounds = cg.gun_info.rounds;
+				cg.set();
 			}
 			//ヒットポイント
 			this->HP = this->use_veh.HP;
@@ -555,13 +861,26 @@ private:
 		}
 	};
 public:
+	//
+	struct ef_guns {
+		EffectS first;
+		ammos* second = nullptr;
+		bool n_l;
+		bool flug;
+		float count = -1.f;
+	};
+	//カメラ
+	struct CAMS {
+		DXDraw::cam_info cam;
+		int Rot = 0;//
+	};
+	typedef std::pair<int, float> p_animes;
 	//マップ
 	struct treePats {
 		MV1 obj, obj_far;
 		MATRIX_ref mat;
 		VECTOR_ref pos;
 	};
-	typedef std::pair<int, float> p_animes;
 	class Chara;
 	//コックピット
 	class cockpits {
@@ -688,7 +1007,6 @@ public:
 				}
 			}
 		}
-
 		void ready_(Chara& c) {
 			float px = (c.p_animes_rudder[1].second - c.p_animes_rudder[0].second)*deg2rad(30);
 			float pz = (c.p_animes_rudder[2].second - c.p_animes_rudder[3].second)*deg2rad(30);
@@ -806,7 +1124,7 @@ public:
 			MATRIX_ref v_mat;
 			VECTOR_ref pos;
 			MATRIX_ref mat;
-			std::vector<Guns> Gun_;						      //
+			std::vector<Guns> Gun_;						//
 			float speed;
 			struct eff_buf {
 				bool flug{ false };				 //
@@ -817,20 +1135,16 @@ public:
 			std::array<eff_buf, ef_size> effcs_; //effect
 			std::array<ef_guns, 8> effcs_missile_; //effect
 			std::array<ef_guns, 12> effcs_gun_;    //effect
-
 			std::array<float, 3> gndsmkeffcs_; //effect
-
 			p_animes p_anime_geardown;		    //車輪アニメーション
-			std::array<p_animes, 6> p_animes_rudder;      //ラダーアニメーション
-			float wheel_Left = 0.f, wheel_Right = 0.f;			      //転輪回転
-
+			std::array<p_animes, 6> p_animes_rudder;//ラダーアニメーション
+			float wheel_Left = 0.f, wheel_Right = 0.f;			//転輪回転
 			//何故か要る
 			sendstat(void) {
 			}
 			//何故か要る
 			sendstat(const sendstat& p) {
 			}
-
 			void get_data(Chara& data) {
 				auto& veh = data.vehicle;
 
@@ -841,7 +1155,7 @@ public:
 				this->Gun_ = veh.Gun_;
 
 				this->p_anime_geardown = data.p_anime_geardown;		    //車輪アニメーション
-				this->p_animes_rudder = data.p_animes_rudder;      //ラダーアニメーション
+				this->p_animes_rudder = data.p_animes_rudder;//ラダーアニメーション
 
 				this->wheel_Left = veh.wheel_Left;
 				this->wheel_Right = veh.wheel_Right;
@@ -906,7 +1220,7 @@ public:
 				}
 
 				data.p_anime_geardown = this->p_anime_geardown;		    //車輪アニメーション
-				data.p_animes_rudder = this->p_animes_rudder;      //ラダーアニメーション
+				data.p_animes_rudder = this->p_animes_rudder;//ラダーアニメーション
 				veh.wheel_Left = this->wheel_Left;
 				veh.wheel_Right = this->wheel_Right;
 
@@ -942,108 +1256,102 @@ public:
 					}
 				}
 			}
-
 			void write(std::ofstream& fout) {
-				{
-					fout.write((char *)&this->speed, sizeof(this->speed));
-					fout.write((char *)&this->v_mat, sizeof(this->v_mat));
-					fout.write((char *)&this->mat, sizeof(this->mat));
-					fout.write((char *)&this->pos, sizeof(this->pos));
-					for (auto& p : this->Gun_) {
-						for (auto& a : p.bullet) {
-							fout.write((char *)&a.flug, sizeof(a.flug));
-							fout.write((char *)&a.pos, sizeof(a.pos));
-							fout.write((char *)&a.repos, sizeof(a.repos));
-							fout.write((char *)&a.spec.caliber_a, sizeof(a.spec.caliber_a));
-							fout.write((char *)&a.color, sizeof(a.color));
-						}
-					}
-					fout.write((char *)&this->p_anime_geardown, sizeof(this->p_anime_geardown));
-					fout.write((char *)&this->p_animes_rudder, sizeof(this->p_animes_rudder));
-
-					fout.write((char *)&this->wheel_Left, sizeof(this->wheel_Left));
-					fout.write((char *)&this->wheel_Right, sizeof(this->wheel_Right));
-
-					for (auto& e : this->effcs_) {
-						fout.write((char *)&e.flug, sizeof(e.flug));
-						fout.write((char *)&e.pos, sizeof(e.pos));
-						fout.write((char *)&e.nor, sizeof(e.nor));
-						fout.write((char *)&e.scale, sizeof(e.scale));
-					}
-					for (auto& e : this->effcs_missile_) {
-						fout.write((char *)&e.first.flug, sizeof(e.first.flug));
-						fout.write((char *)&e.first.pos, sizeof(e.first.pos));
-						fout.write((char *)&e.first.nor, sizeof(e.first.nor));
-						fout.write((char *)&e.first.scale, sizeof(e.first.scale));
-						fout.write((char *)&e.flug, sizeof(e.flug));
-						fout.write((char *)&e.n_l, sizeof(e.n_l));
-						fout.write((char *)&e.count, sizeof(e.count));
-					}
-					for (auto& e : this->effcs_gun_) {
-						fout.write((char *)&e.first.flug, sizeof(e.first.flug));
-						fout.write((char *)&e.first.pos, sizeof(e.first.pos));
-						fout.write((char *)&e.first.nor, sizeof(e.first.nor));
-						fout.write((char *)&e.first.scale, sizeof(e.first.scale));
-						fout.write((char *)&e.flug, sizeof(e.flug));
-						fout.write((char *)&e.n_l, sizeof(e.n_l));
-						fout.write((char *)&e.count, sizeof(e.count));
-					}
-					for (auto& e : this->gndsmkeffcs_) {
-						fout.write((char *)&e, sizeof(e));
+				fout.write((char *)&this->speed, sizeof(this->speed));
+				fout.write((char *)&this->v_mat, sizeof(this->v_mat));
+				fout.write((char *)&this->mat, sizeof(this->mat));
+				fout.write((char *)&this->pos, sizeof(this->pos));
+				for (auto& p : this->Gun_) {
+					for (auto& a : p.bullet) {
+						fout.write((char *)&a.flug, sizeof(a.flug));
+						fout.write((char *)&a.pos, sizeof(a.pos));
+						fout.write((char *)&a.repos, sizeof(a.repos));
+						fout.write((char *)&a.spec.caliber_a, sizeof(a.spec.caliber_a));
+						fout.write((char *)&a.color, sizeof(a.color));
 					}
 				}
+				fout.write((char *)&this->p_anime_geardown, sizeof(this->p_anime_geardown));
+				fout.write((char *)&this->p_animes_rudder, sizeof(this->p_animes_rudder));
+
+				fout.write((char *)&this->wheel_Left, sizeof(this->wheel_Left));
+				fout.write((char *)&this->wheel_Right, sizeof(this->wheel_Right));
+
+				for (auto& e : this->effcs_) {
+					fout.write((char *)&e.flug, sizeof(e.flug));
+					fout.write((char *)&e.pos, sizeof(e.pos));
+					fout.write((char *)&e.nor, sizeof(e.nor));
+					fout.write((char *)&e.scale, sizeof(e.scale));
+				}
+				for (auto& e : this->effcs_missile_) {
+					fout.write((char *)&e.first.flug, sizeof(e.first.flug));
+					fout.write((char *)&e.first.pos, sizeof(e.first.pos));
+					fout.write((char *)&e.first.nor, sizeof(e.first.nor));
+					fout.write((char *)&e.first.scale, sizeof(e.first.scale));
+					fout.write((char *)&e.flug, sizeof(e.flug));
+					fout.write((char *)&e.n_l, sizeof(e.n_l));
+					fout.write((char *)&e.count, sizeof(e.count));
+				}
+				for (auto& e : this->effcs_gun_) {
+					fout.write((char *)&e.first.flug, sizeof(e.first.flug));
+					fout.write((char *)&e.first.pos, sizeof(e.first.pos));
+					fout.write((char *)&e.first.nor, sizeof(e.first.nor));
+					fout.write((char *)&e.first.scale, sizeof(e.first.scale));
+					fout.write((char *)&e.flug, sizeof(e.flug));
+					fout.write((char *)&e.n_l, sizeof(e.n_l));
+					fout.write((char *)&e.count, sizeof(e.count));
+				}
+				for (auto& e : this->gndsmkeffcs_) {
+					fout.write((char *)&e, sizeof(e));
+				}
 			}
-
 			void read(std::ifstream& fout) {
-				{
-					fout.read((char *)&this->speed, sizeof(this->speed));
-					fout.read((char *)&this->v_mat, sizeof(this->v_mat));
-					fout.read((char *)&this->mat, sizeof(this->mat));
-					fout.read((char *)&this->pos, sizeof(this->pos));
-					this->Gun_.clear();
-					this->Gun_.resize(5);
-					for (auto& p : this->Gun_) {
-						for (auto& a : p.bullet) {
-							fout.read((char *)&a.flug, sizeof(a.flug));
-							fout.read((char *)&a.pos, sizeof(a.pos));
-							fout.read((char *)&a.repos, sizeof(a.repos));
-							fout.read((char *)&a.spec.caliber_a, sizeof(a.spec.caliber_a));
-							fout.read((char *)&a.color, sizeof(a.color));
-						}
+				fout.read((char *)&this->speed, sizeof(this->speed));
+				fout.read((char *)&this->v_mat, sizeof(this->v_mat));
+				fout.read((char *)&this->mat, sizeof(this->mat));
+				fout.read((char *)&this->pos, sizeof(this->pos));
+				this->Gun_.clear();
+				this->Gun_.resize(5);
+				for (auto& p : this->Gun_) {
+					for (auto& a : p.bullet) {
+						fout.read((char *)&a.flug, sizeof(a.flug));
+						fout.read((char *)&a.pos, sizeof(a.pos));
+						fout.read((char *)&a.repos, sizeof(a.repos));
+						fout.read((char *)&a.spec.caliber_a, sizeof(a.spec.caliber_a));
+						fout.read((char *)&a.color, sizeof(a.color));
 					}
-					fout.read((char *)&this->p_anime_geardown, sizeof(this->p_anime_geardown));
-					fout.read((char *)&this->p_animes_rudder, sizeof(this->p_animes_rudder));
+				}
+				fout.read((char *)&this->p_anime_geardown, sizeof(this->p_anime_geardown));
+				fout.read((char *)&this->p_animes_rudder, sizeof(this->p_animes_rudder));
 
-					fout.read((char *)&this->wheel_Left, sizeof(this->wheel_Left));
-					fout.read((char *)&this->wheel_Right, sizeof(this->wheel_Right));
+				fout.read((char *)&this->wheel_Left, sizeof(this->wheel_Left));
+				fout.read((char *)&this->wheel_Right, sizeof(this->wheel_Right));
 
-					for (auto& e : this->effcs_) {
-						fout.read((char *)&e.flug, sizeof(e.flug));
-						fout.read((char *)&e.pos, sizeof(e.pos));
-						fout.read((char *)&e.nor, sizeof(e.nor));
-						fout.read((char *)&e.scale, sizeof(e.scale));
-					}
-					for (auto& e : this->effcs_missile_) {
-						fout.read((char *)&e.first.flug, sizeof(e.first.flug));
-						fout.read((char *)&e.first.pos, sizeof(e.first.pos));
-						fout.read((char *)&e.first.nor, sizeof(e.first.nor));
-						fout.read((char *)&e.first.scale, sizeof(e.first.scale));
-						fout.read((char *)&e.flug, sizeof(e.flug));
-						fout.read((char *)&e.n_l, sizeof(e.n_l));
-						fout.read((char *)&e.count, sizeof(e.count));
-					}
-					for (auto& e : this->effcs_gun_) {
-						fout.read((char *)&e.first.flug, sizeof(e.first.flug));
-						fout.read((char *)&e.first.pos, sizeof(e.first.pos));
-						fout.read((char *)&e.first.nor, sizeof(e.first.nor));
-						fout.read((char *)&e.first.scale, sizeof(e.first.scale));
-						fout.read((char *)&e.flug, sizeof(e.flug));
-						fout.read((char *)&e.n_l, sizeof(e.n_l));
-						fout.read((char *)&e.count, sizeof(e.count));
-					}
-					for (auto& e : this->gndsmkeffcs_) {
-						fout.read((char *)&e, sizeof(e));
-					}
+				for (auto& e : this->effcs_) {
+					fout.read((char *)&e.flug, sizeof(e.flug));
+					fout.read((char *)&e.pos, sizeof(e.pos));
+					fout.read((char *)&e.nor, sizeof(e.nor));
+					fout.read((char *)&e.scale, sizeof(e.scale));
+				}
+				for (auto& e : this->effcs_missile_) {
+					fout.read((char *)&e.first.flug, sizeof(e.first.flug));
+					fout.read((char *)&e.first.pos, sizeof(e.first.pos));
+					fout.read((char *)&e.first.nor, sizeof(e.first.nor));
+					fout.read((char *)&e.first.scale, sizeof(e.first.scale));
+					fout.read((char *)&e.flug, sizeof(e.flug));
+					fout.read((char *)&e.n_l, sizeof(e.n_l));
+					fout.read((char *)&e.count, sizeof(e.count));
+				}
+				for (auto& e : this->effcs_gun_) {
+					fout.read((char *)&e.first.flug, sizeof(e.first.flug));
+					fout.read((char *)&e.first.pos, sizeof(e.first.pos));
+					fout.read((char *)&e.first.nor, sizeof(e.first.nor));
+					fout.read((char *)&e.first.scale, sizeof(e.first.scale));
+					fout.read((char *)&e.flug, sizeof(e.flug));
+					fout.read((char *)&e.n_l, sizeof(e.n_l));
+					fout.read((char *)&e.count, sizeof(e.count));
+				}
+				for (auto& e : this->gndsmkeffcs_) {
+					fout.read((char *)&e, sizeof(e));
 				}
 			}
 		};
@@ -1059,11 +1367,11 @@ public:
 		std::array<bool, 18> key{ false };    //キー
 		float view_xrad = 0.f, view_yrad = 0.f; //砲塔操作用ベクトル
 		//戦車//==================================================
-		int hitbuf = 0;		       //使用弾痕
+		int hitbuf = 0;		 //使用弾痕
 		//飛行機//==================================================
 		p_animes p_anime_geardown;		    //車輪アニメーション
 		switchs changegear; //ギアアップスイッチ
-		std::array<p_animes, 6> p_animes_rudder;      //ラダーアニメーション
+		std::array<p_animes, 6> p_animes_rudder;//ラダーアニメーション
 		std::vector<frames> p_burner;		    //バーナー
 		//共通項//==================================================
 		vehicles vehicle;
@@ -1075,7 +1383,7 @@ public:
 
 		cockpits cocks;	//コックピット
 		//セット
-		void set_human(const std::vector<Mainclass::Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
+		void set_human(const std::vector<Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
 			std::fill(this->key.begin(), this->key.end(), false); //操作
 			auto& veh = this->vehicle;
 			//共通
@@ -1119,35 +1427,35 @@ public:
 						auto& veh_t = t.vehicle;
 						//モジュール
 						for (auto& m : veh_t.use_veh.module_mesh) {
-							veh_t.hitres[m] = veh_t.col.CollCheck_Line(c.repos, (c.pos + (c.pos - c.repos) * (0.1f)), -1, int(m));
-							if (veh_t.hitres[m].HitFlag) {
-								veh_t.hitssort[m] = { m, (c.repos - veh_t.hitres[m].HitPosition).size() };
+							veh_t.hits[m].res = veh_t.col.CollCheck_Line(c.repos, (c.pos + (c.pos - c.repos) * (0.1f)), -1, int(m));
+							if (veh_t.hits[m].res.HitFlag) {
+								veh_t.hits[m].sort = { m, (c.repos - veh_t.hits[m].res.HitPosition).size() };
 								is_hit = true;
 							}
 							else {
-								veh_t.hitssort[m] = { m, (std::numeric_limits<float>::max)() };
+								veh_t.hits[m].sort = { m, (std::numeric_limits<float>::max)() };
 							}
 						}
 						//空間装甲
 						for (auto& m : veh_t.use_veh.space_mesh) {
-							veh_t.hitres[m] = veh_t.col.CollCheck_Line(c.repos, (c.pos + (c.pos - c.repos) * (0.1f)), -1, int(m));
-							if (veh_t.hitres[m].HitFlag) {
-								veh_t.hitssort[m] = { m, (c.repos - veh_t.hitres[m].HitPosition).size() };
+							veh_t.hits[m].res = veh_t.col.CollCheck_Line(c.repos, (c.pos + (c.pos - c.repos) * (0.1f)), -1, int(m));
+							if (veh_t.hits[m].res.HitFlag) {
+								veh_t.hits[m].sort = { m, (c.repos - veh_t.hits[m].res.HitPosition).size() };
 								is_hit = true;
 							}
 							else {
-								veh_t.hitssort[m] = { m, (std::numeric_limits<float>::max)() };
+								veh_t.hits[m].sort = { m, (std::numeric_limits<float>::max)() };
 							}
 						}
 						//装甲
 						for (auto& m : veh_t.use_veh.armer_mesh) {
-							veh_t.hitres[m.first] = veh_t.col.CollCheck_Line(c.repos, c.pos, -1, int(m.first));
-							if (veh_t.hitres[m.first].HitFlag) {
-								veh_t.hitssort[m.first] = { m.first, (c.repos - veh_t.hitres[m.first].HitPosition).size() };
+							veh_t.hits[m.first].res = veh_t.col.CollCheck_Line(c.repos, c.pos, -1, int(m.first));
+							if (veh_t.hits[m.first].res.HitFlag) {
+								veh_t.hits[m.first].sort = { m.first, (c.repos - veh_t.hits[m.first].res.HitPosition).size() };
 								is_hit = true;
 							}
 							else {
-								veh_t.hitssort[m.first] = { m.first, (std::numeric_limits<float>::max)() };
+								veh_t.hits[m.first].sort = { m.first, (std::numeric_limits<float>::max)() };
 							}
 						}
 						//当たってない
@@ -1157,23 +1465,23 @@ public:
 						//
 						t.se_hit.play(DX_PLAYTYPE_BACK, TRUE);
 						//当たり判定を近い順にソート
-						std::sort(veh_t.hitssort.begin(), veh_t.hitssort.end(), [](const pair_hit& x, const pair_hit& y) { return x.second < y.second; });
+						std::sort(veh_t.hits.begin(), veh_t.hits.end(), [](const hit_data& x, const hit_data& y) { return x.sort.second < y.sort.second; });
 						//ダメージ面に届くまで判定
-						for (auto& tt : veh_t.hitssort) {
+						for (auto& tt : veh_t.hits) {
 							//装甲面に当たらなかったならスルー
-							if (tt.second == (std::numeric_limits<float>::max)()) {
+							if (tt.sort.second == (std::numeric_limits<float>::max)()) {
 								break;
 							}
 							//当たったら判定
 							for (auto& a : veh_t.use_veh.armer_mesh) {
-								if (tt.first != a.first) {
+								if (tt.sort.first != a.first) {
 									continue;
 								}
-								hitnear = tt.first;
+								hitnear = tt.sort.first;
 								//ダメージ面に当たった時に装甲値に勝てるかどうか
 								{
-									VECTOR_ref normal = veh_t.hitres[hitnear.value()].Normal;
-									VECTOR_ref position = veh_t.hitres[hitnear.value()].HitPosition;
+									VECTOR_ref normal = tt.res.Normal;
+									VECTOR_ref position = tt.res.HitPosition;
 
 									VECTOR_ref vec_t = c.vec;
 									//弾処理
@@ -1183,7 +1491,7 @@ public:
 									//貫通
 									if (c.spec.pene_a > a.second * (1.0f / std::abs(vec_t.Norm().dot(normal)))) {
 										if (t.p_anime_geardown.second <= 0.5f) {
-											veh_t.HP_m[tt.first] = std::max<int16_t>(veh_t.HP_m[tt.first] - 30, 0); //
+											veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
 											veh_t.HP = std::max<int16_t>(veh_t.HP - c.spec.damage_a, 0); //
 										}
 										//撃破時エフェクト
@@ -1228,14 +1536,7 @@ public:
 									}
 									//弾痕のセット
 									{
-										float asize = c.spec.caliber_a * 100.f;
-										auto scale = VGet(asize / std::abs(c.vec.Norm().dot(normal)), asize, asize);
-										auto y_vec = MATRIX_ref::Vtrans(normal, veh_t.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
-										auto z_vec = MATRIX_ref::Vtrans(normal.cross(c.vec), veh_t.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
-
-										veh_t.hit_obj[t.hitbuf].mat = MATRIX_ref::Scale(scale)* MATRIX_ref::Axis1(y_vec.cross(z_vec), y_vec, z_vec);
-										veh_t.hit_obj[t.hitbuf].pos = MATRIX_ref::Vtrans(position - veh_t.pos, veh_t.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180))) + y_vec * 0.02f;
-										veh_t.hit_obj[t.hitbuf].flug = true;
+										veh_t.hit_obj[t.hitbuf].set(c, t, position, normal);
 										++t.hitbuf %= veh_t.hit_obj.size();
 									}
 								}
@@ -1246,24 +1547,24 @@ public:
 							}
 							//空間装甲、モジュールに当たったのでモジュールに30ダメ、貫徹力を1/2に
 							for (auto& a : veh_t.use_veh.space_mesh) {
-								if (tt.first == a) {
+								if (tt.sort.first == a) {
 									if (c.spec.caliber_a >= 0.020f) {
-										this->effcs[ef_reco].set(VECTOR_ref(veh_t.hitres[tt.first].HitPosition) + VECTOR_ref(veh_t.hitres[tt.first].Normal) * (0.1f), veh_t.hitres[tt.first].Normal);
+										this->effcs[ef_reco].set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
 									}
 									else {
-										this->effcs[ef_reco2].set(VECTOR_ref(veh_t.hitres[tt.first].HitPosition) + VECTOR_ref(veh_t.hitres[tt.first].Normal) * (0.1f), veh_t.hitres[tt.first].Normal);
+										this->effcs[ef_reco2].set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
 									}
 									switch (c.spec.type_a) {
 									case 0: //AP
-										veh_t.HP_m[tt.first] = std::max<int16_t>(veh_t.HP_m[tt.first] - 30, 0); //
+										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
 										c.spec.pene_a /= 2.0f;
 										break;
 									case 1: //HE
-										veh_t.HP_m[tt.first] = std::max<int16_t>(veh_t.HP_m[tt.first] - 30, 0); //
+										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
 										c.flug = false;//爆発する
 										break;
 									case 2: //ミサイル
-										veh_t.HP_m[tt.first] = std::max<int16_t>(veh_t.HP_m[tt.first] - 30, 0); //
+										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
 										c.flug = false;//爆発する
 										break;
 									default:
@@ -1272,24 +1573,24 @@ public:
 								}
 							}
 							for (auto& a : veh_t.use_veh.module_mesh) {
-								if (tt.first == a) {
+								if (tt.sort.first == a) {
 									if (c.spec.caliber_a >= 0.020f) {
-										this->effcs[ef_reco].set(VECTOR_ref(veh_t.hitres[tt.first].HitPosition) + VECTOR_ref(veh_t.hitres[tt.first].Normal) * (0.1f), veh_t.hitres[tt.first].Normal);
+										this->effcs[ef_reco].set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
 									}
 									else {
-										this->effcs[ef_reco2].set(VECTOR_ref(veh_t.hitres[tt.first].HitPosition) + VECTOR_ref(veh_t.hitres[tt.first].Normal) * (0.1f), veh_t.hitres[tt.first].Normal);
+										this->effcs[ef_reco2].set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
 									}
 									switch (c.spec.type_a) {
 									case 0: //AP
-										veh_t.HP_m[tt.first] = std::max<int16_t>(veh_t.HP_m[tt.first] - 30, 0); //
+										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
 										c.spec.pene_a /= 2.0f;
 										break;
 									case 1: //HE
-										veh_t.HP_m[tt.first] = std::max<int16_t>(veh_t.HP_m[tt.first] - 30, 0); //
+										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
 										c.flug = false;//爆発する
 										break;
 									case 2: //ミサイル
-										veh_t.HP_m[tt.first] = std::max<int16_t>(veh_t.HP_m[tt.first] - 30, 0); //
+										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
 										c.flug = false;//爆発する
 										break;
 									default:
