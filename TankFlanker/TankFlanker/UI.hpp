@@ -37,6 +37,8 @@ private:
 	VECTOR_ref altpos;
 	VECTOR_ref spdpos;
 
+
+	float rad_tt = 0.f;
 public:
 	UI(const bool& use_vr_) {
 		out_disp_x = deskx;
@@ -354,25 +356,20 @@ public:
 			if (aimpos.z() >= 0.f && aimpos.z() <= 1.f) {
 				circle.DrawExtendGraph(int(aimpos.x()) - y_r(siz, out_disp_y), int(aimpos.y()) - y_r(siz, out_disp_y), int(aimpos.x()) + y_r(siz, out_disp_y), int(aimpos.y()) + y_r(siz, out_disp_y), TRUE);
 
-				VECTOR_ref tmp = cam_s.cam.camup;
+				VECTOR_ref tmp = cam_s.cam.camup.Norm();
 				VECTOR_ref tmp_t = VGet(0, 1.f, 0);
 
-				VECTOR_ref tmp_t2 = VGet(tmp.x(),0.f,tmp.z());
-				tmp_t2 = tmp_t2.Norm();
-
-				float y_t = tmp.dot(tmp_t);
-				float x_t = tmp.cross(tmp_t).size();
-
-				//tmp.cross(tmp_t2);
-
-				float rad_t = std::atan2f(x_t, y_t);
-				//*
-				if (tmp.cross(cam_s.cam.camvec - cam_s.cam.campos).y() >= 0.f) {
+				float tmp_cos = asinf((tmp.cross((cam_s.cam.camvec - cam_s.cam.campos).Norm())).dot(tmp_t));
+				
+				float rad_t = tmp_cos;
+				rad_t = tmp_cos;
+				if (tmp.dot(tmp_t) < 0.f) {
+					rad_t = DX_PI_F - tmp_cos;
 				}
-				//*/
+
 				DrawRotaGraph(int(aimpos.x()), int(aimpos.y()), y_r(siz, out_disp_y) / 100.f, rad_t, aim.get(), TRUE);
 
-				font18.DrawStringFormat(int(aimpos.x()), int(aimpos.y()), ((tmp.cross(cam_s.cam.camvec - cam_s.cam.campos).y() >= 0.f) ? GetColor(0, 255, 0) : GetColor(255, 0, 0)), "%d", int(rad2deg(rad_t)));
+				font18.DrawStringFormat(int(aimpos.x()), int(aimpos.y()), GetColor(255, 0, 0), "%d", int(rad2deg(rad_t)));
 			}
 		}
 		//
