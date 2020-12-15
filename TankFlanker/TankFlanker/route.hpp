@@ -60,6 +60,7 @@ public:
 		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);			//ホストパスエフェクト
 		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->out_disp_x, Drawparts->out_disp_y);	//ホストパスエフェクト
 		auto mapparts = std::make_unique<Mapclass>();																			//map
+		auto grassparts = std::make_unique<GRASS>();	/*草クラス*/
 		//
 		font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 		outScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//描画スクリーン
@@ -92,6 +93,11 @@ public:
 				}
 				//海
 				mapparts->sea_draw(cam_s.cam.campos);
+				//マップ
+				{
+					mapparts->cloud_draw();
+					grassparts->draw_grass();
+				}
 				//機体
 				SetFogStartEnd(0.0f, 3000.f);
 				SetFogColor(128, 128, 128);
@@ -119,6 +125,7 @@ public:
 				}
 				SetUseLighting(TRUE);
 				SetFogEnable(TRUE);
+
 			}
 			);
 		};
@@ -155,8 +162,15 @@ public:
 				UIparts->load_window("マップモデル");			   //ロード画面
 				//壁
 				mapparts->set_map();
+				//grass
+				grassparts->set_grass_ready_before();
+				grassparts->set_grass_ready("data/grassput.bmp", 35000.f, 35000.f, -35000.f, -35000.f);
 				//光、影
-				Drawparts->Set_Light_Shadow(mapparts->map_get().mesh_maxpos(0), mapparts->map_get().mesh_minpos(0), VGet(0.0f, -0.5f, 0.5f), [&mapparts] { mapparts->map_get().DrawModel(); });
+				Drawparts->Set_Light_Shadow(mapparts->map_get().mesh_maxpos(0), mapparts->map_get().mesh_minpos(0), VGet(0.0f, -0.5f, 0.5f), 
+					[&] { 
+					mapparts->map_get().DrawModel();
+					grassparts->draw_grass();
+				});
 				for (auto& c : chara) {
 					size_t i = &c - &chara[0];
 					auto& veh = c.vehicle;
@@ -1313,6 +1327,8 @@ public:
 				chara.clear();
 				mapparts->delete_map();
 				Drawparts->Delete_Shadow();
+
+				grassparts->delete_grass();
 			}
 			//
 		} while (ProcessMessage() == 0 && ending);

@@ -875,12 +875,6 @@ public:
 		int Rot = 0;//
 	};
 	typedef std::pair<int, float> p_animes;
-	//マップ
-	struct treePats {
-		MV1 obj, obj_far;
-		MATRIX_ref mat;
-		VECTOR_ref pos;
-	};
 	class Chara;
 	//コックピット
 	class cockpits {
