@@ -60,7 +60,6 @@ public:
 		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);			//ホストパスエフェクト
 		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->out_disp_x, Drawparts->out_disp_y);	//ホストパスエフェクト
 		auto mapparts = std::make_unique<Mapclass>();																			//map
-		auto grassparts = std::make_unique<GRASS>();	/*草クラス*/
 		//
 		font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 		outScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//描画スクリーン
@@ -93,11 +92,8 @@ public:
 				}
 				//海
 				mapparts->sea_draw(cam_s.cam.campos);
-				//マップ
-				{
-					mapparts->cloud_draw();
-					grassparts->draw_grass();
-				}
+				//雲
+				mapparts->cloud_draw();
 				//機体
 				SetFogStartEnd(0.0f, 3000.f);
 				SetFogColor(128, 128, 128);
@@ -112,8 +108,6 @@ public:
 						}
 					}
 					mapparts->map_drawtree();
-					//
-
 				}
 				SetFogEnable(FALSE);
 				SetUseLighting(FALSE);
@@ -132,10 +126,10 @@ public:
 		auto mouse_aim = [&](VECTOR_ref& eyevec_tmp) {
 			int mousex, mousey;
 			GetMousePoint(&mousex, &mousey);
-			SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
+			SetMousePoint(deskx / 2, desky / 2);
 
-			float y = atan2f(eyevec_tmp.x(), eyevec_tmp.z()) + deg2rad(float(mousex - Drawparts->disp_x / 2) * 0.1f / fovs);
-			float x = atan2f(eyevec_tmp.y(), std::hypotf(eyevec_tmp.x(), eyevec_tmp.z())) + deg2rad(float(mousey - Drawparts->disp_y / 2) * 0.1f / fovs);
+			float y = atan2f(eyevec_tmp.x(), eyevec_tmp.z()) + deg2rad(float(mousex - deskx / 2) * 0.1f / fovs);
+			float x = atan2f(eyevec_tmp.y(), std::hypotf(eyevec_tmp.x(), eyevec_tmp.z())) + deg2rad(float(mousey - desky / 2) * 0.1f / fovs);
 			x = std::clamp(x, deg2rad(-80), deg2rad(45));
 			eyevec_tmp = VGet(cos(x) * std::sin(y), std::sin(x), std::cos(x) * std::cos(y));
 		};
@@ -160,16 +154,12 @@ public:
 				//マップ読み込み
 				mapparts->set_map_pre();
 				UIparts->load_window("マップモデル");			   //ロード画面
-				//壁
-				mapparts->set_map();
-				//grass
-				grassparts->set_grass_ready_before();
-				grassparts->set_grass_ready("data/grassput.bmp", 35000.f, 35000.f, -35000.f, -35000.f);
+				mapparts->set_map("data/grassput.bmp", 35000.f, 35000.f, -35000.f, -35000.f);
 				//光、影
 				Drawparts->Set_Light_Shadow(mapparts->map_get().mesh_maxpos(0), mapparts->map_get().mesh_minpos(0), VGet(0.0f, -0.5f, 0.5f), 
 					[&] { 
 					mapparts->map_get().DrawModel();
-					grassparts->draw_grass();
+					mapparts->cloud_draw();
 				});
 				for (auto& c : chara) {
 					size_t i = &c - &chara[0];
@@ -853,10 +843,10 @@ public:
 											cam_easy.camup = veh.mat.yvec();
 										}
 									}
-									//near取得
-									cam_easy.near_ = (cam_s.Rot >= ADS) ? (5.f + 25.f * (cam_easy.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
 									//far取得
-									cam_easy.far_ = 6000.f;
+									cam_easy.far_ = (cam_s.Rot >= ADS) ? (500.f) : (20.f*(range_p - 5.f));
+									//near取得
+									cam_easy.near_ = (cam_s.Rot >= ADS) ? (3.f) : (range_p - 5.f);
 									//fov
 									cam_easy.fov = deg2rad(fov_pc / fovs);
 
@@ -1030,10 +1020,10 @@ public:
 
 
 									}
-									//near取得
-									cam_easy.near_ = (cam_s.Rot >= ADS) ? (5.f + 25.f * (cam_easy.far_ - 300.f) / (3000.f - 300.f)) : (range_p - 5.f);
 									//far取得
-									cam_easy.far_ = 6000.f;
+									cam_easy.far_ = (cam_s.Rot >= ADS) ? (1500.f) : (60.f*(range_p - 5.f));
+									//near取得
+									cam_easy.near_ = (cam_s.Rot >= ADS) ? (3.f) : (range_p - 5.f);
 									//fov
 									cam_easy.fov = deg2rad(Drawparts->use_vr ? 90 : fov_pc / fovs);
 
@@ -1105,10 +1095,10 @@ public:
 										cam_s.cam.camvec = cam_s.cam.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
 										cam_s.cam.camup = veh.mat.yvec();
 									}
-									//near取得
-									cam_s.cam.near_ = 5.f + 25.f * (cam_s.cam.far_ - 300.f) / (3000.f - 300.f);
 									//far取得
-									cam_s.cam.far_ = 4000.f;
+									cam_easy.far_ = (cam_s.Rot >= ADS) ? (2000.f) : (4000.f);
+									//near取得
+									cam_easy.near_ = (cam_s.Rot >= ADS) ? (3.f) : (range_p - 5.f);
 									//fov
 									cam_s.cam.fov = deg2rad(fov_pc / fovs);
 								}
@@ -1327,8 +1317,6 @@ public:
 				chara.clear();
 				mapparts->delete_map();
 				Drawparts->Delete_Shadow();
-
-				grassparts->delete_grass();
 			}
 			//
 		} while (ProcessMessage() == 0 && ending);
