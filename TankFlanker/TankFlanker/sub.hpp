@@ -130,7 +130,7 @@ public:
 		uint16_t HP = 0;					  //
 		std::vector<std::pair<size_t, float>> armer_mesh; //装甲ID
 		std::vector<size_t> space_mesh;			  //装甲ID
-		std::vector<size_t> module_mesh;		  //装甲ID
+		std::vector<std::pair<size_t, size_t>> module_mesh;		  //装甲ID
 		int camo_tex = 0;				  //
 		std::vector<int> camog;				  //
 		bool isfloat = false;			  //浮くかどうか
@@ -326,13 +326,23 @@ public:
 						t.armer_mesh.back().first = i;
 						t.armer_mesh.back().second = std::stof(getparams::getright(p.c_str())); //装甲値
 					}
-					else if (p.find("space", 0) != std::string::npos) {		    //空間装甲
+					else if (p.find("space", 0) != std::string::npos) {	//空間装甲
 						t.space_mesh.resize(t.space_mesh.size() + 1);
 						t.space_mesh.back() = i;
 					}
-					else { //モジュール
+					else if (p.find("parts", 0) != std::string::npos) {	//モジュール
 						t.module_mesh.resize(t.module_mesh.size() + 1);
-						t.module_mesh.back() = i;
+						t.module_mesh.back().first = i;
+					}
+				}
+				{
+					size_t z = 0;
+					for (int i = 0; i < t.obj.mesh_num(); i++) {
+						std::string p = t.obj.material_name(i);
+						if (p.find("parts", 0) != std::string::npos) {	//モジュール
+							t.module_mesh[z].second = i;
+							z++;
+						}
 					}
 				}
 				//迷彩
@@ -844,6 +854,8 @@ private:
 		void spawn(const VECTOR_ref& pos_, const MATRIX_ref& mat_) {
 			this->reset();
 
+			this->accel = 30.f;
+			this->speed = 300.f / 3.6f;
 			//リセット
 			this->pos = pos_;
 			this->mat = mat_;
@@ -856,7 +868,7 @@ private:
 			this->HP = this->use_veh.HP;
 			//モジュール耐久
 			for (auto& h : this->HP_m) {
-				h = 100;
+				h = this->use_veh.HP;
 			}
 		}
 	};
@@ -1421,13 +1433,13 @@ public:
 						auto& veh_t = t.vehicle;
 						//モジュール
 						for (auto& m : veh_t.use_veh.module_mesh) {
-							veh_t.hits[m].res = veh_t.col.CollCheck_Line(c.repos, (c.pos + (c.pos - c.repos) * (0.1f)), -1, int(m));
-							if (veh_t.hits[m].res.HitFlag) {
-								veh_t.hits[m].sort = { m, (c.repos - veh_t.hits[m].res.HitPosition).size() };
+							veh_t.hits[m.first].res = veh_t.col.CollCheck_Line(c.repos, (c.pos + (c.pos - c.repos) * (0.1f)), -1, int(m.first));
+							if (veh_t.hits[m.first].res.HitFlag) {
+								veh_t.hits[m.first].sort = { m.first, (c.repos - veh_t.hits[m.first].res.HitPosition).size() };
 								is_hit = true;
 							}
 							else {
-								veh_t.hits[m].sort = { m, (std::numeric_limits<float>::max)() };
+								veh_t.hits[m.first].sort = { m.first, (std::numeric_limits<float>::max)() };
 							}
 						}
 						//空間装甲
@@ -1485,7 +1497,7 @@ public:
 									//貫通
 									if (c.spec.pene_a > a.second * (1.0f / std::abs(vec_t.Norm().dot(normal)))) {
 										if (t.p_anime_geardown.second <= 0.5f) {
-											veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
+											//veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - c.spec.damage_a, 0); //
 											veh_t.HP = std::max<int16_t>(veh_t.HP - c.spec.damage_a, 0); //
 										}
 										//撃破時エフェクト
@@ -1550,15 +1562,15 @@ public:
 									}
 									switch (c.spec.type_a) {
 									case 0: //AP
-										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
+										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - c.spec.damage_a, 0); //
 										c.spec.pene_a /= 2.0f;
 										break;
 									case 1: //HE
-										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
+										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - c.spec.damage_a, 0); //
 										c.flug = false;//爆発する
 										break;
 									case 2: //ミサイル
-										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
+										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - c.spec.damage_a, 0); //
 										c.flug = false;//爆発する
 										break;
 									default:
@@ -1567,7 +1579,7 @@ public:
 								}
 							}
 							for (auto& a : veh_t.use_veh.module_mesh) {
-								if (tt.sort.first == a) {
+								if (tt.sort.first == a.first) {
 									if (c.spec.caliber_a >= 0.020f) {
 										this->effcs[ef_reco].set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
 									}
@@ -1576,15 +1588,15 @@ public:
 									}
 									switch (c.spec.type_a) {
 									case 0: //AP
-										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
+										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - c.spec.damage_a, 0); //
 										c.spec.pene_a /= 2.0f;
 										break;
 									case 1: //HE
-										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
+										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - c.spec.damage_a, 0); //
 										c.flug = false;//爆発する
 										break;
 									case 2: //ミサイル
-										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - 30, 0); //
+										veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - c.spec.damage_a, 0); //
 										c.flug = false;//爆発する
 										break;
 									default:

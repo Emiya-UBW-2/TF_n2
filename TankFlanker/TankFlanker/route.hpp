@@ -101,7 +101,11 @@ public:
 					for (auto& c : chara) {
 						auto& veh = c.vehicle;
 						//戦闘機
-						veh.obj.DrawModel();
+						for (auto& h : veh.HP_m) {
+							if (h > 0) {
+								veh.obj.DrawMesh(&h - &veh.HP_m[0]);
+							}
+						}
 						//弾痕
 						for (auto& h : veh.hit_obj) {
 							h.draw();
@@ -140,7 +144,7 @@ public:
 				start_c = true;
 				start_c2 = true;
 				//キャラinit
-				chara.resize(2);
+				chara.resize(5);
 				for (auto& c : chara) {
 					c.se_cockpit = se_cockpit.Duplicate();
 					c.se_gun = se_gun.Duplicate();
@@ -165,7 +169,7 @@ public:
 					size_t i = &c - &chara[0];
 					auto& veh = c.vehicle;
 					//キャラ選択
-					veh.spawn(VGet(float(30 * (i / 3))*sin(deg2rad(-130)), 10.f, float(30 * (i / 3))*cos(deg2rad(-130)) + float(30 * (i % 3))), MATRIX_ref::RotY(deg2rad(-130)));
+					veh.spawn(VGet(float(30 * (i / 3))*sin(deg2rad(-130)), 100.f, float(30 * (i / 3))*cos(deg2rad(-130)) + float(30 * (i % 3))), MATRIX_ref::RotY(deg2rad(-130)));
 					//キャラ設定
 					c.set_human(Vehicles, Ammo, hit_pic);	//
 					c.cocks.set_(cockpit);					//コックピット
@@ -508,14 +512,80 @@ public:
 									rad_spec = deg2rad(veh.use_veh.body_rad_limit * (std::clamp(veh.speed, 0.f, veh.use_veh.min_speed_limit) / veh.use_veh.min_speed_limit));
 								}
 								//ピッチ
-								easing_set(&veh.xradadd_right, (c.key[2] ? -rad_spec / 3.f : c.key[12] ? -rad_spec / 9.f : 0.f), 0.95f);
-								easing_set(&veh.xradadd_left, (c.key[3] ? rad_spec / 3.f : c.key[13] ? rad_spec / 9.f : 0.f), 0.95f);
+								{
+									if (veh.HP_m[c.vehicle.use_veh.module_mesh[0].first] > 0 && veh.HP_m[c.vehicle.use_veh.module_mesh[1].first] > 0) {
+										easing_set(&veh.xradadd_right, (c.key[2] ? -rad_spec / 3.f : c.key[12] ? -rad_spec / 9.f : 0.f), 0.95f);
+										easing_set(&veh.xradadd_left, (c.key[3] ? rad_spec / 3.f : c.key[13] ? rad_spec / 9.f : 0.f), 0.95f);
+									}
+									else {
+										if (!(veh.HP_m[c.vehicle.use_veh.module_mesh[0].first] == 0 && veh.HP_m[c.vehicle.use_veh.module_mesh[1].first] == 0)) {
+											easing_set(&veh.xradadd_right,
+												float((-int(rad_spec / 12.f*1000.f) + GetRand(int(rad_spec / 12.f*2.f*1000.f)))) / 1000.f + (c.key[2] ? -rad_spec / 6.f : c.key[12] ? -rad_spec / 18.f : 0.f)
+												, 0.95f);
+											easing_set(&veh.xradadd_left,
+												float((-int(rad_spec / 12.f*1000.f) + GetRand(int(rad_spec / 12.f*2.f*1000.f)))) / 1000.f + (c.key[3] ? rad_spec / 6.f : c.key[13] ? rad_spec / 18.f : 0.f)
+												, 0.95f);
+										}
+										else {
+											easing_set(&veh.xradadd_right,
+												float((-int(rad_spec / 3.f*1000.f) + GetRand(int(rad_spec / 3.f*2.f*1000.f)))) / 1000.f + (c.key[2] ? -rad_spec / 12.f : c.key[12] ? -rad_spec / 36.f : 0.f)
+												, 0.95f);
+											easing_set(&veh.xradadd_left,
+												float((-int(rad_spec / 3.f*1000.f) + GetRand(int(rad_spec / 3.f*2.f*1000.f)))) / 1000.f + (c.key[3] ? rad_spec / 12.f : c.key[13] ? rad_spec / 36.f : 0.f)
+												, 0.95f);
+										}
+									}
+								}
 								//ロール
-								easing_set(&veh.zradadd_right, (c.key[4] ? rad_spec : (c.key[14] ? rad_spec / 3.f : 0.f)), 0.95f);
-								easing_set(&veh.zradadd_left, (c.key[5] ? -rad_spec : (c.key[15] ? -rad_spec / 3.f : 0.f)), 0.95f);
+								{
+									if (veh.HP_m[c.vehicle.use_veh.module_mesh[0].first] > 0 && veh.HP_m[c.vehicle.use_veh.module_mesh[1].first] > 0) {
+										easing_set(&veh.zradadd_left, (c.key[5] ? (-rad_spec / 1.f) : (c.key[15] ? -rad_spec / 3.f : 0.f)), 0.95f);
+										easing_set(&veh.zradadd_right, (c.key[4] ? (rad_spec / 1.f) : (c.key[14] ? rad_spec / 3.f : 0.f)), 0.95f);
+									}
+									else {
+										if (!(veh.HP_m[c.vehicle.use_veh.module_mesh[0].first] == 0 && veh.HP_m[c.vehicle.use_veh.module_mesh[1].first] == 0)) {
+											easing_set(&veh.zradadd_left,
+												float((-int(rad_spec / 12.f*1000.f) + GetRand(int(rad_spec / 12.f*2.f*1000.f)))) / 1000.f + (c.key[5] ? (-rad_spec / 2.f) : (c.key[15] ? -rad_spec / 6.f : 0.f))
+												, 0.95f);
+											easing_set(&veh.zradadd_right,
+												float((-int(rad_spec / 12.f*1000.f) + GetRand(int(rad_spec / 12.f*2.f*1000.f)))) / 1000.f + (c.key[4] ? (rad_spec / 2.f) : (c.key[14] ? rad_spec / 6.f : 0.f))
+												, 0.95f);
+										}
+										else {
+											easing_set(&veh.zradadd_left,
+												float((-int(rad_spec / 6.f*1000.f) + GetRand(int(rad_spec / 6.f*2.f*1000.f)))) / 1000.f + (c.key[5] ? (-rad_spec / 4.f) : (c.key[15] ? -rad_spec / 12.f : 0.f))
+												, 0.95f);
+											easing_set(&veh.zradadd_right,
+												float((-int(rad_spec / 6.f*1000.f) + GetRand(int(rad_spec / 6.f*2.f*1000.f)))) / 1000.f + (c.key[4] ? (rad_spec / 4.f) : (c.key[14] ? rad_spec / 12.f : 0.f))
+												, 0.95f);
+										}
+									}
+								}
 								//ヨー
-								easing_set(&veh.yradadd_left, (c.key[6] ? -rad_spec / 24.f : (c.key[16] ? -rad_spec / 72.f : 0.f)), 0.95f);
-								easing_set(&veh.yradadd_right, (c.key[7] ? rad_spec / 24.f : (c.key[17] ? rad_spec / 72.f : 0.f)), 0.95f);
+								{
+									if (veh.HP_m[c.vehicle.use_veh.module_mesh[0].first] > 0 && veh.HP_m[c.vehicle.use_veh.module_mesh[1].first] > 0) {
+										easing_set(&veh.yradadd_left, (c.key[6] ? -rad_spec / 24.f : (c.key[16] ? -rad_spec / 72.f : 0.f)), 0.95f);
+										easing_set(&veh.yradadd_right, (c.key[7] ? rad_spec / 24.f : (c.key[17] ? rad_spec / 72.f : 0.f)), 0.95f);
+									}
+									else {
+										if (!(veh.HP_m[c.vehicle.use_veh.module_mesh[0].first] == 0 && veh.HP_m[c.vehicle.use_veh.module_mesh[1].first] == 0)) {
+											easing_set(&veh.yradadd_left,
+												float((-int(rad_spec / 24.f*1000.f) + GetRand(int(rad_spec / 24.f*2.f*1000.f)))) / 1000.f + (c.key[6] ? -rad_spec / 48.f : (c.key[16] ? -rad_spec / 144.f : 0.f))
+												, 0.95f);
+											easing_set(&veh.yradadd_right,
+												float((-int(rad_spec / 24.f*1000.f) + GetRand(int(rad_spec / 24.f*2.f*1000.f)))) / 1000.f + (c.key[7] ? rad_spec / 48.f : (c.key[17] ? rad_spec / 144.f : 0.f))
+												, 0.95f);
+										}
+										else {
+											easing_set(&veh.yradadd_left,
+												float((-int(rad_spec / 9.f*1000.f) + GetRand(int(rad_spec / 9.f*2.f*1000.f)))) / 1000.f + (c.key[6] ? -rad_spec / 96.f : (c.key[16] ? -rad_spec / 288.f : 0.f))
+												, 0.95f);
+											easing_set(&veh.yradadd_right,
+												float((-int(rad_spec / 9.f*1000.f) + GetRand(int(rad_spec / 9.f*2.f*1000.f)))) / 1000.f + (c.key[7] ? rad_spec / 96.f : (c.key[17] ? rad_spec / 288.f : 0.f))
+												, 0.95f);
+										}
+									}
+								}
 								//スロットル
 								if (veh.over_heat & (veh.accel >= 80.f)) {
 									easing_set(&veh.accel_add, -200.f, 0.95f);
@@ -666,7 +736,7 @@ public:
 								}
 								if (hitb) {
 									size_t index = &c - &chara[0];
-									veh.spawn(VGet(float(30 * (index / 3))*sin(deg2rad(-130)), 10.f, float(30 * (index / 3))*cos(deg2rad(-130)) + float(30 * (index % 3))), MATRIX_ref::RotY(deg2rad(-130)));
+									veh.spawn(VGet(float(30 * (index / 3))*sin(deg2rad(-130)), 100.f, float(30 * (index / 3))*cos(deg2rad(-130)) + float(30 * (index % 3))), MATRIX_ref::RotY(deg2rad(-130)));
 									c.p_anime_geardown.second = 1.f;
 									c.changegear.first = true;
 								}

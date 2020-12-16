@@ -760,6 +760,14 @@ public:
 					if (c.p_anime_geardown.second >= 0.5f) {
 						DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4, out_disp_y)), xp + xs, yp + ys / 2 + ys * 2 / 3, GetColor(127, 127, 127), TRUE);
 					}
+					/*
+					for (auto& h : c.vehicle.HP_m) {
+						int p = &h - &c.vehicle.HP_m[0];
+
+						DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 + y_r(4 + p * 5, out_disp_y)), xp + xs, yp + ys / 2 + (ys * 2 / 3 + y_r(8 + p * 5, out_disp_y)), GetColor(255, 0, 0), TRUE);
+						DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 + y_r(4 + p * 5, out_disp_y)), xp + xs * int(h) / int(c.vehicle.use_veh.HP), yp + ys / 2 + (ys * 2 / 3 + y_r(8 + p * 5, out_disp_y)), GetColor(0, 255, 0), TRUE);
+					}
+					*/
 
 
 					font->DrawStringFormat(xp, yp + 18, GetColor(255, 0, 0), "%d m", int((VECTOR_ref(c.vehicle.pos) - chara.vehicle.pos).size()));
