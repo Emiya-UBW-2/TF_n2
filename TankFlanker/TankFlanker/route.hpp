@@ -102,8 +102,15 @@ public:
 						auto& veh = c.vehicle;
 						//戦闘機
 						for (auto& h : veh.HP_m) {
+							size_t i = &h - &veh.HP_m[0];
 							if (h > 0) {
-								veh.obj.DrawMesh(&h - &veh.HP_m[0]);
+								veh.obj.DrawMesh(i);
+							}
+							else {
+								if (veh.info_break[i].per > 0.1f) {
+									veh.obj_break.SetMatrix(veh.info_break[i].mat * MATRIX_ref::Mtrans(veh.info_break[i].pos));
+									veh.obj_break.DrawMesh(i);
+								}
 							}
 						}
 						//弾痕
@@ -139,17 +146,67 @@ public:
 		};
 		//ココから繰り返し読み込み//-------------------------------------------------------------------
 		do {
+			//読み出し
+			if (!replay_on) {
+				chara.resize(20);
+			}
+			else{
+				Mainclass::Chara::sendstat tmp_rep;
+				Mainclass::CAMS tmp_cam_rep;
+				size_t size_c = 1;
+				std::vector< std::list<Mainclass::Chara::sendstat>::iterator> chara_rep;
+
+				std::ifstream fout;
+				fout.open("data/file.txt", std::ios::binary);
+
+				fout.read((char *)&size_c, sizeof(size_c));
+
+				chara.resize(size_c);
+				{
+					for (auto& c : chara) {
+						c.rep.clear();
+					}
+					rep_cam.clear();
+					for (auto& c : chara) {
+						c.rep.push_back(tmp_rep);
+					}
+					rep_cam.push_back(tmp_cam_rep);
+				}
+
+				for (auto& c : chara) {
+					chara_rep.emplace_back(c.rep.begin());
+				}
+
+				auto tcam = rep_cam.begin();
+				while (true) {
+					{
+						for (auto& cr : chara_rep) {
+							cr->read(fout);
+						}
+						fout.read((char *)&tcam->cam, sizeof(tcam->cam));
+						fout.read((char *)&tcam->Rot, sizeof(tcam->Rot));
+					}
+					if (fout.eof()) {
+						break;
+					}
+					{
+						for (auto& c : chara) {
+							c.rep.push_back(tmp_rep);
+						}
+						rep_cam.push_back(tmp_cam_rep);
+					}
+					for (auto& cr : chara_rep) {
+						cr++;
+					}
+					tcam++;
+				}
+				fout.close();  //ファイルを閉じる
+			}
 			{
 				oldv = false;
 				start_c = true;
 				start_c2 = true;
-				//キャラinit
-				chara.resize(5);
 				for (auto& c : chara) {
-					c.se_cockpit = se_cockpit.Duplicate();
-					c.se_gun = se_gun.Duplicate();
-					c.se_missile = se_missile.Duplicate();
-					c.se_hit = se_hit.Duplicate();
 				}
 				//キャラ選択
 				if (!UIparts->select_window(&chara[0], &Vehicles)) {
@@ -159,85 +216,39 @@ public:
 				mapparts->set_map_pre();
 				UIparts->load_window("マップモデル");			   //ロード画面
 				mapparts->set_map("data/grassput.bmp", 35000.f, 35000.f, -35000.f, -35000.f);
+				//木セット
+				mapparts->map_settree();
 				//光、影
-				Drawparts->Set_Light_Shadow(mapparts->map_get().mesh_maxpos(0), mapparts->map_get().mesh_minpos(0), VGet(0.0f, -0.5f, 0.5f), 
-					[&] { 
+				Drawparts->Set_Light_Shadow(mapparts->map_get().mesh_maxpos(0), mapparts->map_get().mesh_minpos(0), VGet(0.0f, -0.5f, 0.5f),
+					[&] {
 					mapparts->map_get().DrawModel();
 					mapparts->cloud_draw();
 				});
+				//共通
 				for (auto& c : chara) {
-					size_t i = &c - &chara[0];
-					auto& veh = c.vehicle;
 					//キャラ選択
-					veh.spawn(VGet(float(30 * (i / 3))*sin(deg2rad(-130)), 100.f, float(30 * (i / 3))*cos(deg2rad(-130)) + float(30 * (i % 3))), MATRIX_ref::RotY(deg2rad(-130)));
+					size_t i = &c - &chara[0];
+					c.vehicle.spawn(VGet(float(100 * (i / 3))*sin(deg2rad(-130)), 1000.f, float(100 * (i / 3))*cos(deg2rad(-130)) + float(100 * (i % 3))), MATRIX_ref::RotY(deg2rad(-130)));
 					//キャラ設定
 					c.set_human(Vehicles, Ammo, hit_pic);	//
 					c.cocks.set_(cockpit);					//コックピット
-				}
-				//木セット
-				mapparts->map_settree();
-			}
-			//読み出し
-			if (replay_on) {
-
-				Mainclass::Chara::sendstat tmp_rep;
-				Mainclass::CAMS tmp_cam_rep;
-
-				std::ifstream fout;
-				fout.open("data/file.txt", std::ios::binary);
-				{
-					chara[0].rep.clear();
-					chara[1].rep.clear();
-					rep_cam.clear();
-					chara[0].rep.push_back(tmp_rep);
-					chara[1].rep.push_back(tmp_rep);
-					rep_cam.push_back(tmp_cam_rep);
-				}
-				auto tt = chara[0].rep.begin();
-				auto tt2 = chara[1].rep.begin();
-				auto tcam = rep_cam.begin();
-				while (true) {
-					{
-						tt->read(fout);
-						tt2->read(fout);
-						fout.read((char *)&tcam->cam, sizeof(tcam->cam));
-						fout.read((char *)&tcam->Rot, sizeof(tcam->Rot));
-					}
-					if (fout.eof()) {
-						break;
-					}
-					{
-						chara[0].rep.push_back(tmp_rep);
-						chara[1].rep.push_back(tmp_rep);
-						rep_cam.push_back(tmp_cam_rep);
-					}
-					tt++;
-					tt2++;
-					tcam++;
-				}
-				fout.close();  //ファイルを閉じる
-			}
-			{
-				//共通
-				for (auto& c : chara) {
+					//
+					c.se_cockpit = se_cockpit.Duplicate();
+					c.se_gun = se_gun.Duplicate();
+					c.se_missile = se_missile.Duplicate();
+					c.se_hit = se_hit.Duplicate();
 					c.se_cockpit.Radius(600.f);
 					c.se_gun.Radius(300.f);
 					c.se_missile.Radius(300.f);
 					c.se_hit.Radius(900.f);
-					c.se_cockpit.play(DX_PLAYTYPE_LOOP, TRUE);
-					c.se_cockpit.vol(64);
 				}
 				se_alert.vol(64);
-				//
+				//開始共通
 				eye_pos_ads = VGet(0, 0.58f, 0);
-
 				auto& mine = chara[0];
 				size_t sel_l = 0;
 				switchs start_stop;
-				auto tcam = rep_cam.begin();
-				auto tt = chara[0].rep.begin();
-				auto tt2 = chara[1].rep.begin();
-
+				std::vector< std::list<Mainclass::Chara::sendstat>::iterator> chara_rep;
 				//開始
 				if (!replay_on) {
 					eyevec = mine.vehicle.mat.zvec() * -1.f;
@@ -255,6 +266,13 @@ public:
 					eyevec2 = chara[sel_l].vehicle.mat.zvec() * -1.f;
 				}
 
+				for (auto& c : chara) {
+					c.se_cockpit.play(DX_PLAYTYPE_LOOP, TRUE);
+					c.se_cockpit.vol(64);
+					chara_rep.emplace_back(c.rep.begin());
+				}
+				auto tcam = rep_cam.begin();
+
 				SetMouseDispFlag(FALSE);
 				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 
@@ -264,7 +282,7 @@ public:
 					if (!replay_on) {
 						for (auto& c : chara) {
 							auto& veh = c.vehicle;
-							//当たり判定リフレッシュ
+							//当たり判定クリア
 							if (veh.hit_check) {
 								veh.col.SetMatrix(MATRIX_ref::Mtrans(VGet(0.f, -100.f, 0.f)));
 								for (int i = 0; i < veh.col.mesh_num(); i++) {
@@ -345,6 +363,127 @@ public:
 						}
 						//キー
 						if (!replay_on) {
+							//
+							for (auto& c : chara) {
+								auto& veh = c.vehicle;
+								if (&c - &chara[0] >= (Drawparts->use_vr ? 2 : 1)) {
+
+									c.key[0] = false;//GetRand(100) <= 10;   //射撃
+									c.key[1] = false;//GetRand(100) <= 1; //マシンガン
+
+
+									size_t id = chara.size();
+									VECTOR_ref tgt_pos;
+
+									float dist = (std::numeric_limits<float>::max)();
+									for (auto& t : chara) {
+										//弾関連
+										if (&c == &t) {
+											continue;
+										}
+										auto p = (t.vehicle.pos - veh.pos).size();
+										if (dist > p) {
+											dist = p;
+											id = &t - &chara[0];
+											tgt_pos = t.vehicle.pos;
+										}
+									}
+
+									VECTOR_ref tgt_vec = (tgt_pos - veh.pos).Norm();
+									VECTOR_ref my_xvec = veh.mat.xvec();
+									VECTOR_ref my_yvec = veh.mat.yvec();
+									VECTOR_ref my_zvec = veh.mat.zvec();
+									{
+										//ピッチ
+										VECTOR_ref tgt_yvec = tgt_vec.cross(my_xvec);
+										VECTOR_ref cross_yvec = tgt_vec.cross(tgt_yvec);
+										VECTOR_ref cross_vec = tgt_vec.cross(my_zvec);
+
+										if (cross_vec.dot(cross_yvec) >= 0.1f) {
+											c.key[2] = GetRand(10) <= 5;
+											c.key[3] = false;
+											c.key[12] = !c.key[2];
+											c.key[13] = false;
+										}
+										else if (cross_vec.dot(cross_yvec) <= -0.1f) {
+											c.key[2] = false;
+											c.key[3] = GetRand(10) <= 5;
+											c.key[12] = false;
+											c.key[13] = !c.key[3];
+										}
+										else {
+											c.key[2] = false;
+											c.key[3] = false;
+											if (cross_vec.dot(cross_yvec) >= 0.f) {
+												c.key[12] = true;
+												c.key[13] = false;
+											}
+											else {
+												c.key[12] = false;
+												c.key[13] = true;
+											}
+
+											c.key[0] = GetRand(100) <= 10;   //射撃
+											c.key[1] = GetRand(200) <= 1; //マシンガン
+										}
+									}
+									//ロール
+									{
+										auto tgt_xvec = tgt_vec.cross(my_zvec).Norm();
+										VECTOR_ref tgt_yvec = tgt_xvec.cross(my_zvec);
+										VECTOR_ref cross_yvec = tgt_xvec.cross(tgt_yvec);
+										VECTOR_ref cross_vec = tgt_xvec.cross(my_xvec);
+
+										if (cross_vec.dot(cross_yvec) >= 0.1f) {
+											c.key[4] = GetRand(10) <= 5;
+											c.key[5] = false;
+											c.key[14] = !c.key[4];
+											c.key[15] = false;
+										}
+										else if (cross_vec.dot(cross_yvec) <= -0.1f) {
+											c.key[4] = false;
+											c.key[5] = GetRand(10) <= 5;
+											c.key[14] = false;
+											c.key[15] = !c.key[5];
+										}
+										else {
+											c.key[4] = false;
+											c.key[5] = false;
+											if (cross_vec.dot(cross_yvec) >= 0.f) {
+												c.key[14] = true;
+												c.key[15] = false;
+											}
+											else {
+												c.key[14] = false;
+												c.key[15] = true;
+											}
+										}
+									}
+
+									//ヨー
+									c.key[6] = false;
+									c.key[7] = false;
+									//スロットル
+									if (veh.speed <= veh.use_veh.min_speed_limit) {
+										c.key[8] = true;
+										c.key[9] = false;
+									}
+									else if (veh.speed >= veh.use_veh.max_speed_limit*0.8f) {
+										c.key[8] = false;
+										c.key[9] = true;
+									}
+									else {
+										c.key[8] = false;
+										c.key[9] = false;
+									}
+
+									c.key[10] = false;
+									c.key[11] = false; 
+
+									c.key[16] = false;
+									c.key[17] = false; 
+								}
+							}
 							if (Drawparts->use_vr) {
 								chara[1].key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //射撃
 								chara[1].key[1] = ((GetMouseInput() & MOUSE_INPUT_MIDDLE) != 0); //マシンガン
@@ -736,7 +875,7 @@ public:
 								}
 								if (hitb) {
 									size_t index = &c - &chara[0];
-									veh.spawn(VGet(float(30 * (index / 3))*sin(deg2rad(-130)), 100.f, float(30 * (index / 3))*cos(deg2rad(-130)) + float(30 * (index % 3))), MATRIX_ref::RotY(deg2rad(-130)));
+									veh.spawn(VGet(float(100 * (index / 3))*sin(deg2rad(-130)), 1000.f, float(100 * (index / 3))*cos(deg2rad(-130)) + float(100 * (index % 3))), MATRIX_ref::RotY(deg2rad(-130)));
 									c.p_anime_geardown.second = 1.f;
 									c.changegear.first = true;
 								}
@@ -831,6 +970,23 @@ public:
 						for (auto& c : chara) {
 							auto& veh = c.vehicle;
 							veh.obj.SetMatrix(veh.mat * MATRIX_ref::Mtrans(veh.pos));
+
+							for (auto& h : veh.HP_m) {
+								size_t i = &h - &veh.HP_m[0];
+								if (h > 0) {
+									veh.info_break[i].add = veh.add;
+									veh.info_break[i].speed = veh.speed;
+
+									veh.info_break[i].pos = veh.pos;
+									veh.info_break[i].mat = veh.mat;
+									veh.info_break[i].per = 1.f;
+								}
+								else {
+									veh.info_break[i].add.yadd(M_GR / powf(GetFPS(), 2.f));
+									veh.info_break[i].pos += veh.info_break[i].add + (veh.info_break[i].mat.zvec() * (-veh.info_break[i].speed / GetFPS()));
+									veh.info_break[i].per = std::max(veh.info_break[i].per - 1.f / GetFPS() / 10.f, 0.f);
+								}
+							}
 						}
 						for (auto& c : chara) {
 							c.se_cockpit.SetPosition(c.vehicle.pos);
@@ -840,8 +996,9 @@ public:
 						}
 					}
 					else {
-						tt->put_data(chara[0]);
-						tt2->put_data(chara[1]);
+						for (auto& cr : chara_rep) {//&cr-&chara_rep[0]
+							cr->put_data(chara[&cr - &chara_rep[0]]);
+						}
 					}
 					//アラート
 					{
@@ -928,12 +1085,15 @@ public:
 						{
 							start_stop.get_in(CheckHitKey(KEY_INPUT_SPACE) != 0);
 							if (!start_stop.first) {
-								tt++;
-								if (tt == chara[0].rep.end()) {
-									break;
+								bool tmp = false;
+								for (auto& cr : chara_rep) {
+									cr++;
+									if (cr == chara[&cr - &chara_rep[0]].rep.end()) {
+										tmp = true;
+										break;
+									}
 								}
-								tt2++;
-								if (tt2 == chara[1].rep.end()) {
+								if (tmp) {
 									break;
 								}
 								tcam++;
@@ -1022,7 +1182,12 @@ public:
 						[&] {
 						for (auto& c : chara) {
 							auto& veh = c.vehicle;
-							veh.obj.DrawModel();
+							for (auto& h : veh.HP_m) {
+								size_t i = &h - &veh.HP_m[0];
+								if (h > 0) {
+									veh.obj.DrawMesh(i);
+								}
+							}
 						}
 						mapparts->map_drawtree();
 					}
@@ -1313,37 +1478,45 @@ public:
 			if (!replay_on) {
 				std::ofstream fout;
 				fout.open("data/file.txt", std::ios::binary);
+				size_t size_c = chara.size();
+				fout.write((char *)&size_c, sizeof(size_c));
 
-				auto tt = chara[0].rep.begin();
-				auto tt2 = chara[1].rep.begin();
+				std::vector< std::list<Mainclass::Chara::sendstat>::iterator> chara_rep;
+				for (auto& c : chara) {
+					chara_rep.emplace_back(c.rep.begin());
+				}
 				auto tcam = rep_cam.begin();
 
 				float bar = 0.f;
 				int all = (int)(chara[0].rep.size());
 				int now = all;
-
 				ClearDrawScreen();
-
 				while (ProcessMessage() == 0) {
 					const auto waits = GetNowHiPerformanceCount();
 					if (now > 0) {
 						{
-							tt->write(fout);
-							tt2->write(fout);
+							for (auto& cr : chara_rep) {
+								cr->write(fout);
+							}
 							fout.write((char *)&tcam->cam, sizeof(tcam->cam));
 							fout.write((char *)&tcam->Rot, sizeof(tcam->Rot));
 						}
-						tt++;
-						if (tt == chara[0].rep.end()) {
-							break;
-						}
-						tt2++;
-						if (tt2 == chara[1].rep.end()) {
-							break;
-						}
-						tcam++;
-						if (tcam == rep_cam.end()) {
-							break;
+						{
+							bool tmp = false;
+							for (auto& cr : chara_rep) {
+								cr++;
+								if (cr == chara[&cr-&chara_rep[0]].rep.end()) {
+									tmp = true;
+									break;
+								}
+							}
+							if (tmp) {
+								break;
+							}
+							tcam++;
+							if (tcam == rep_cam.end()) {
+								break;
+							}
 						}
 						now--;
 					}

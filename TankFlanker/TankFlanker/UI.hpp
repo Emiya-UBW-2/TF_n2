@@ -323,7 +323,7 @@ public:
 		Mainclass::CAMS& cam_s,
 		Mainclass::cockpits & cocks,
 		const DXDraw::system_VR& vr_sys,
-		const Mainclass::Chara& chara,
+		Mainclass::Chara& chara,
 		const char& overrider = -1
 	) {
 		int xs = 0, xp = 0, ys = 0, yp = 0;
@@ -559,10 +559,7 @@ public:
 					{
 						if (!(use_vr && overrider == -1)) {
 							xs = x_r(200, out_disp_x);
-							xp = disp_x - x_r(20, out_disp_x) - xs;
-
 							xp = disp_x - x_r(20 + 30, out_disp_x) - xs;
-
 							ys = y_r(42, out_disp_y);
 							yp = disp_y - y_r(20, out_disp_y) - ys;
 						}
@@ -594,6 +591,32 @@ public:
 							yp += ys;
 							xp += x_r(30, out_disp_x);
 						}
+					}
+					{
+						if (!(use_vr && overrider == -1)) {
+							xs = x_r(230, out_disp_x);
+							xp = disp_x - x_r(20 + 30, out_disp_x) - xs;
+							ys = y_r(304, out_disp_y);
+							yp = disp_y - y_r(20 + 50, out_disp_y) - ys;
+						}
+						else {
+							xs = x_r(230, out_disp_x);
+							xp = disp_x / 2 + x_r(20, out_disp_x);
+							ys = y_r(304, out_disp_y);
+							yp = disp_y / 2 + disp_y / 6 + y_r(20, out_disp_y) - ys;
+						}
+						{
+							auto tmp = deg2rad(90 * veh.HP / veh.use_veh.HP);
+							SetDrawBright(std::min(int(255.f*cos(tmp)*2.f), 255), std::min(int(255.f*sin(tmp)*2.f), 255), 0);
+							veh.graph_HP_m_all.DrawExtendGraph(xp, yp, xp + xs, yp + ys, true);
+						}
+						for (auto& p : veh.graph_HP_m) {
+							auto tmp = deg2rad(90 * veh.HP_m[veh.use_veh.module_mesh[&p - &veh.graph_HP_m[0]].first] / veh.use_veh.HP);
+
+							SetDrawBright(std::min(int(255.f*cos(tmp)*2.f), 255), std::min(int(255.f*sin(tmp)*2.f), 255), 0);
+							p.DrawExtendGraph(xp, yp, xp + xs, yp + ys, true);
+						}
+						SetDrawBright(255, 255, 255);
 					}
 				}
 				//

@@ -122,6 +122,8 @@ public:
 		//共通
 		std::string name;				  //
 		MV1 obj, col;					  //
+		std::vector<GraphHandle> graph_HP_m;		//ライフ
+		GraphHandle graph_HP_m_all;
 		VECTOR_ref minpos, maxpos;			  //
 		std::vector<gun_frame> gunframe;			  //
 		std::vector<foot_frame> wheelframe;			  //
@@ -222,6 +224,12 @@ public:
 				MV1::Load(std::string(name) + t.name + "/model.mv1", &t.obj, Async);
 				MV1::Load(std::string(name) + t.name + "/col.mv1", &t.col, Async);
 				t.ui_pic = GraphHandle::Load(std::string(name) + t.name + "/pic.png");
+				//todo
+				t.graph_HP_m.resize(7);
+				for (int i = 0; i < 7; i++) {
+					t.graph_HP_m[i] = GraphHandle::Load(std::string(name) + t.name + "/parts" + std::to_string(i + 1) + ".png");
+				}
+				t.graph_HP_m_all = GraphHandle::Load(std::string(name) + t.name + "/parts_all.png");
 			}
 		}
 		//メイン読み込み
@@ -568,12 +576,14 @@ private:
 								if (c == &t || veh_t.hit_check) {
 									continue;
 								}
-								if ((Segment_Point_MinLen(a.pos, a.repos, veh_t.pos) > 5.f)) {
+								if ((Segment_Point_MinLen(a.pos, a.repos, veh_t.pos) > 10.f)) {
 									continue;
 								}
 								veh_t.col.SetMatrix((MATRIX_ref)(veh_t.mat) * MATRIX_ref::Mtrans(veh_t.pos));
 								for (int i = 0; i < veh_t.col.mesh_num(); i++) {
-									veh_t.col.RefreshCollInfo(-1, i);
+									if (veh_t.HP_m[i] > 0) {
+										veh_t.col.RefreshCollInfo(-1, i);
+									}
 								}
 								veh_t.hit_check = true;
 							}
@@ -674,7 +684,7 @@ private:
 										if (dist > p) {
 											dist = p;
 											id = &t - &(*chara)[0];
-											pos = t.vehicle.pos;
+											pos = t.vehicle.pos+ (t.vehicle.mat.zvec() * (-t.vehicle.speed / GetFPS()))*((a.pos - pos).size()/ (a.spec.speed_a));
 										}
 									}
 									if (id != chara->size()) {
@@ -739,7 +749,7 @@ private:
 	class vehicles {
 	public:
 		Vehcs use_veh;						//固有値
-		MV1 obj;							//
+		MV1 obj, obj_break;					//
 		MV1 col;							//
 		bool hit_check = false;						//当たり判定を取るかチェック
 		size_t use_id = 0;						//使用する車両(機材)
@@ -762,6 +772,17 @@ private:
 		float yradadd_left = 0.f, yradadd_right = 0.f;	    //
 		float zradadd_left = 0.f, zradadd_right = 0.f; //
 		std::vector<int16_t> HP_m;					//ライフ
+		std::vector<GraphHandle> graph_HP_m;		//ライフ
+		GraphHandle graph_HP_m_all;
+		struct breaks{
+			VECTOR_ref pos;							//車体座標
+			MATRIX_ref mat;							//車体回転行列
+			VECTOR_ref add;							//車体加速度
+			float per = 1.f;
+			float speed = 0.f;
+		};
+		std::vector<breaks> info_break;					//ライフ
+
 		std::array<Hit, 24> hit_obj;					//弾痕
 		size_t camo_sel = 0;						//
 		float wheel_Left = 0.f, wheel_Right = 0.f;			//転輪回転
@@ -799,6 +820,7 @@ private:
 			this->use_veh.into(vehcs);
 			//
 			this->obj = vehcs.obj.Duplicate();
+			this->obj_break = vehcs.obj.Duplicate();
 			this->col = vehcs.col.Duplicate();
 			//コリジョン
 			for (int j = 0; j < this->col.mesh_num(); j++) {
@@ -811,13 +833,25 @@ private:
 				MV1SetMaterialSpcColor(this->obj.get(), j, GetColorF(0.85f, 0.82f, 0.78f, 0.1f));
 				MV1SetMaterialSpcPower(this->obj.get(), j, 50.0f);
 			}
+			for (int j = 0; j < this->obj_break.material_num(); ++j) {
+				MV1SetMaterialSpcColor(this->obj_break.get(), j, GetColorF(0.85f, 0.82f, 0.78f, 0.1f));
+				MV1SetMaterialSpcPower(this->obj_break.get(), j, 50.0f);
+			}
 			//モジュール耐久
 			this->HP_m.resize(this->col.mesh_num());
+			for (auto& p : vehcs.graph_HP_m) {
+				this->graph_HP_m.resize(this->graph_HP_m.size() + 1);
+				this->graph_HP_m.back() = p.Duplicate();
+			}
+			graph_HP_m_all = vehcs.graph_HP_m_all.Duplicate();
+			this->info_break.resize(this->col.mesh_num());
 			//迷彩
 			if (this->use_veh.camog.size() > 0) {
 				this->camo_sel %= this->use_veh.camog.size();
 				//GraphBlend(MV1GetTextureGraphHandle(this->obj.get(), this->use_veh.camo_tex), this->use_veh.camog[this->camo_sel], 255, DX_GRAPH_BLEND_NORMAL);
 				MV1SetTextureGraphHandle(this->obj.get(), this->use_veh.camo_tex, this->use_veh.camog[this->camo_sel], FALSE);
+				//GraphBlend(MV1GetTextureGraphHandle(this->obj_break.get(), this->use_veh.camo_tex), this->use_veh.camog[this->camo_sel], 255, DX_GRAPH_BLEND_NORMAL);
+				MV1SetTextureGraphHandle(this->obj_break.get(), this->use_veh.camo_tex, this->use_veh.camog[this->camo_sel], FALSE);
 			}
 			//砲
 			this->Gun_.resize(this->use_veh.gunframe.size());
@@ -828,6 +862,7 @@ private:
 		}
 		void Dispose() {
 			this->obj.Dispose();
+			this->obj_break.Dispose();
 			this->col.Dispose();
 			this->hit_check = false;
 			this->HP = 0;
@@ -840,7 +875,12 @@ private:
 				hz.sort.clear();
 			}
 			this->hits.clear();
+			for (auto& p : this->graph_HP_m) {
+				p.Dispose();
+			}
+			this->graph_HP_m_all.Dispose();
 			this->HP_m.clear();
+			this->graph_HP_m.clear();
 			this->wheel_Left = 0.f;
 			this->wheel_Right = 0.f;
 			this->wheel_Leftadd = 0.f;
@@ -869,6 +909,11 @@ private:
 			//モジュール耐久
 			for (auto& h : this->HP_m) {
 				h = this->use_veh.HP;
+			}
+			if (this->HP_m.size() > 2) {
+				this->HP_m[0] = 1;
+				this->HP_m[1] = 1;
+				this->HP_m[2] = 1;
 			}
 		}
 	};
@@ -1576,6 +1621,10 @@ public:
 									default:
 										break;
 									}
+									//破壊時時エフェクト
+									if (veh_t.HP_m[tt.sort.first] == 0) {
+										t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
+									}
 								}
 							}
 							for (auto& a : veh_t.use_veh.module_mesh) {
@@ -1601,6 +1650,10 @@ public:
 										break;
 									default:
 										break;
+									}
+									//破壊時時エフェクト
+									if (veh_t.HP_m[tt.sort.first] == 0) {
+										t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
 									}
 								}
 							}
