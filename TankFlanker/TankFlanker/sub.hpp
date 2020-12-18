@@ -634,40 +634,6 @@ private:
 								{
 									a.spec.speed_a -= 5.f / GetFPS() / size;
 									a.pos += VGet(0.f, a.yadd / size, 0.f);
-									//
-									size_t id = chara->size();
-									VECTOR_ref pos;
-									float dist = (std::numeric_limits<float>::max)();
-									for (auto& t : *chara) {
-										//弾関連
-										if (c == &t) {
-											continue;
-										}
-										auto p = (t.vehicle.pos - a.pos).size();
-										if (dist > p) {
-											dist = p;
-											id = &t - &(*chara)[0];
-											pos = t.vehicle.pos + (t.vehicle.mat.zvec() * (-t.vehicle.speed / GetFPS()))*((a.pos - pos).size() / (a.spec.speed_a));
-										}
-									}
-									if (id != chara->size()) {
-										//反映
-										auto vec_a = (a.pos - pos).Norm();
-										auto vec_z = a.vec;
-										if (vec_a.dot(vec_z) < 0 && (a.pos - pos).size() <= 500.f) {
-											float z_hyp = std::hypotf(vec_z.x(), vec_z.z());
-											float a_hyp = std::hypotf(vec_a.x(), vec_a.z());
-											float cost = (vec_a.z() * vec_z.x() - vec_a.x() * vec_z.z()) / (a_hyp * z_hyp);
-											float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cos取得2D
-											float view_xrad = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
-											{
-												float limit = deg2rad(2.5f) / GetFPS();
-												float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad, -limit, limit);
-												float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad, -limit, limit);
-												a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
-											}
-										}
-									}
 								}
 								break;
 								case 2: //ミサイル
@@ -698,7 +664,7 @@ private:
 											float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cos取得2D
 											float view_xrad = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
 											{
-												float limit = deg2rad(25.f) / GetFPS();
+												float limit = deg2rad(22.5f) / GetFPS();
 												float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad, -limit, limit);
 												float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad, -limit, limit);
 												a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
@@ -1417,6 +1383,9 @@ public:
 		//操作関連//==================================================
 		std::array<bool, 18> key{ false };    //キー
 		float view_xrad = 0.f, view_yrad = 0.f; //砲塔操作用ベクトル
+		bool ms_on = true;
+		bool ms_key = true;
+		float ms_cnt = 0.f;
 		//戦車//==================================================
 		int hitbuf = 0;		 //使用弾痕
 		//飛行機//==================================================

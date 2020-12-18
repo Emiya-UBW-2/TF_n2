@@ -337,9 +337,11 @@ public:
 				aimpos = ConvWorldPosToScreenPos(aimp.get());
 				for (auto& c : charas) {
 					c.winpos = ConvWorldPosToScreenPos(
-						
-						c.vehicle.pos.get()
-						//c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - c.vehicle.pos).size() / (a.spec.speed_a))
+
+						//c.vehicle.pos.get()
+						(
+							c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - c.vehicle.pos).size() / (600.f / GetFPS()))
+							).get()
 					);
 
 					//pos = c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - pos).size() / (a.spec.speed_a));

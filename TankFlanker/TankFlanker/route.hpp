@@ -994,8 +994,27 @@ public:
 								}
 							}
 							//ËŒ‚
-							for (auto& cg : veh.Gun_) {
-								cg.math(c.key[((&cg - &veh.Gun_[0]) == 0) ? 0 : 1], &c);
+							{
+								for (auto& cg : veh.Gun_) {
+									c.ms_key = c.key[((&cg - &veh.Gun_[0]) == 0) ? 0 : 1];
+									if (c.ms_key && (&cg - &veh.Gun_[0]) != 0) {
+										if (!c.ms_on) {
+											c.ms_key = false;
+										}
+										if (cg.loadcnt == 0) {
+											c.ms_on = false;
+										}
+									}
+									cg.math(c.ms_key, &c);
+								}
+
+								if (!c.ms_on) {
+									c.ms_cnt += 1.f / GetFPS();
+									if (c.ms_cnt >= 2.f) {
+										c.ms_cnt = 0.f;
+										c.ms_on = true;
+									}
+								}
 							}
 							//’eŠÖ˜A
 							{
