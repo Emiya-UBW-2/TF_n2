@@ -647,7 +647,7 @@ private:
 										if (dist > p) {
 											dist = p;
 											id = &t - &(*chara)[0];
-											pos = t.vehicle.pos;
+											pos = t.vehicle.pos + (t.vehicle.mat.zvec() * (-t.vehicle.speed / GetFPS()))*((a.pos - pos).size() / (a.spec.speed_a));
 										}
 									}
 									if (id != chara->size()) {

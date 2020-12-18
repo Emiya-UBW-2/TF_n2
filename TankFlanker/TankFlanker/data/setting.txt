@@ -2,3 +2,4 @@ hostpass=true
 bloom=true
 shadow=true
 usevr=true
+fov = 45.0

@@ -336,7 +336,14 @@ public:
 				//mapparts->map_col_line_nearest(chara.vehicle.pos, &aimp);				//’nŒ`
 				aimpos = ConvWorldPosToScreenPos(aimp.get());
 				for (auto& c : charas) {
-					c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
+					c.winpos = ConvWorldPosToScreenPos(
+						
+						c.vehicle.pos.get()
+						//c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - c.vehicle.pos).size() / (a.spec.speed_a))
+					);
+
+					//pos = c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - pos).size() / (a.spec.speed_a));
+
 				}
 				if (cam_s.Rot >= ADS) {
 					altpos = ConvWorldPosToScreenPos((cocks.obj.frame(cocks.alt_100_f.first) - (cocks.obj.frame(cocks.alt_100_2_f.first) - cocks.obj.frame(cocks.alt_100_f.first)).Norm()*0.05f).get());
