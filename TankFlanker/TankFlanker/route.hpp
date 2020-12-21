@@ -154,7 +154,7 @@ public:
 		do {
 			//読み出し
 			if (!replay_on) {
-				chara.resize(3);
+				chara.resize(1);
 			}
 			else{
 				Mainclass::Chara::sendstat tmp_rep;
@@ -495,6 +495,7 @@ public:
 									c.key[17] = false; 
 								}
 							}
+							//*
 							if (Drawparts->use_vr) {
 								chara[1].key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //射撃
 								chara[1].key[1] = ((GetMouseInput() & MOUSE_INPUT_MIDDLE) != 0); //マシンガン
@@ -520,6 +521,7 @@ public:
 								chara[1].key[16] = (CheckHitKey(KEY_INPUT_Q) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
 								chara[1].key[17] = (CheckHitKey(KEY_INPUT_E) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
 							}
+							//*/
 							//通常、VR共通
 							if (!Drawparts->use_vr) {
 								mine.key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //射撃
@@ -759,6 +761,34 @@ public:
 									rad_spec = deg2rad(veh.use_veh.body_rad_limit * (std::clamp(veh.speed, 0.f, veh.use_veh.min_speed_limit) / veh.use_veh.min_speed_limit));
 								}
 								//ピッチ
+								/*
+								if(&c==&mine)
+								{
+									if (veh.HP_m[c.vehicle.use_veh.module_mesh[0].first] > 0 && veh.HP_m[c.vehicle.use_veh.module_mesh[1].first] > 0) {
+										easing_set(&veh.xradadd_right, (c.key[2] ? -rad_spec * 3.f / 3.f : c.key[12] ? -rad_spec * 3.f / 9.f : 0.f), 0.95f);
+										easing_set(&veh.xradadd_left, (c.key[3] ? rad_spec * 3.f / 3.f : c.key[13] ? rad_spec * 3.f / 9.f : 0.f), 0.95f);
+									}
+									else {
+										if (!(veh.HP_m[c.vehicle.use_veh.module_mesh[0].first] == 0 && veh.HP_m[c.vehicle.use_veh.module_mesh[1].first] == 0)) {
+											easing_set(&veh.xradadd_right,
+												float((-int(rad_spec * 3.f / 12.f*1000.f) + GetRand(int(rad_spec * 3.f / 12.f*2.f*1000.f)))) / 1000.f + (c.key[2] ? -rad_spec * 3.f / 6.f : c.key[12] ? -rad_spec * 3.f / 18.f : 0.f)
+												, 0.95f);
+											easing_set(&veh.xradadd_left,
+												float((-int(rad_spec * 3.f / 12.f*1000.f) + GetRand(int(rad_spec * 3.f / 12.f*2.f*1000.f)))) / 1000.f + (c.key[3] ? rad_spec * 3.f / 6.f : c.key[13] ? rad_spec * 3.f / 18.f : 0.f)
+												, 0.95f);
+										}
+										else {
+											easing_set(&veh.xradadd_right,
+												float((-int(rad_spec * 3.f / 3.f*1000.f) + GetRand(int(rad_spec * 3.f / 3.f*2.f*1000.f)))) / 1000.f + (c.key[2] ? -rad_spec * 3.f / 12.f : c.key[12] ? -rad_spec * 3.f / 36.f : 0.f)
+												, 0.95f);
+											easing_set(&veh.xradadd_left,
+												float((-int(rad_spec * 3.f / 3.f*1000.f) + GetRand(int(rad_spec * 3.f / 3.f*2.f*1000.f)))) / 1000.f + (c.key[3] ? rad_spec * 3.f / 12.f : c.key[13] ? rad_spec * 3.f / 36.f : 0.f)
+												, 0.95f);
+										}
+									}
+								}
+								else
+								//*/
 								{
 									if (veh.HP_m[c.vehicle.use_veh.module_mesh[0].first] > 0 && veh.HP_m[c.vehicle.use_veh.module_mesh[1].first] > 0) {
 										easing_set(&veh.xradadd_right, (c.key[2] ? -rad_spec / 3.f : c.key[12] ? -rad_spec / 9.f : 0.f), 0.95f);
@@ -1280,7 +1310,7 @@ public:
 								//UI
 								Hostpassparts->UI_Screen.SetDraw_Screen();
 								{
-									UIparts->draw(chara, Hostpassparts->MAIN_Screen, cam_s, mine.cocks, *Drawparts->get_device_hand1(), mine);
+									UIparts->draw(chara, Hostpassparts->MAIN_Screen, cam_s, *Drawparts->get_device_hand1(), mine);
 								}
 								//sky
 								Hostpassparts->SkyScreen.SetDraw_Screen(cam_s.cam.campos - cam_s.cam.camvec, VGet(0, 0, 0), cam_s.cam.camup, cam_s.cam.fov, 1.0f, 50.0f);
@@ -1336,11 +1366,18 @@ public:
 										}
 										cam_s.cam.camvec = cam_s.cam.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
 										cam_s.cam.camup = veh.mat.yvec();
-									}
+
+										/*
+										cam_s.cam.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
+										cam_s.cam.campos.y(std::max(cam_s.cam.campos.y(), 5.f));
+										cam_s.cam.camvec = cam_s.cam.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
+										cam_s.cam.camup = MATRIX_ref::Vtrans(HMDmat.yvec(), veh.mat);//veh.mat.yvec();
+										//*/
+										}
 									//far取得
-									cam_easy.far_ = (cam_s.Rot >= ADS) ? (2000.f) : (4000.f);
+									cam_s.cam.far_ = (cam_s.Rot >= ADS) ? (2000.f) : (4000.f);
 									//near取得
-									cam_easy.near_ = (cam_s.Rot >= ADS) ? (3.f) : (range_p - 5.f);
+									cam_s.cam.near_ = (cam_s.Rot >= ADS) ? (3.f) : (range_p - 5.f);
 									//fov
 									cam_s.cam.fov = deg2rad(fov_pc / fovs);
 								}
@@ -1351,7 +1388,7 @@ public:
 								//UI
 								Hostpass2parts->UI_Screen.SetDraw_Screen();
 								{
-									UIparts->draw(chara, Hostpass2parts->MAIN_Screen, cam_s, ct.cocks, *Drawparts->get_device_hand1(), ct, 0);
+									UIparts->draw(chara, Hostpass2parts->MAIN_Screen, cam_s, *Drawparts->get_device_hand1(), ct, 0);
 								}
 								//sky
 								Hostpass2parts->SkyScreen.SetDraw_Screen(cam_s.cam.campos - cam_s.cam.camvec, VGet(0, 0, 0), cam_s.cam.camup, cam_s.cam.fov, 1.0f, 50.0f);
@@ -1382,7 +1419,7 @@ public:
 						{
 							if (Drawparts->use_vr) {
 								outScreen2.DrawGraph(0, 0, false);
-								//Drawparts->outScreen[0].DrawExtendGraph(0, 0, Drawparts->out_disp_x, Drawparts->out_disp_y, false);
+								//Drawparts->outScreen[0].DrawGraph(0, 0, false);
 							}
 							else {
 								Drawparts->outScreen[0].DrawGraph(0, 0, false);
@@ -1402,7 +1439,7 @@ public:
 						//UI
 						Hostpass2parts->UI_Screen.SetDraw_Screen();
 						{
-							UIparts->draw(chara, Hostpass2parts->MAIN_Screen, cam_s, chara[sel_l].cocks, *Drawparts->get_device_hand1(), chara[sel_l], 0);
+							UIparts->draw(chara, Hostpass2parts->MAIN_Screen, cam_s, *Drawparts->get_device_hand1(), chara[sel_l], 0);
 						}
 						//sky
 						Hostpass2parts->SkyScreen.SetDraw_Screen(cam_s.cam.campos - cam_s.cam.camvec, VGet(0, 0, 0), cam_s.cam.camup, cam_s.cam.fov, 1.0f, 50.0f);

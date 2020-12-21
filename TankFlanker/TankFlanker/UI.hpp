@@ -321,7 +321,6 @@ public:
 		std::vector<Mainclass::Chara>& charas,
 		GraphHandle& MAIN_Screen,
 		Mainclass::CAMS& cam_s,
-		Mainclass::cockpits & cocks,
 		const DXDraw::system_VR& vr_sys,
 		Mainclass::Chara& chara,
 		const char& overrider = -1
@@ -348,8 +347,8 @@ public:
 
 				}
 				if (cam_s.Rot >= ADS) {
-					altpos = ConvWorldPosToScreenPos((cocks.obj.frame(cocks.alt_100_f.first) - (cocks.obj.frame(cocks.alt_100_2_f.first) - cocks.obj.frame(cocks.alt_100_f.first)).Norm()*0.05f).get());
-					spdpos = ConvWorldPosToScreenPos((cocks.obj.frame(cocks.speed_f.first) - (cocks.obj.frame(cocks.speed2_f.first) - cocks.obj.frame(cocks.speed_f.first)).Norm()*0.05f).get());
+					altpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.alt_100_f.first) - (chara.cocks.obj.frame(chara.cocks.alt_100_2_f.first) - chara.cocks.obj.frame(chara.cocks.alt_100_f.first)).Norm()*0.05f).get());
+					spdpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.speed_f.first) - (chara.cocks.obj.frame(chara.cocks.speed2_f.first) - chara.cocks.obj.frame(chara.cocks.speed_f.first)).Norm()*0.05f).get());
 
 					auto& veh = chara.vehicle;
 					aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
@@ -377,6 +376,8 @@ public:
 				}
 
 				DrawRotaGraph(int(aimpos.x()), int(aimpos.y()), y_r(siz, out_disp_y) / 100.f, rad_t, aim.get(), TRUE);
+
+				DrawRotaGraph(int(disp_x / 2), int(disp_y / 2), y_r(siz, out_disp_y) / 200.f, 0.f, aim.get(), TRUE);
 
 				font18.DrawStringFormat(int(aimpos.x()), int(aimpos.y()), GetColor(255, 0, 0), "%d", int(rad2deg(rad_t)));
 			}
