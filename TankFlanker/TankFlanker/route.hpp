@@ -64,11 +64,11 @@ public:
 		auto UIparts = std::make_unique<UI>(Drawparts->use_vr);																	//UI
 		auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);																	//デバッグ
 		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);			//ホストパスエフェクト
-		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->out_disp_x, Drawparts->out_disp_y);	//ホストパスエフェクト
+		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, deskx, desky);	//ホストパスエフェクト
 		auto mapparts = std::make_unique<Mapclass>();																			//map
 		//
 		font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
-		outScreen2 = GraphHandle::Make(Drawparts->out_disp_x, Drawparts->out_disp_y, true);	//描画スクリーン
+		outScreen2 = GraphHandle::Make(deskx, desky, true);	//描画スクリーン
 	//その他
 		SetCreate3DSoundFlag(TRUE);
 		se_cockpit = SoundHandle::Load("data/audio/fighter-cockpit1.wav");
@@ -264,7 +264,7 @@ public:
 					eyevec = mine.vehicle.mat.zvec() * -1.f;
 					cam_s.cam.campos = mine.vehicle.pos + VGet(0.f, 3.f, 0.f) + eyevec * range;
 					cam_s.Rot = ADS;
-					eyevec2 = chara[1].vehicle.mat.zvec() * -1.f;
+					eyevec2 = chara[0].vehicle.mat.zvec() * -1.f;
 					for (auto& c : chara) {
 						auto& veh = c.vehicle;
 						for (auto& t : veh.use_veh.wheelframe) {
@@ -377,7 +377,7 @@ public:
 							//
 							for (auto& c : chara) {
 								auto& veh = c.vehicle;
-								if (&c - &chara[0] >= (Drawparts->use_vr ? 2 : 1)) {
+								if (&c - &chara[0] >= (Drawparts->use_vr ? 1 : 1)) {
 
 									c.key[0] = false;//GetRand(100) <= 10;   //射撃
 									c.key[1] = false;//GetRand(100) <= 1; //マシンガン
@@ -495,7 +495,7 @@ public:
 									c.key[17] = false; 
 								}
 							}
-							//*
+							/*
 							if (Drawparts->use_vr) {
 								chara[1].key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //射撃
 								chara[1].key[1] = ((GetMouseInput() & MOUSE_INPUT_MIDDLE) != 0); //マシンガン
@@ -636,7 +636,7 @@ public:
 								oldv = ptr_.turn && ptr_.now;
 								HMDpos = HMDpos - rec_HMD;
 								HMDmat = MATRIX_ref::Axis1(HMDmat.xvec()*-1.f, HMDmat.yvec(), HMDmat.zvec()*-1.f);
-								eye_pos_ads = HMDpos + VGet(0, -0.8f, 0);
+								eye_pos_ads = HMDpos + VGet(0, -0.28f, 0);
 								eye_pos_ads = VGet(
 									std::clamp(eye_pos_ads.x(), -0.18f, 0.18f),
 									std::clamp(eye_pos_ads.y(), 0.f, 0.8f),
@@ -1352,10 +1352,11 @@ public:
 							}
 							//2P描画
 							if (Drawparts->use_vr) {
-								auto& ct = chara[1];
+								auto& ct = chara[0];
 								auto& veh = ct.vehicle;
 								//cam_s.cam
 								{
+									/*
 									//campos,camvec,camup取得
 									mouse_aim(eyevec2);
 									{
@@ -1367,17 +1368,16 @@ public:
 										cam_s.cam.camvec = cam_s.cam.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
 										cam_s.cam.camup = veh.mat.yvec();
 
-										/*
-										cam_s.cam.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
-										cam_s.cam.campos.y(std::max(cam_s.cam.campos.y(), 5.f));
-										cam_s.cam.camvec = cam_s.cam.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
-										cam_s.cam.camup = MATRIX_ref::Vtrans(HMDmat.yvec(), veh.mat);//veh.mat.yvec();
-										//*/
+										//cam_s.cam.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
+										//cam_s.cam.campos.y(std::max(cam_s.cam.campos.y(), 5.f));
+										//cam_s.cam.camvec = cam_s.cam.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
+										//cam_s.cam.camup = MATRIX_ref::Vtrans(HMDmat.yvec(), veh.mat);//veh.mat.yvec();
 										}
 									//far取得
 									cam_s.cam.far_ = (cam_s.Rot >= ADS) ? (2000.f) : (4000.f);
 									//near取得
 									cam_s.cam.near_ = (cam_s.Rot >= ADS) ? (3.f) : (range_p - 5.f);
+									//*/
 									//fov
 									cam_s.cam.fov = deg2rad(fov_pc / fovs);
 								}
@@ -1585,9 +1585,9 @@ public:
 					}
 					SetDrawScreen(DX_SCREEN_BACK);
 					{
-						DrawBox(Drawparts->out_disp_x - font18.GetDrawWidthFormat("リプレイデータ保存中… %04d/%04d  ", all - now, all), Drawparts->out_disp_y - y_r(70, Drawparts->out_disp_y), Drawparts->out_disp_x, Drawparts->out_disp_y - y_r(40, Drawparts->out_disp_y), GetColor(0, 0, 0), TRUE);
-						font18.DrawStringFormat_RIGHT(Drawparts->out_disp_x, Drawparts->out_disp_y - y_r(70, Drawparts->out_disp_y), GetColor(0, 255, 0), "リプレイデータ保存中… %04d/%04d  ", all - now, all);
-						DrawBox(0, Drawparts->out_disp_y - y_r(50, Drawparts->out_disp_y), int(float(Drawparts->out_disp_x) * bar / float(all)), Drawparts->out_disp_y - y_r(40, Drawparts->out_disp_y), GetColor(0, 255, 0), TRUE);
+						DrawBox(deskx - font18.GetDrawWidthFormat("リプレイデータ保存中… %04d/%04d  ", all - now, all), desky - y_r(70, desky), deskx, desky - y_r(40, desky), GetColor(0, 0, 0), TRUE);
+						font18.DrawStringFormat_RIGHT(deskx, desky - y_r(70, desky), GetColor(0, 255, 0), "リプレイデータ保存中… %04d/%04d  ", all - now, all);
+						DrawBox(0, desky - y_r(50, desky), int(float(deskx) * bar / float(all)), desky - y_r(40, desky), GetColor(0, 255, 0), TRUE);
 						easing_set(&bar, float(all - now), 0.95f);
 					}
 					Drawparts->Screen_Flip(waits);
