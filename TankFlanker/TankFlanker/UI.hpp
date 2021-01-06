@@ -375,11 +375,13 @@ public:
 					rad_t = DX_PI_F - tmp_cos;
 				}
 
-				DrawRotaGraph(int(aimpos.x()), int(aimpos.y()), y_r(siz, out_disp_y) / 100.f, rad_t, aim.get(), TRUE);
+				//DrawRotaGraph(int(aimpos.x()), int(aimpos.y()), y_r(siz, out_disp_y) / 100.f, rad_t, aim.get(), TRUE);//2
 
-				DrawRotaGraph(int(disp_x / 2), int(disp_y / 2), y_r(siz, out_disp_y) / 200.f, 0.f, aim.get(), TRUE);
+				//DrawRotaGraph(int(disp_x / 2), int(disp_y / 2), y_r(siz, out_disp_y) / 200.f, 0.f, aim.get(), TRUE);//3
 
-				font18.DrawStringFormat(int(aimpos.x()), int(aimpos.y()), GetColor(255, 0, 0), "%d", int(rad2deg(rad_t)));
+				DrawRotaGraph(int(disp_x / 2), int(disp_y / 2), y_r(siz, out_disp_y) / 100.f, 0.f, aim.get(), TRUE);//1
+
+				//font18.DrawStringFormat(int(aimpos.x()), int(aimpos.y()), GetColor(255, 0, 0), "%d", int(rad2deg(rad_t)));
 			}
 		}
 		//

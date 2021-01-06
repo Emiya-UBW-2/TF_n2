@@ -99,7 +99,7 @@ public:
 				//äC
 				mapparts->sea_draw(cam_s.cam.campos);
 				//â_
-				mapparts->cloud_draw();
+				//mapparts->cloud_draw();//2
 				//ã@ëÃ
 				SetFogStartEnd(0.0f, 3000.f);
 				SetFogColor(128, 128, 128);
@@ -154,7 +154,7 @@ public:
 		do {
 			//ì«Ç›èoÇµ
 			if (!replay_on) {
-				chara.resize(1);
+				chara.resize(10);
 			}
 			else{
 				Mainclass::Chara::sendstat tmp_rep;
