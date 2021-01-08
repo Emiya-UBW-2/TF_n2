@@ -154,7 +154,7 @@ public:
 		do {
 			//“Ç‚Ýo‚µ
 			if (!replay_on) {
-				chara.resize(10);
+				chara.resize(6);
 			}
 			else{
 				Mainclass::Chara::sendstat tmp_rep;
@@ -1327,6 +1327,10 @@ public:
 								//VR‚ÉˆÚ‚·
 								Drawparts->draw_VR(
 									[&] {
+									auto campos = VECTOR_ref(GetCameraPosition()) - cam_s.cam.campos;
+									campos = MATRIX_ref::Vtrans(campos, MATRIX_ref::Axis1((VECTOR_ref(cam_s.cam.camvec) - cam_s.cam.campos)*-1.f, cam_s.cam.camup, (VECTOR_ref(cam_s.cam.camvec) - cam_s.cam.campos).cross(cam_s.cam.camup)*-1.f));
+									SetCameraPositionAndTargetAndUpVec((campos + cam_s.cam.campos).get(), (campos + cam_s.cam.camvec).get(), GetCameraUpVector());
+
 									SetCameraNearFar(0.01f, 2.f);
 									SetUseZBuffer3D(FALSE);												//zbufuse
 									SetWriteZBuffer3D(FALSE);											//zbufwrite
