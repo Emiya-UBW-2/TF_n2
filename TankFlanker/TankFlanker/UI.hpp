@@ -319,78 +319,32 @@ public:
 
 	void draw(
 		std::vector<Mainclass::Chara>& charas,
-		GraphHandle& MAIN_Screen,
-		Mainclass::CAMS& cam_s,
+		Mainclass::Chara& chara,	
+		const bool& adss,
 		const DXDraw::system_VR& vr_sys,
-		Mainclass::Chara& chara,
-		const char& overrider = -1
+		bool uses_vr = true
 	) {
 		int xs = 0, xp = 0, ys = 0, yp = 0;
-		//照準座標取得
-		{
-			auto scr = GetDrawScreen();
-			MAIN_Screen.SetDraw_Screen(cam_s.cam.campos, cam_s.cam.camvec, cam_s.cam.camup, cam_s.cam.fov, 0.01f, 5000.0f);
-			{
-				VECTOR_ref aimp = (VECTOR_ref)(chara.vehicle.pos) + chara.vehicle.mat.zvec() * (-1000.f);
-				//mapparts->map_col_line_nearest(chara.vehicle.pos, &aimp);				//地形
-				aimpos = ConvWorldPosToScreenPos(aimp.get());
-				for (auto& c : charas) {
-					c.winpos = ConvWorldPosToScreenPos(
-
-						//c.vehicle.pos.get()
-						(
-							c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - c.vehicle.pos).size() / (600.f / GetFPS()))
-							).get()
-					);
-
-					//pos = c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - pos).size() / (a.spec.speed_a));
-
-				}
-				if (cam_s.Rot >= ADS) {
-					altpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.alt_100_f.first) - (chara.cocks.obj.frame(chara.cocks.alt_100_2_f.first) - chara.cocks.obj.frame(chara.cocks.alt_100_f.first)).Norm()*0.05f).get());
-					spdpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.speed_f.first) - (chara.cocks.obj.frame(chara.cocks.speed2_f.first) - chara.cocks.obj.frame(chara.cocks.speed_f.first)).Norm()*0.05f).get());
-
-					auto& veh = chara.vehicle;
-					aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
-				}
-			}
-			SetDrawScreen(scr);
+		if (uses_vr) {
+			GetScreenState(&disp_x, &disp_y, nullptr);
 		}
-		//オーバーライド
-		MAIN_Screen.GetSize(&disp_x, &disp_y);
 		//照準
 		{
 			int siz = int(64.f);
 			if (aimpos.z() >= 0.f && aimpos.z() <= 1.f) {
 				circle.DrawExtendGraph(int(aimpos.x()) - y_r(siz, out_disp_y), int(aimpos.y()) - y_r(siz, out_disp_y), int(aimpos.x()) + y_r(siz, out_disp_y), int(aimpos.y()) + y_r(siz, out_disp_y), TRUE);
 
-				VECTOR_ref tmp = cam_s.cam.camup.Norm();
-				VECTOR_ref tmp_t = VGet(0, 1.f, 0);
+				DrawRotaGraph(int(disp_x / 2), int(disp_y / 2), y_r(siz, out_disp_y) / 200.f, 0.f, aim.get(), TRUE);//3
 
-				float tmp_cos = asinf((tmp.cross((cam_s.cam.camvec - cam_s.cam.campos).Norm())).dot(tmp_t));
-				
-				float rad_t = tmp_cos;
-				rad_t = tmp_cos;
-				if (tmp.dot(tmp_t) < 0.f) {
-					rad_t = DX_PI_F - tmp_cos;
-				}
-
-				//DrawRotaGraph(int(aimpos.x()), int(aimpos.y()), y_r(siz, out_disp_y) / 100.f, rad_t, aim.get(), TRUE);//2
-
-				//DrawRotaGraph(int(disp_x / 2), int(disp_y / 2), y_r(siz, out_disp_y) / 200.f, 0.f, aim.get(), TRUE);//3
-
-				DrawRotaGraph(int(disp_x / 2), int(disp_y / 2), y_r(siz, out_disp_y) / 100.f, 0.f, aim.get(), TRUE);//1
-
-				//font18.DrawStringFormat(int(aimpos.x()), int(aimpos.y()), GetColor(255, 0, 0), "%d", int(rad2deg(rad_t)));
 			}
 		}
 		//
-		FontHandle* font = (!(use_vr && overrider == -1)) ? &font18 : &font36;
+		FontHandle* font = (!uses_vr) ? &font18 : &font36;
 		{
 			{
 				//弾薬
 				{
-					if (!(use_vr && overrider == -1)) {
+					if (!uses_vr) {
 						xs = x_r(200, out_disp_x);
 						xp = x_r(20, out_disp_x);
 						ys = y_r(18, out_disp_y);
@@ -444,7 +398,7 @@ public:
 					auto& veh = chara.vehicle;
 					//速度計
 					{
-						if (cam_s.Rot >= ADS) {
+						if (adss) {
 							if (spdpos.z() >= 0.f && spdpos.z() <= 1.f) {
 								xp = (int)(spdpos.x());
 								yp = (int)(spdpos.y());
@@ -468,7 +422,7 @@ public:
 							}
 						}
 						else {
-							if (!(use_vr && overrider == -1)) {
+							if (!uses_vr) {
 								xp = disp_x / 3;
 								yp = disp_y / 2;
 							}
@@ -498,7 +452,7 @@ public:
 					//高度計
 					{
 						//
-						if (cam_s.Rot >= ADS) {
+						if (adss) {
 							if (altpos.z() >= 0.f && altpos.z() <= 1.f) {
 								xp = (int)(altpos.x());
 								yp = (int)(altpos.y());
@@ -507,7 +461,7 @@ public:
 						}
 						else {
 							//
-							if (!(use_vr && overrider == -1)) {
+							if (!uses_vr) {
 								xp = disp_x * 2 / 3;
 								yp = disp_y / 2;
 							}
@@ -521,7 +475,7 @@ public:
 					//アラート
 					{
 						//
-						if (cam_s.Rot >= ADS) {
+						if (adss) {
 							if (aimpos_2.z() >= 0.f && aimpos_2.z() <= 1.f) {
 								xp = (int)(aimpos_2.x());
 								yp = (int)(aimpos_2.y());
@@ -543,7 +497,7 @@ public:
 							}
 						}
 						else {
-							if (!(use_vr && overrider == -1)) {
+							if (!uses_vr) {
 								xp = disp_x / 2;
 								yp = disp_y / 3;
 							}
@@ -569,7 +523,7 @@ public:
 					}
 					//HP
 					{
-						if (!(use_vr && overrider == -1)) {
+						if (!uses_vr) {
 							xs = x_r(200, out_disp_x);
 							xp = disp_x - x_r(20 + 30, out_disp_x) - xs;
 							ys = y_r(42, out_disp_y);
@@ -605,7 +559,7 @@ public:
 						}
 					}
 					{
-						if (!(use_vr && overrider == -1)) {
+						if (!uses_vr) {
 							xs = x_r(230, out_disp_x);
 							xp = disp_x - x_r(20 + 30, out_disp_x) - xs;
 							ys = y_r(304, out_disp_y);
@@ -635,7 +589,7 @@ public:
 			}
 		}
 		//VR用オプション
-		if ((use_vr && overrider == -1)) {
+		if (uses_vr) {
 			const float vr_sys_yvec_y = vr_sys.yvec.y();
 			const float vr_sys_yvec_x = vr_sys.yvec.x();
 			const float vr_sys_touch_y = ((vr_sys.on[1] & BUTTON_TOUCHPAD) != 0) ? vr_sys.touch.y() : 0.f;
@@ -701,7 +655,7 @@ public:
 			*/
 			//速度計
 			{
-				if (!(use_vr && overrider == -1)) {
+				if (!uses_vr) {
 					xs = x_r(200, out_disp_x);
 					xp = disp_x / 3;
 					ys = disp_y / 4 / 3;
@@ -739,7 +693,7 @@ public:
 			}
 			//高度計
 			{
-				if (!(use_vr && overrider == -1)) {
+				if (!uses_vr) {
 					xs = x_r(200, out_disp_x);
 					xp = disp_x * 2 / 3;
 					ys = (disp_y / 4) / 3;
@@ -814,6 +768,27 @@ public:
 		if (chara.vehicle.KILL_ID != -1) {
 			font->DrawStringFormat(disp_x / 4, disp_y / 3, GetColor(255, 0, 0), "KILL : %d", chara.vehicle.KILL);
 			font->DrawStringFormat(disp_x / 4, disp_y / 3 + y_r(18, out_disp_y), GetColor(255, 0, 0), "KILL ID : %d", chara.vehicle.KILL_ID);
+		}
+	}
+
+	void item_draw(std::vector<Mainclass::Chara>& charas, Mainclass::Chara& chara, const Mainclass::CAMS& cam_s) {
+		{
+			SetCameraNearFar(0.01f, 5000.f);
+
+
+			VECTOR_ref aimp = (VECTOR_ref)(chara.vehicle.pos) + chara.vehicle.mat.zvec() * (-1000.f);
+			//mapparts->map_col_line_nearest(chara.vehicle.pos, &aimp);				//地形
+			aimpos = ConvWorldPosToScreenPos(aimp.get());
+			for (auto& c : charas) {
+				c.winpos = ConvWorldPosToScreenPos((c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - c.vehicle.pos).size() / (600.f / GetFPS()))).get());
+				//pos = c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - pos).size() / (a.spec.speed_a));
+			}
+			if (cam_s.Rot >= ADS) {
+				altpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.alt_100_f.first) - (chara.cocks.obj.frame(chara.cocks.alt_100_2_f.first) - chara.cocks.obj.frame(chara.cocks.alt_100_f.first)).Norm()*0.05f).get());
+				spdpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.speed_f.first) - (chara.cocks.obj.frame(chara.cocks.speed2_f.first) - chara.cocks.obj.frame(chara.cocks.speed_f.first)).Norm()*0.05f).get());
+				auto& veh = chara.vehicle;
+				aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
+			}
 		}
 	}
 };

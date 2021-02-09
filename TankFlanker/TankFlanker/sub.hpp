@@ -894,7 +894,7 @@ public:
 	};
 	//カメラ
 	struct CAMS {
-		DXDraw::cam_info cam;
+		cam_info cam;
 		int Rot = 0;//
 	};
 	typedef std::pair<int, float> p_animes;
@@ -1510,12 +1510,14 @@ public:
 									c.pos = c.vec * (0.1f) + position;
 									//貫通
 									if (c.spec.pene_a > a.second * (1.0f / std::abs(vec_t.Norm().dot(normal)))) {
+										auto tt = veh_t.HP;
+
 										if (t.p_anime_geardown.second <= 0.5f) {
 											//veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - c.spec.damage_a, 0); //
 											veh_t.HP = std::max<int16_t>(veh_t.HP - c.spec.damage_a, 0); //
 										}
 										//撃破時エフェクト
-										if (veh_t.HP == 0) {
+										if (veh_t.HP == 0 && tt!= veh_t.HP) {
 											this->vehicle.KILL++;
 											this->vehicle.KILL_ID = (int)(&t - &tgts[0]);
 											veh_t.DEATH++;

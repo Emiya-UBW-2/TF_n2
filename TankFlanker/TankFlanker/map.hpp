@@ -211,7 +211,6 @@ public:
 	}
 	//‹ó•`‰æ
 	void sky_draw(void) {
-		SetCameraNearFar(1000.0f, 5000.0f);
 		SetFogEnable(FALSE);
 		SetUseLighting(FALSE);
 		{
