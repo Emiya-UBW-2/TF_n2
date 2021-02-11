@@ -90,7 +90,7 @@ public:
 					mapparts->map_get().DrawModel();
 				}
 				//ŠC
-				mapparts->sea_draw(cam_s.cam.campos);
+				mapparts->sea_draw();
 				//‰_
 				//mapparts->cloud_draw();//2
 				//‹@‘Ì
@@ -1008,6 +1008,7 @@ public:
 					//VRXV
 					Drawparts->Move_Player();
 					//•`‰æ
+					mapparts->sea_draw_set();
 					{
 						{
 							//Ž©‹@•`‰æ

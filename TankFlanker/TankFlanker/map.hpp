@@ -23,6 +23,16 @@ private:
 	int IndexNum, VerNum;			/*grass*/
 	int vnum, pnum;					/*grass*/
 	MV1_REF_POLYGONLIST RefMesh;	/*grass*/
+
+	//海
+	int PixelShaderHandle;
+	int VertexShaderHandle;
+	int vscbhandle;
+	int pscbhandle;
+	FLOAT4 *f4;
+	float g_fTime;
+	int OldTime;
+
 public:
 	Mapclass() {
 	}
@@ -43,6 +53,13 @@ public:
 		cloud_pic = GraphHandle::Load("data/model/cloud/cloud.png");		 /*grass*/
 		SetUseASyncLoadFlag(FALSE);
 		MV1::Load("data/model/cloud/model.mv1", &cloud, true);		/*grass*/
+
+		vscbhandle = CreateShaderConstantBuffer(sizeof(float) * 4);
+		VertexShaderHandle = LoadVertexShader("shader/NormalMesh_DirLight_PhongVS.vso");	// 頂点シェーダーを読み込む
+		pscbhandle = CreateShaderConstantBuffer(sizeof(float) * 4);
+		PixelShaderHandle = LoadPixelShader("shader/NormalMesh_DirLight_PhongPS.pso");	// ピクセルシェーダーを読み込む
+		g_fTime = 0.f;
+		OldTime = GetNowCount();
 	}
 
 	void set_map(const char* buf, const float x_max = 10.f, const float z_max = 10.f, const float x_min = -10.f, const float z_min = -10.f) {
@@ -198,15 +215,37 @@ public:
 		}
 		return p;
 	}
-
-
-	void sea_draw(const VECTOR_ref& campos) {
-		SetFogStartEnd(0.0f, 25000.f);
-		SetFogColor(128, 192, 255);
+	void sea_draw_set() {/*const VECTOR_ref& campos*/
 		{
-			sea.SetPosition(VGet(campos.x(), -5.f, campos.z()));
-			sea.SetScale(VGet(10.f, 10.f, 10.f));
+			auto Time = GetNowCount();	// 現在の時間を得る
+			g_fTime += float(Time - OldTime) / 1000.0f*0.5f;
+			OldTime = Time;				// 現在の時間を保存
+		}
+		sea.SetScale(VGet(10.f, 1.f, 10.f));
+		//sea.SetPosition(VGet(campos.x(), -5.f, campos.z()));
+	}
+
+	void sea_draw() {
+		SetFogStartEnd(0.0f, 11500.f);
+		SetFogColor(72, 164, 218);
+		{
+			SetUseVertexShader(VertexShaderHandle);	// 使用する頂点シェーダーをセット
+			SetUsePixelShader(PixelShaderHandle);	// 使用するピクセルシェーダーをセット
+			{
+				//
+				f4 = (FLOAT4 *)GetBufferShaderConstantBuffer(vscbhandle);			// 頂点シェーダー用の定数バッファのアドレスを取得
+				f4->x = g_fTime;
+				UpdateShaderConstantBuffer(vscbhandle);								// 頂点シェーダー用の定数バッファを更新して書き込んだ内容を反映する
+				SetShaderConstantBuffer(vscbhandle, DX_SHADERTYPE_VERTEX, 4);		// 頂点シェーダーの定数バッファを定数バッファレジスタ４にセット
+				//
+				f4 = (FLOAT4 *)GetBufferShaderConstantBuffer(pscbhandle);			// ピクセルシェーダー用の定数バッファのアドレスを取得
+				f4->x = g_fTime;
+				UpdateShaderConstantBuffer(pscbhandle);								// ピクセルシェーダー用の定数バッファを更新して書き込んだ内容を反映する
+				SetShaderConstantBuffer(pscbhandle, DX_SHADERTYPE_PIXEL, 3);		// ピクセルシェーダー用の定数バッファを定数バッファレジスタ３にセット
+			}
+			MV1SetUseOrigShader(TRUE);
 			sea.DrawModel();
+			MV1SetUseOrigShader(FALSE);
 		}
 	}
 	//空描画
