@@ -4,17 +4,10 @@ class Mapclass:Mainclass {
 private:
 	//マップ
 	MV1 map, map_col;					    //地面
-	MV1 tree_model, tree_far;				    //木
 	MV1 sky;	  //空
 	MV1 sea;	  //海
-	struct treePats {
-		MV1 obj, obj_far;
-		MATRIX_ref mat;
-		VECTOR_ref pos;
-	};
-	std::vector<treePats> tree;	//壁をセット
 	//雲
-	int clouds = 250;				/*grassの数*/
+	int clouds = 125;				/*grassの数*/
 	std::vector<VERTEX3D> cloudver; /*grass*/
 	std::vector<DWORD> cloudind;    /*grass*/
 	int VerBuf, IndexBuf;			/*grass*/
@@ -44,8 +37,6 @@ public:
 	void set_map_pre() {
 		MV1::Load("data/map_new/model.mv1", &map, true);		   //map
 		MV1::Load("data/map_new/col.mv1", &map_col, true);		   //mapコリジョン
-		MV1::Load("data/model/tree/model.mv1", &tree_model, true); //木
-		MV1::Load("data/model/tree/model2.mv1", &tree_far, true); //木
 		MV1::Load("data/model/sky/model.mv1", &sky, true);	 //空
 		MV1::Load("data/model/sea/model.mv1", &sea, true);	 //海
 
@@ -86,18 +77,8 @@ public:
 
 			for (int i = 0; i < p.PolygonNum; i++) {
 				if (p.Polygons[i].MaterialIndex == 2) {
-
 				}
 				else if (p.Polygons[i].MaterialIndex == 3) {
-					//木
-					tree.resize(tree.size() + 1);
-					tree.back().mat = MATRIX_ref::Scale(VGet(15.f / 10.f, 15.f / 10.f, 15.f / 10.f));
-					tree.back().pos = (VECTOR_ref(p.Vertexs[p.Polygons[i].VIndex[0]].Position) + p.Vertexs[p.Polygons[i].VIndex[1]].Position + p.Vertexs[p.Polygons[i].VIndex[2]].Position) * (1.f / 3.f);
-
-					tree.back().obj = tree_model.Duplicate();
-					tree.back().obj.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
-					tree.back().obj_far = tree_far.Duplicate();
-					tree.back().obj_far.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
 				}
 			}
 		}
@@ -167,33 +148,12 @@ public:
 	void delete_map() {
 		map.Dispose();		   //map
 		map_col.Dispose();		   //mapコリジョン
-		tree_model.Dispose(); //木
-		tree_far.Dispose(); //木
 		sky.Dispose();	 //空
 		sea.Dispose();	 //海
-		for (auto&t : tree) {
-			t.obj.Dispose();
-			t.obj_far.Dispose();
-		}
-		tree.clear();
-
 		cloud_pic.Dispose();
 		cloud.Dispose();
 		cloudver.clear();
 		cloudind.clear();
-	}
-
-	void map_settree() {
-		for (auto& l : tree) {
-			l.obj.SetMatrix(l.mat * MATRIX_ref::Mtrans(l.pos));
-			l.obj_far.SetMatrix(l.mat * MATRIX_ref::Mtrans(l.pos));
-		}
-	}
-	void map_drawtree() {
-		for (auto& l : tree) {
-			l.obj.DrawModel();
-			//l.obj_far.DrawModel();
-		}
 	}
 
 	auto& map_get() { return map; }
@@ -221,7 +181,6 @@ public:
 			g_fTime += float(Time - OldTime) / 1000.0f*0.5f;
 			OldTime = Time;				// 現在の時間を保存
 		}
-		sea.SetScale(VGet(10.f, 1.f, 10.f));
 		//sea.SetPosition(VGet(campos.x(), -5.f, campos.z()));
 	}
 

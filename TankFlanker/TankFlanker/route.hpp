@@ -11,7 +11,6 @@ class main_c : Mainclass {
 	//描画スクリーン
 	GraphHandle outScreen2;
 	GraphHandle UI_Screen, UI_Screen2;
-	MV1 hit_pic;	//弾痕
 	MV1 cockpit;	//コックピット
 	//操作
 	Mainclass::CAMS cam_s;
@@ -70,7 +69,6 @@ public:
 		SetCreate3DSoundFlag(FALSE);
 		se_alert = SoundHandle::Load("data/audio/alert.wav");
 		//
-		MV1::Load("data/model/hit/model.mv1", &hit_pic, true);			//弾痕
 		Mainclass::Vehcs::set_vehicles_pre("data/plane/", &Vehicles, true);
 		MV1::Load("data/model/cockpit/model.mv1", &cockpit, true);
 		//
@@ -111,12 +109,7 @@ public:
 								}
 							}
 						}
-						//弾痕
-						for (auto& h : veh.hit_obj) {
-							h.draw();
-						}
 					}
-					mapparts->map_drawtree();
 				}
 				SetFogEnable(FALSE);
 				SetUseLighting(FALSE);
@@ -158,8 +151,6 @@ public:
 				mapparts->set_map_pre();
 				UIparts->load_window("マップモデル");			   //ロード画面
 				mapparts->set_map("data/grassput.bmp", 35000.f, 35000.f, -35000.f, -35000.f);
-				//木セット
-				mapparts->map_settree();
 				//光、影
 				Drawparts->Set_Light_Shadow(mapparts->map_get().mesh_maxpos(0), mapparts->map_get().mesh_minpos(0), VGet(0.0f, -0.5f, 0.5f),
 					[&] {
@@ -175,7 +166,7 @@ public:
 					}
 					c.vehicle.spawn(VGet(float(100 * (i / 3))*sin(deg2rad(-130)), 1000.f, float(100 * (i / 3))*cos(deg2rad(-130)) + float(100 * (i % 3))), MATRIX_ref::RotY(deg2rad(-130)));
 					//キャラ設定
-					c.set_human(Vehicles, Ammo, hit_pic);	//
+					c.set_human(Vehicles, Ammo);	//
 					c.cocks.set_(cockpit);					//コックピット
 					//
 					c.se_cockpit = se_cockpit.Duplicate();
@@ -865,10 +856,6 @@ public:
 								for (auto& cg : veh.Gun_) {
 									cg.math_reco(mapparts, &c, &chara);
 								}
-								//弾痕
-								for (auto& h : veh.hit_obj) {
-									h.put(c);
-								}
 								//ミサイル
 								for (auto& a : c.effcs_missile) {
 									if (a.second != nullptr) {
@@ -925,7 +912,11 @@ public:
 						//effect
 						for (auto& t : c.effcs) {
 							const size_t index = &t - &c.effcs[0];
-							if (index != ef_smoke1 && index != ef_smoke2 && index != ef_smoke3) {
+							if (index != ef_smoke1 && index != ef_smoke2
+								
+								//&& index != ef_smoke3
+								
+								) {
 								t.put(Drawparts->get_effHandle(int(index)));
 							}
 						}
@@ -938,7 +929,7 @@ public:
 						for (auto& t : veh.use_veh.wingframe) {
 							t.smkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), 10.f);
 							if (start_c2) {
-								t.smkeffcs.set_loop(Drawparts->get_effHandle(ef_smoke3));
+								//t.smkeffcs.set_loop(Drawparts->get_effHandle(ef_smoke3));
 							}
 						}
 						//銃砲
@@ -1004,7 +995,6 @@ public:
 								}
 							}
 						}
-						mapparts->map_drawtree();
 					}
 					, VGet(200.f, 200.f, 200.f), VGet(2000.f, 2000.f, 2000.f));
 					//VR更新

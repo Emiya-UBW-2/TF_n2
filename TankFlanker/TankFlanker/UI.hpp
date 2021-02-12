@@ -8,13 +8,8 @@ class UI : Mainclass {
 private:
 	GraphHandle circle;
 	GraphHandle aim;
-	GraphHandle scope;
-	GraphHandle lock;
-	GraphHandle hit;
 	GraphHandle CamScreen;
-	GraphHandle HP_per;
 	float ber = 0;
-	GraphHandle HP_ber;
 	GraphHandle bufScreen;
 	//font
 	FontHandle font36;
@@ -43,13 +38,8 @@ public:
 		out_disp_x = deskx;
 		out_disp_y = desky;
 
-		lock = GraphHandle::Load("data/UI/battle_lock.bmp");
-		hit = GraphHandle::Load("data/UI/battle_hit.bmp");
 		circle = GraphHandle::Load("data/UI/battle_circle.bmp");
 		aim = GraphHandle::Load("data/UI/battle_aim.bmp");
-		scope = GraphHandle::Load("data/UI/battle_scope.png");
-		HP_per = GraphHandle::Load("data/UI/battle_hp_bar_max.bmp");
-		HP_ber = GraphHandle::Load("data/UI/battle_hp_bar.bmp");
 		CamScreen = GraphHandle::Make(240, 240, true);
 		bufScreen = GraphHandle::Make(out_disp_x, out_disp_y, true);
 

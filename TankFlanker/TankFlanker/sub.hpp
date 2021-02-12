@@ -23,8 +23,8 @@ enum Effect {
 	ef_smoke1 = 6, //ミサイル炎
 	ef_smoke2 = 7, //銃の軌跡
 	ef_gndsmoke = 8,//地面の軌跡
-	ef_smoke3 = 9, //飛行機の軌跡
-	ef_size = 10
+	//ef_smoke3 = 9, //飛行機の軌跡
+	ef_size
 };
 
 //要改善
@@ -425,46 +425,6 @@ public:
 public:
 	class Chara;
 
-	struct Hit {			//
-		bool flug{ false };//弾痕フラグ
-		int use{ 0 };		//使用フレーム
-		MV1 pic;			//弾痕モデル
-		VECTOR_ref pos;		//座標
-		MATRIX_ref mat;		//
-		void clear() {
-			this->flug = false;
-			this->use = 0;
-			this->pic.Dispose();
-			this->pos = VGet(0, 0, 0);
-			this->mat.clear();
-		}
-		void init(const MV1& hit_pic) {
-			this->clear();
-			this->pic = hit_pic.Duplicate();
-		}
-		void set(const ammos& c, const Chara& tgt,const VECTOR_ref& position, const VECTOR_ref& normal) {
-			float asize = c.spec.caliber_a * 100.f;
-			auto scale = VGet(asize / std::abs(c.vec.Norm().dot(normal)), asize, asize);
-			auto y_vec = MATRIX_ref::Vtrans(normal, tgt.vehicle.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
-			auto z_vec = MATRIX_ref::Vtrans(normal.cross(c.vec), tgt.vehicle.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180)));
-
-			this->mat = MATRIX_ref::Scale(scale)* MATRIX_ref::Axis1(y_vec.cross(z_vec), y_vec, z_vec);
-			this->pos = MATRIX_ref::Vtrans((VECTOR_ref)position - tgt.vehicle.pos, tgt.vehicle.mat.Inverse() * MATRIX_ref::RotY(deg2rad(180))) + y_vec * 0.02f;
-			this->flug = true;
-		}
-
-		void put(const Chara& c) {
-			if (this->flug) {
-				this->pic.SetMatrix(this->mat* c.vehicle.mat*MATRIX_ref::Mtrans((VECTOR_ref)c.vehicle.pos + MATRIX_ref::Vtrans(this->pos, c.vehicle.mat)));
-			}
-		}
-		void draw() {
-			if (this->flug) {
-				this->pic.DrawFrame(this->use);
-			}
-		}
-	};
-
 public:
 	class Chara;
 private:
@@ -680,7 +640,7 @@ private:
 						}
 
 						//消す(2秒たった、スピードが100以下、貫通が0以下)
-						if (a.count >= 2.5f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
+						if (a.count >= 2.f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
 							a.flug = false;
 						}
 						if (!a.flug) {
@@ -749,7 +709,6 @@ private:
 		};
 		std::vector<breaks> info_break;					//ライフ
 
-		std::array<Hit, 24> hit_obj;					//弾痕
 		size_t camo_sel = 0;						//
 		float wheel_Left = 0.f, wheel_Right = 0.f;			//転輪回転
 		float wheel_Leftadd = 0.f, wheel_Rightadd = 0.f;		//転輪回転
@@ -779,7 +738,7 @@ private:
 			this->add.clear();
 		}
 	public:
-		void init(const Vehcs& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
+		void init(const Vehcs& vehcs, const std::vector<Ammos>& Ammo_) {
 			//
 			this->Dispose();
 			//
@@ -794,7 +753,6 @@ private:
 			}
 			this->hits.resize(this->col.mesh_num());
 			//弾痕
-			for (auto& h : this->hit_obj) { h.init(hit_pic); }
 			for (int j = 0; j < this->obj.material_num(); ++j) {
 				MV1SetMaterialSpcColor(this->obj.get(), j, GetColorF(0.85f, 0.82f, 0.78f, 0.1f));
 				MV1SetMaterialSpcPower(this->obj.get(), j, 50.0f);
@@ -851,7 +809,6 @@ private:
 			this->wheel_Right = 0.f;
 			this->wheel_Leftadd = 0.f;
 			this->wheel_Rightadd = 0.f;
-			for (auto& h : this->hit_obj) { h.clear(); }
 			for (auto& cg : this->Gun_) { cg.clear(); }
 			this->Gun_.clear();
 
@@ -1386,8 +1343,6 @@ public:
 		bool ms_on = true;
 		bool ms_key = true;
 		float ms_cnt = 0.f;
-		//戦車//==================================================
-		int hitbuf = 0;		 //使用弾痕
 		//飛行機//==================================================
 		p_animes p_anime_geardown;		    //車輪アニメーション
 		switchs changegear; //ギアアップスイッチ
@@ -1403,13 +1358,13 @@ public:
 
 		cockpits cocks;	//コックピット
 		//セット
-		void set_human(const std::vector<Vehcs>& vehcs, const std::vector<Ammos>& Ammo_, const MV1& hit_pic) {
+		void set_human(const std::vector<Vehcs>& vehcs, const std::vector<Ammos>& Ammo_) {
 			std::fill(this->key.begin(), this->key.end(), false); //操作
 			auto& veh = this->vehicle;
 			//共通
 			{
 				veh.use_id = std::min<size_t>(veh.use_id, vehcs.size() - 1);
-				veh.init(vehcs[veh.use_id], Ammo_, hit_pic);
+				veh.init(vehcs[veh.use_id], Ammo_);
 			}
 			//飛行機
 			{
@@ -1526,8 +1481,6 @@ public:
 										}
 										//弾処理
 										c.flug = false;
-										//弾痕
-										veh_t.hit_obj[t.hitbuf].use = 0;
 									}
 									//非貫通
 									else {
@@ -1547,19 +1500,12 @@ public:
 										default:
 											break;
 										}
-										//弾痕
-										veh_t.hit_obj[t.hitbuf].use = 1;
 									}
 									if (c.spec.caliber_a >= 0.020f) {
 										this->effcs[ef_reco].set(c.pos, normal);
 									}
 									else {
 										this->effcs[ef_reco2].set(c.pos, normal);
-									}
-									//弾痕のセット
-									{
-										veh_t.hit_obj[t.hitbuf].set(c, t, position, normal);
-										++t.hitbuf %= veh_t.hit_obj.size();
 									}
 								}
 							}
