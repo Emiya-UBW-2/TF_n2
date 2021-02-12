@@ -7,7 +7,7 @@ class main_c : Mainclass {
 
 	cam_info cam_easy;
 	VECTOR_ref eyevec, eyevec2;																	//視点
-	FontHandle font18;
+	//FontHandle font18;
 	//描画スクリーン
 	GraphHandle outScreen2;
 	GraphHandle UI_Screen, UI_Screen2;
@@ -51,17 +51,16 @@ public:
 			SetOutApplicationLogValidFlag(TRUE);	//log
 		}
 		//
-		auto Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);								//汎用クラス
-		auto UIparts = std::make_unique<UI>(Drawparts->use_vr);																	//UI
-		auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);																	//デバッグ
-		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);			//ホストパスエフェクト
-		UI_Screen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);									//VR、フルスクリーン共用UI
-		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, deskx, desky);	//ホストパスエフェクト
-		UI_Screen2 = GraphHandle::Make(deskx, desky, true);															//フルスクリーン向けUI
-		auto mapparts = std::make_unique<Mapclass>();																			//map
-		//
-		font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
+		auto Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);						//汎用クラス
+		auto UIparts = std::make_unique<UI>();																			//UI
+		auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);															//デバッグ
+		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);	//ホストパスエフェクト
+		UI_Screen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);										//VR、フルスクリーン共用UI
+		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, deskx, desky);							//ホストパスエフェクト
+		UI_Screen2 = GraphHandle::Make(deskx, desky, true);																//フルスクリーン向けUI
+		auto mapparts = std::make_unique<Mapclass>();																	//map
 		outScreen2 = GraphHandle::Make(deskx, desky, true);	//描画スクリーン
+		//font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 	//その他
 		SetCreate3DSoundFlag(TRUE);
 		se_cockpit = SoundHandle::Load("data/audio/fighter-cockpit1.wav");
@@ -146,7 +145,7 @@ public:
 		//ココから繰り返し読み込み//-------------------------------------------------------------------
 		do {
 			//読み出し
-			chara.resize(6);
+			chara.resize(12);
 			{
 				oldv = false;
 				start_c = true;
@@ -171,6 +170,9 @@ public:
 				for (auto& c : chara) {
 					//キャラ選択
 					size_t i = &c - &chara[0];
+					if (i > 6) {
+						c.id = 1;
+					}
 					c.vehicle.spawn(VGet(float(100 * (i / 3))*sin(deg2rad(-130)), 1000.f, float(100 * (i / 3))*cos(deg2rad(-130)) + float(100 * (i % 3))), MATRIX_ref::RotY(deg2rad(-130)));
 					//キャラ設定
 					c.set_human(Vehicles, Ammo, hit_pic);	//
@@ -301,7 +303,7 @@ public:
 									float dist = (std::numeric_limits<float>::max)();
 									for (auto& t : chara) {
 										//弾関連
-										if (&c == &t) {
+										if (&c == &t || c.id == t.id) {
 											continue;
 										}
 										auto p = (t.vehicle.pos - veh.pos).size();
@@ -1091,14 +1093,19 @@ public:
 									[&] {
 									auto tmp = GetDrawScreen();
 									auto tmp_cams = cam_s;
-									tmp_cams.cam.campos = GetCameraPosition();
-									tmp_cams.cam.camvec = GetCameraTarget();
+									//*
+									auto camtmp = VECTOR_ref(GetCameraPosition()) - cam_s.cam.campos;
 
-									/*
-									auto campos = VECTOR_ref(GetCameraPosition()) - cam_s.cam.campos;
-									campos = MATRIX_ref::Vtrans(campos, MATRIX_ref::Axis1((VECTOR_ref(cam_s.cam.camvec) - cam_s.cam.campos)*-1.f, cam_s.cam.camup, (VECTOR_ref(cam_s.cam.camvec) - cam_s.cam.campos).cross(cam_s.cam.camup)*-1.f));
-									SetCameraPositionAndTargetAndUpVec((campos + cam_s.cam.campos).get(), (campos + cam_s.cam.camvec).get(), GetCameraUpVector());
-									*/
+									auto tvec = (VECTOR_ref(cam_s.cam.camvec) - cam_s.cam.campos);
+
+									camtmp = MATRIX_ref::Vtrans(camtmp, MATRIX_ref::Axis1(
+										tvec.cross(cam_s.cam.camup),
+										cam_s.cam.camup,
+										tvec));
+
+									tmp_cams.cam.campos = camtmp + cam_s.cam.campos;
+									tmp_cams.cam.camvec = camtmp + cam_s.cam.camvec;
+									//*/
 									//被写体深度描画
 									Hostpassparts->BUF_draw([&]() { mapparts->sky_draw(); }, ram_draw, tmp_cams.cam);
 									//最終描画
@@ -1112,14 +1119,14 @@ public:
 
 										SetCameraNearFar(0.01f, 2.f);
 										//コックピット
-										if (cam_s.Rot >= ADS) {
+										if (tmp_cams.Rot >= ADS) {
 											mine.cocks.obj.DrawModel();
 										}
 										if (Drawparts->use_vr) {
 											//UI
 											SetUseZBuffer3D(FALSE);												//zbufuse
 											SetWriteZBuffer3D(FALSE);											//zbufwrite
-											DrawBillboard3D((cam_s.cam.campos + (cam_s.cam.camvec - cam_s.cam.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.8f, 0.f, UI_Screen.get(), TRUE);
+											DrawBillboard3D((tmp_cams.cam.campos + (tmp_cams.cam.camvec - tmp_cams.cam.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.8f, 0.f, UI_Screen.get(), TRUE);
 											SetUseZBuffer3D(TRUE);												//zbufuse
 											SetWriteZBuffer3D(TRUE);											//zbufwrite
 										}
@@ -1130,7 +1137,7 @@ public:
 								}, cam_s.cam);
 							}
 							//2P描画
-							if (Drawparts->use_vr) {
+							if (Drawparts->use_vr && false) {
 								auto& ct = chara[0];
 								auto& veh = ct.vehicle;
 								//cam_s.cam
@@ -1178,7 +1185,7 @@ public:
 								{
 									Hostpass2parts->get_main().DrawGraph(0, 0, true);
 
-									UIparts->item_draw(chara, ct, cam_s);
+									//UIparts->item_draw(chara, ct, cam_s);
 
 									SetCameraNearFar(0.01f, 2.f);
 									//コックピット
@@ -1193,7 +1200,7 @@ public:
 						{
 							if (Drawparts->use_vr) {
 								outScreen2.DrawGraph(0, 0, false);
-								//Drawparts->outScreen[0].DrawGraph(0, 0, false);
+								//Drawparts->outScreen[0].DrawRotaGraph(960, 540, 0.5f, 0, false);
 							}
 							else {
 								Drawparts->outScreen[0].DrawGraph(0, 0, false);

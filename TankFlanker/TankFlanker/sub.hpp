@@ -643,7 +643,7 @@ private:
 									float dist = (std::numeric_limits<float>::max)();
 									for (auto& t : *chara) {
 										//弾関連
-										if (c == &t) {
+										if (c == &t || c->id == t.id) {
 											continue;
 										}
 										auto p = (t.vehicle.pos - a.pos).size();
@@ -1379,7 +1379,7 @@ public:
 		std::array<ef_guns, 12> effcs_gun;    //effect
 		size_t missile_effcnt = 0;
 		size_t gun_effcnt = 0;
-
+		size_t id;
 		//操作関連//==================================================
 		std::array<bool, 18> key{ false };    //キー
 		float view_xrad = 0.f, view_yrad = 0.f; //砲塔操作用ベクトル

@@ -30,7 +30,6 @@ private:
 	int out_disp_y = desky;
 	int disp_x = deskx;
 	int disp_y = desky;
-	bool use_vr = false;
 
 	VECTOR_ref aimpos;
 	VECTOR_ref aimpos_2;
@@ -40,10 +39,9 @@ private:
 
 	float rad_tt = 0.f;
 public:
-	UI(const bool& use_vr_) {
+	UI(void) {
 		out_disp_x = deskx;
 		out_disp_y = desky;
-		use_vr = use_vr_;
 
 		lock = GraphHandle::Load("data/UI/battle_lock.bmp");
 		hit = GraphHandle::Load("data/UI/battle_hit.bmp");
@@ -734,11 +732,21 @@ public:
 		for (auto&c : charas) {
 			if (&c != &chara) {
 				int siz = int(32.f);
+
+				unsigned int col = 0;
+
+				if (c.id == chara.id) {
+					col = GetColor(0, 255, 0);
+				}
+				else {
+					col = GetColor(255, 0, 0);
+				}
+
 				if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
 					siz = int(32.f);
-					DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), GetColor(255, 0, 0), FALSE);
+					DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), col, FALSE);
 					siz = int(42.f);
-					DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), GetColor(255, 0, 0), FALSE);
+					DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), col, FALSE);
 
 					xp = int(c.winpos.x()) - y_r(siz, out_disp_y);
 					yp = int(c.winpos.y()) + y_r(siz, out_disp_y);
@@ -759,8 +767,8 @@ public:
 					*/
 
 
-					font->DrawStringFormat(xp, yp + 18, GetColor(255, 0, 0), "%d m", int((VECTOR_ref(c.vehicle.pos) - chara.vehicle.pos).size()));
-					DrawLine(int(c.winpos.x()), int(c.winpos.y()), disp_x / 2, disp_y / 2, GetColor(255, 0, 0));
+					font->DrawStringFormat(xp, yp + 18, col, "%d m", int((VECTOR_ref(c.vehicle.pos) - chara.vehicle.pos).size()));
+					DrawLine(int(c.winpos.x()), int(c.winpos.y()), disp_x / 2, disp_y / 2, col);
 				}
 			}
 		}
