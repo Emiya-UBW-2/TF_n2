@@ -279,7 +279,7 @@ public:
 
 		}
 		else {
-			chara->vehicle.use_id = 0; //飛行機
+			chara->vehicle.use_id = 1; //飛行機
 			chara->vehicle.camo_sel = 0;
 		}
 		return (CheckHitKey(KEY_INPUT_ESCAPE) == 0);

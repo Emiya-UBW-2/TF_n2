@@ -99,14 +99,19 @@ public:
 						//í“¬‹@
 						for (auto& h : veh.HP_m) {
 							size_t i = &h - &veh.HP_m[0];
-							if (h > 0) {
-								veh.obj.DrawMesh(int(i));
+							if (i >= 3) {
+								if (h > 0) {
+									veh.obj.DrawMesh(veh.use_veh.module_mesh[i-3].second);
+								}
+								else {
+									if (veh.info_break[i].per > 0.1f) {
+										veh.obj_break.SetMatrix(veh.info_break[i].mat * MATRIX_ref::Mtrans(veh.info_break[i].pos));
+										veh.obj_break.DrawMesh(veh.use_veh.module_mesh[i-3].second);
+									}
+								}
 							}
 							else {
-								if (veh.info_break[i].per > 0.1f) {
-									veh.obj_break.SetMatrix(veh.info_break[i].mat * MATRIX_ref::Mtrans(veh.info_break[i].pos));
-									veh.obj_break.DrawMesh(int(i));
-								}
+								veh.obj.DrawMesh(int(i));
 							}
 						}
 					}
