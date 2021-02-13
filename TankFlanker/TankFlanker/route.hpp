@@ -97,6 +97,9 @@ public:
 					for (auto& c : chara) {
 						auto& veh = c.vehicle;
 						//êÌì¨ã@
+						for (int i = 0; i < veh.use_veh.module_mesh[0].second; i++) {
+							veh.obj.DrawMesh(i);
+						}
 						for (auto& h : veh.HP_m) {
 							size_t i = &h - &veh.HP_m[0];
 							if (i >= 3) {
@@ -109,9 +112,6 @@ public:
 										veh.obj_break.DrawMesh(veh.use_veh.module_mesh[i-3].second);
 									}
 								}
-							}
-							else {
-								veh.obj.DrawMesh(int(i));
 							}
 						}
 					}
