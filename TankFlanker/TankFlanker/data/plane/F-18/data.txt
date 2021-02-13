@@ -4,6 +4,7 @@ midspeed=450
 minspeed=250
 rad=90
 HP=100
+canlook=2000
 gun_0_name=M61
 gun_0_loadcnt=0.05
 gun_0_round=570

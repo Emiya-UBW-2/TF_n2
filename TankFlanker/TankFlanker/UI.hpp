@@ -8,6 +8,8 @@ class UI : Mainclass {
 private:
 	GraphHandle circle;
 	GraphHandle aim;
+	GraphHandle aim_if;
+
 	GraphHandle CamScreen;
 	float ber = 0;
 	GraphHandle bufScreen;
@@ -40,6 +42,7 @@ public:
 
 		circle = GraphHandle::Load("data/UI/battle_circle.bmp");
 		aim = GraphHandle::Load("data/UI/battle_aim.bmp");
+		aim_if = GraphHandle::Load("data/UI/battle_if.bmp");
 		CamScreen = GraphHandle::Make(240, 240, true);
 		bufScreen = GraphHandle::Make(out_disp_x, out_disp_y, true);
 
@@ -755,10 +758,23 @@ public:
 						DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 + y_r(4 + p * 5, out_disp_y)), xp + xs * int(h) / int(c.vehicle.use_veh.HP), yp + ys / 2 + (ys * 2 / 3 + y_r(8 + p * 5, out_disp_y)), GetColor(0, 255, 0), TRUE);
 					}
 					*/
-
-
 					font->DrawStringFormat(xp, yp + 18, col, "%d m", int((VECTOR_ref(c.vehicle.pos) - chara.vehicle.pos).size()));
-					DrawLine(int(c.winpos.x()), int(c.winpos.y()), disp_x / 2, disp_y / 2, col);
+
+					if (c.id != chara.id) {
+						if (int(c.winpos.x()) < 0 || int(c.winpos.x()) > disp_x || int(c.winpos.y()) < 0 || int(c.winpos.y()) > disp_y) {
+							auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
+							DrawLine(
+								disp_x / 2 + int(120.f*sin(rad)),
+								disp_y / 2 + int(120.f*cos(rad)),
+								disp_x / 2 + int(200.f*sin(rad)),
+								disp_y / 2 + int(200.f*cos(rad)),
+								col);
+						}
+						if (c.winpos_if.z() >= 0.f && c.winpos_if.z() <= 1.f) {
+							DrawLine(int(c.winpos.x()), int(c.winpos.y()), int(c.winpos_if.x()), int(c.winpos_if.y()), col);
+							aim_if.DrawRotaGraph(int(c.winpos_if.x()), int(c.winpos_if.y()), 0.25f, 0.f, TRUE);
+						}
+					}
 				}
 			}
 		}
@@ -771,15 +787,16 @@ public:
 
 	void item_draw(std::vector<Mainclass::Chara>& charas, Mainclass::Chara& chara, const Mainclass::CAMS& cam_s) {
 		{
-			SetCameraNearFar(0.01f, 5000.f);
+			SetCameraNearFar(0.01f, chara.vehicle.use_veh.canlook_dist*1.5f);
 
 
-			VECTOR_ref aimp = (VECTOR_ref)(chara.vehicle.pos) + chara.vehicle.mat.zvec() * (-1000.f);
+			VECTOR_ref aimp = (VECTOR_ref)(chara.vehicle.pos) + chara.vehicle.mat.zvec() * (-chara.vehicle.use_veh.canlook_dist*0.8f);
 			//mapparts->map_col_line_nearest(chara.vehicle.pos, &aimp);				//’nŒ`
 			aimpos = ConvWorldPosToScreenPos(aimp.get());
 			for (auto& c : charas) {
-				c.winpos = ConvWorldPosToScreenPos((c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - c.vehicle.pos).size() / (600.f / GetFPS()))).get());
+				c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - c.vehicle.pos).size() / (600.f / GetFPS()))).get());
 				//pos = c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - pos).size() / (a.spec.speed_a));
+				c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
 			}
 			if (cam_s.Rot >= ADS) {
 				altpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.alt_100_f.first) - (chara.cocks.obj.frame(chara.cocks.alt_100_2_f.first) - chara.cocks.obj.frame(chara.cocks.alt_100_f.first)).Norm()*0.05f).get());

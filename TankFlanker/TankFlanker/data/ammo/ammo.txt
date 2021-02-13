@@ -3,12 +3,12 @@ type       =1
 caliber    =0.020
 penetration=30
 speed      =800
-damage     =15
+damage     =25
 
 name       =AIM9-X
 type       =2
 caliber    =0.127
 penetration=120
 speed      =600
-damage     =38
+damage     =64
 end

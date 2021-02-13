@@ -100,12 +100,12 @@ public:
 						for (auto& h : veh.HP_m) {
 							size_t i = &h - &veh.HP_m[0];
 							if (h > 0) {
-								veh.obj.DrawMesh(i);
+								veh.obj.DrawMesh(int(i));
 							}
 							else {
 								if (veh.info_break[i].per > 0.1f) {
 									veh.obj_break.SetMatrix(veh.info_break[i].mat * MATRIX_ref::Mtrans(veh.info_break[i].pos));
-									veh.obj_break.DrawMesh(i);
+									veh.obj_break.DrawMesh(int(i));
 								}
 							}
 						}
@@ -138,7 +138,7 @@ public:
 		//ココから繰り返し読み込み//-------------------------------------------------------------------
 		do {
 			//読み出し
-			chara.resize(12);
+			chara.resize(24);
 			{
 				oldv = false;
 				start_c = true;
@@ -161,13 +161,21 @@ public:
 				for (auto& c : chara) {
 					//キャラ選択
 					size_t i = &c - &chara[0];
-					if (i > 6) {
+					if (i >= (chara.size() / 2)) {
 						c.id = 1;
 					}
-					c.vehicle.spawn(VGet(float(100 * (i / 3))*sin(deg2rad(-130)), 1000.f, float(100 * (i / 3))*cos(deg2rad(-130)) + float(100 * (i % 3))), MATRIX_ref::RotY(deg2rad(-130)));
+
+					float rad = deg2rad(-130);
+					c.vehicle.spawn(VGet(
+
+						float(5000 * (i / (chara.size() / 2)))*sin(rad) + float(100 * (i % (chara.size() / 2)))*cos(rad),
+						1500.f,
+						float(5000 * (i / (chara.size() / 2)))*cos(rad) - float(100 * (i % (chara.size() / 2)))*sin(rad)
+					), MATRIX_ref::RotY(deg2rad(((c.id == 0) ? 180 : 0) - 130)));
+
 					//キャラ設定
 					c.set_human(Vehicles, Ammo);	//
-					c.cocks.set_(cockpit);					//コックピット
+					c.cocks.set_(cockpit);			//コックピット
 					//
 					c.se_cockpit = se_cockpit.Duplicate();
 					c.se_gun = se_gun.Duplicate();
@@ -182,7 +190,6 @@ public:
 				//開始共通
 				eye_pos_ads = VGet(0, 0.58f, 0);
 				auto& mine = chara[0];
-				size_t sel_l = 0;
 				switchs start_stop;
 				std::vector< std::list<Mainclass::Chara::sendstat>::iterator> chara_rep;
 				//開始
@@ -294,7 +301,10 @@ public:
 									float dist = (std::numeric_limits<float>::max)();
 									for (auto& t : chara) {
 										//弾関連
-										if (&c == &t || c.id == t.id) {
+										if (&c == &t ||
+											c.id == t.id ||
+											(c.vehicle.pos-t.vehicle.pos).size() >=c.vehicle.use_veh.canlook_dist
+											) {
 											continue;
 										}
 										auto p = (t.vehicle.pos - veh.pos).size();
@@ -304,74 +314,145 @@ public:
 											tgt_pos = t.vehicle.pos;
 										}
 									}
-
-									VECTOR_ref tgt_vec = (tgt_pos - veh.pos).Norm();
+									if (id == chara.size()) {
+										tgt_pos = veh.pos - veh.mat.zvec();
+									}
+									VECTOR_ref tgt_zvec = (tgt_pos - veh.pos).Norm();
 									VECTOR_ref my_xvec = veh.mat.xvec();
 									VECTOR_ref my_yvec = veh.mat.yvec();
 									VECTOR_ref my_zvec = veh.mat.zvec();
 									{
 										//ピッチ
-										VECTOR_ref tgt_yvec = tgt_vec.cross(my_xvec);
-										VECTOR_ref cross_yvec = tgt_vec.cross(tgt_yvec);
-										VECTOR_ref cross_vec = tgt_vec.cross(my_zvec);
-
-										if (cross_vec.dot(cross_yvec) >= 0.1f) {
-											c.key[2] = GetRand(10) <= 5;
-											c.key[3] = false;
-											c.key[12] = GetRand(10) <= 5;
-											c.key[13] = false;
-										}
-										else if (cross_vec.dot(cross_yvec) <= -0.1f) {
-											c.key[2] = false;
-											c.key[3] = GetRand(10) <= 5;
-											c.key[12] = false;
-											c.key[13] = GetRand(10) <= 5;
-										}
-										else {
-											c.key[2] = false;
-											c.key[3] = false;
-											if (cross_vec.dot(cross_yvec) >= 0.f) {
-												c.key[12] = true;
+										if (id != chara.size()) {
+											auto tgt_yvec = tgt_zvec.cross(my_xvec);
+											auto cross_yvec = tgt_zvec.cross(tgt_yvec);
+											auto cross_vec = tgt_zvec.cross(my_zvec);
+											auto dot = cross_vec.dot(cross_yvec);
+											if (dot >= 0.1f) {
+												c.key[2] = GetRand(10) <= 5;
+												c.key[3] = false;
+												c.key[12] = GetRand(10) <= 5;
 												c.key[13] = false;
 											}
-											else {
+											else if (dot <= -0.1f) {
+												c.key[2] = false;
+												c.key[3] = GetRand(10) <= 5;
 												c.key[12] = false;
-												c.key[13] = true;
+												c.key[13] = GetRand(10) <= 5;
 											}
-
-											c.key[0] = GetRand(100) <= 10;   //射撃
-											c.key[1] = GetRand(200) <= 1; //マシンガン
+											else {
+												c.key[2] = false;
+												c.key[3] = false;
+												if (dot >= 0.f) {
+													c.key[12] = true;
+													c.key[13] = false;
+												}
+												else {
+													c.key[12] = false;
+													c.key[13] = true;
+												}
+												if ((tgt_pos - c.vehicle.pos).size() <= 300) {
+													c.key[0] = GetRand(100) <= 20;   //射撃
+												}
+												if ((tgt_pos - c.vehicle.pos).size() <= 1500) {
+													c.key[1] = GetRand(200) <= 1; //マシンガン
+												}
+											}
+										}
+										else {
+											tgt_zvec.y(0.f);
+											tgt_zvec = tgt_zvec.Norm();
+											auto tgt_yvec = tgt_zvec.cross(my_xvec);
+											auto cross_yvec = tgt_zvec.cross(tgt_yvec);
+											auto cross_vec = tgt_zvec.cross(my_zvec);
+											auto dot = cross_vec.dot(cross_yvec);
+											if (dot >= 0.1f) {
+												c.key[2] = GetRand(10) <= 5;
+												c.key[3] = false;
+												c.key[12] = GetRand(10) <= 5;
+												c.key[13] = false;
+											}
+											else if (dot <= -0.1f) {
+												c.key[2] = false;
+												c.key[3] = GetRand(10) <= 5;
+												c.key[12] = false;
+												c.key[13] = GetRand(10) <= 5;
+											}
+											else {
+												c.key[2] = false;
+												c.key[3] = false;
+												if (dot >= 0.f) {
+													c.key[12] = true;
+													c.key[13] = false;
+												}
+												else {
+													c.key[12] = false;
+													c.key[13] = true;
+												}
+											}
 										}
 									}
 									//ロール
 									{
-										auto tgt_xvec = tgt_vec.cross(my_zvec).Norm();
-										VECTOR_ref tgt_yvec = tgt_xvec.cross(my_zvec);
-										VECTOR_ref cross_yvec = tgt_xvec.cross(tgt_yvec);
-										VECTOR_ref cross_vec = tgt_xvec.cross(my_xvec);
-
-										if (cross_vec.dot(cross_yvec) >= 0.1f) {
-											c.key[4] = GetRand(10) <= 5;
-											c.key[5] = false;
-											c.key[14] = GetRand(10) <= 5;
-											c.key[15] = false;
-										}
-										else if (cross_vec.dot(cross_yvec) <= -0.1f) {
-											c.key[4] = false;
-											c.key[5] = GetRand(10) <= 5;
-											c.key[14] = false;
-											c.key[15] = GetRand(10) <= 5;
-										}
-										else {
-											c.key[4] = false;
-											c.key[5] = false;
-											if (cross_vec.dot(cross_yvec) >= 0.f) {
-												c.key[14] = true;
+										if (id != chara.size()) {
+											auto tgt_xvec = tgt_zvec.cross(my_zvec).Norm();
+											auto tgt_yvec = tgt_xvec.cross(my_zvec);
+											auto cross_vec = tgt_xvec.cross(my_xvec);
+											auto dot = cross_vec.dot(tgt_xvec.cross(tgt_yvec));
+											if (dot >= 0.1f) {
+												c.key[4] = GetRand(10) <= 5;
+												c.key[5] = false;
+												c.key[14] = GetRand(10) <= 5;
 												c.key[15] = false;
 											}
-											else {
+											else if (dot <= -0.1f) {
+												c.key[4] = false;
+												c.key[5] = GetRand(10) <= 5;
 												c.key[14] = false;
-												c.key[15] = true;
+												c.key[15] = GetRand(10) <= 5;
+											}
+											else {
+												c.key[4] = false;
+												c.key[5] = false;
+												if (dot >= 0.f) {
+													c.key[14] = true;
+													c.key[15] = false;
+												}
+												else {
+													c.key[14] = false;
+													c.key[15] = true;
+												}
+											}
+										}
+										else {
+											tgt_zvec = VGet(0, 1, 0);
+											auto tgt_xvec = tgt_zvec.cross(my_zvec).Norm();
+											auto tgt_yvec = tgt_xvec.cross(my_zvec);
+											auto cross_vec = tgt_xvec.cross(my_xvec);
+											auto dot = cross_vec.dot(tgt_xvec.cross(tgt_yvec));
+											if (dot >= 0.1f) {
+												c.key[4] = GetRand(10) <= 5;
+												c.key[5] = false;
+												c.key[14] = GetRand(10) <= 5;
+												c.key[15] = false;
+											}
+											else if (dot <= -0.1f) {
+												c.key[4] = false;
+												c.key[5] = GetRand(10) <= 5;
+												c.key[14] = false;
+												c.key[15] = GetRand(10) <= 5;
+											}
+											else {
+												c.key[4] = false;
+												c.key[5] = false;
+												if (dot >= 0.f) {
+													c.key[14] = true;
+													c.key[15] = false;
+												}
+												else {
+													c.key[14] = false;
+													c.key[15] = true;
+												}
 											}
 										}
 									}
@@ -399,6 +480,26 @@ public:
 									c.key[16] = false;
 									c.key[17] = false; 
 								}
+								/*
+								c.key[0] = false;
+								c.key[1] = false;
+								c.key[2] = false;
+								c.key[3] = false;
+								c.key[4] = false;
+								c.key[5] = false;
+								c.key[6] = false;
+								c.key[7] = false;
+								c.key[8] = false;
+								c.key[9] = false;
+								c.key[10] = false;
+								c.key[11] = false;
+								c.key[12] = false;
+								c.key[13] = false;
+								c.key[14] = false;
+								c.key[15] = false;
+								c.key[16] = false;
+								c.key[17] = false;
+								*/
 							}
 							/*
 							if (Drawparts->use_vr) {
@@ -820,8 +921,7 @@ public:
 										}
 									}
 									if (hitb) {
-										size_t index = &c - &chara[0];
-										veh.spawn(VGet(float(100 * (index / 3))*sin(deg2rad(-130)), 1000.f, float(100 * (index / 3))*cos(deg2rad(-130)) + float(100 * (index % 3))), MATRIX_ref::RotY(deg2rad(-130)));
+										veh.respawn();
 										c.p_anime_geardown.second = 1.f;
 										c.changegear.first = true;
 									}
@@ -844,7 +944,7 @@ public:
 
 								if (!c.ms_on) {
 									c.ms_cnt += 1.f / GetFPS();
-									if (c.ms_cnt >= 2.f) {
+									if (c.ms_cnt >= 8.f) {
 										c.ms_cnt = 0.f;
 										c.ms_on = true;
 									}
@@ -991,7 +1091,7 @@ public:
 							for (auto& h : veh.HP_m) {
 								size_t i = &h - &veh.HP_m[0];
 								if (h > 0) {
-									veh.obj.DrawMesh(i);
+									veh.obj.DrawMesh(int(i));
 								}
 							}
 						}
@@ -1126,71 +1226,12 @@ public:
 									}
 								}, cam_s.cam);
 							}
-							//2P描画
-							if (Drawparts->use_vr && false) {
-								auto& ct = chara[0];
-								auto& veh = ct.vehicle;
-								//cam_s.cam
-								{
-									/*
-									//campos,camvec,camup取得
-									mouse_aim(eyevec2);
-									{
-										cam_s.cam.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(0, 0.58f, 0), veh.mat);
-										cam_s.cam.campos.y(std::max(cam_s.cam.campos.y(), 5.f));
-										if ((GetMouseInput() & MOUSE_INPUT_RIGHT) == 0) {
-											eyevec2 = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
-										}
-										cam_s.cam.camvec = cam_s.cam.campos - MATRIX_ref::Vtrans(eyevec2, veh.mat);
-										cam_s.cam.camup = veh.mat.yvec();
-
-										//cam_s.cam.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
-										//cam_s.cam.campos.y(std::max(cam_s.cam.campos.y(), 5.f));
-										//cam_s.cam.camvec = cam_s.cam.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
-										//cam_s.cam.camup = MATRIX_ref::Vtrans(HMDmat.yvec(), veh.mat);//veh.mat.yvec();
-										}
-									//far取得
-									cam_s.cam.far_ = (cam_s.Rot >= ADS) ? (2000.f) : (4000.f);
-									//near取得
-									cam_s.cam.near_ = (cam_s.Rot >= ADS) ? (3.f) : (range_p - 5.f);
-									//*/
-									//fov
-									cam_s.cam.fov = deg2rad(fov_pc / fovs);
-								}
-								//コックピット演算
-								{
-									ct.cocks.ready_(ct);
-								}
-								//UI
-								UI_Screen2.SetDraw_Screen();
-								{
-									UIparts->draw(chara, ct, cam_s.Rot, *Drawparts->get_device_hand1(), false);
-								}
-								//被写体深度描画
-								Hostpass2parts->BUF_draw([&]() { mapparts->sky_draw(); }, ram_draw, cam_s.cam);
-								//最終描画
-								Hostpass2parts->MAIN_draw();
-								//Screen2に移す
-								outScreen2.SetDraw_Screen(cam_s.cam.campos, cam_s.cam.camvec, cam_s.cam.camup, cam_s.cam.fov, cam_s.cam.near_, cam_s.cam.far_);
-								{
-									Hostpass2parts->get_main().DrawGraph(0, 0, true);
-
-									//UIparts->item_draw(chara, ct, cam_s);
-
-									SetCameraNearFar(0.01f, 2.f);
-									//コックピット
-									ct.cocks.obj.DrawModel();
-									//UI
-									UI_Screen2.DrawGraph(0, 0, true);
-								}
-							}
 						}
 						//draw
 						GraphHandle::SetDraw_Screen(int(DX_SCREEN_BACK), false);
 						{
 							if (Drawparts->use_vr) {
-								outScreen2.DrawGraph(0, 0, false);
-								//Drawparts->outScreen[0].DrawRotaGraph(960, 540, 0.5f, 0, false);
+								Drawparts->outScreen[0].DrawRotaGraph(960, 540, 0.5f, 0, false);
 							}
 							else {
 								Drawparts->outScreen[0].DrawGraph(0, 0, false);

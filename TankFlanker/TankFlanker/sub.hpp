@@ -130,6 +130,7 @@ public:
 		std::vector<foot_frame> wheelframe_nospring;		  //誘導輪回転
 		std::vector< wing_frame> wingframe;
 		uint16_t HP = 0;					  //
+		float canlook_dist = 1000.f;
 		std::vector<std::pair<size_t, float>> armer_mesh; //装甲ID
 		std::vector<size_t> space_mesh;			  //装甲ID
 		std::vector<std::pair<size_t, size_t>> module_mesh;		  //装甲ID
@@ -178,6 +179,7 @@ public:
 			this->maxpos = t.maxpos;
 			this->gunframe = t.gunframe;
 			this->HP = t.HP;
+			this->canlook_dist = t.canlook_dist;
 			this->armer_mesh = t.armer_mesh;
 			this->space_mesh = t.space_mesh;
 			this->module_mesh = t.module_mesh;
@@ -392,6 +394,7 @@ public:
 					t.min_speed_limit = getparams::_float(mdata) / 3.6f;
 					t.body_rad_limit = getparams::_float(mdata);
 					t.HP = uint16_t(getparams::_ulong(mdata));
+					t.canlook_dist = getparams::_float(mdata);
 					FileRead_gets(mstr, 64, mdata);
 					for (auto& g : t.gunframe) {
 						g.name = getparams::getright(mstr);
@@ -490,10 +493,10 @@ private:
 				if (u.spec.type_a != 2) {
 					c->effcs[ef_fire].set(c->vehicle.obj.frame(this->gun_info.frame3.first), u.vec, u.spec.caliber_a / 0.1f);
 					if (u.spec.caliber_a >= 0.017f) {
-						c->effcs_gun[c->gun_effcnt].first.set(c->vehicle.obj.frame(this->gun_info.frame3.first), u.vec);
-						c->effcs_gun[c->gun_effcnt].second = &u;
-						c->effcs_gun[c->gun_effcnt].count = 0.f;
-						++c->gun_effcnt %= c->effcs_gun.size();
+						//c->effcs_gun[c->gun_effcnt].first.set(c->vehicle.obj.frame(this->gun_info.frame3.first), u.vec);
+						//c->effcs_gun[c->gun_effcnt].second = &u;
+						//c->effcs_gun[c->gun_effcnt].count = 0.f;
+						//++c->gun_effcnt %= c->effcs_gun.size();
 					}
 					c->se_gun.play(DX_PLAYTYPE_BACK, TRUE);
 				}
@@ -624,7 +627,7 @@ private:
 											float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cos取得2D
 											float view_xrad = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
 											{
-												float limit = deg2rad(22.5f) / GetFPS();
+												float limit = deg2rad(17.5f) / GetFPS();
 												float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad, -limit, limit);
 												float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad, -limit, limit);
 												a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
@@ -686,7 +689,8 @@ private:
 		int DEATH_ID = -1;						//体力
 		VECTOR_ref pos;							//車体座標
 		MATRIX_ref mat;							//車体回転行列
-		MATRIX_ref mat_start;					//車体回転行列(初期配置)
+		VECTOR_ref pos_spawn;					//車体座標
+		MATRIX_ref mat_spawn;					//車体回転行列
 		VECTOR_ref add;							//車体加速度
 		std::vector<Guns> Gun_;						//
 		float accel = 0.f, accel_add = 0.f;
@@ -749,7 +753,7 @@ private:
 			this->col = vehcs.col.Duplicate();
 			//コリジョン
 			for (int j = 0; j < this->col.mesh_num(); j++) {
-				this->col.SetupCollInfo(8, 8, 8, -1, j);
+				this->col.SetupCollInfo(1, 1, 1, -1, j);
 			}
 			this->hits.resize(this->col.mesh_num());
 			//弾痕
@@ -782,7 +786,7 @@ private:
 			for (auto& cg : this->Gun_) {
 				cg.init(this->use_veh.gunframe[&cg - &this->Gun_[0]], Ammo_);
 			}
-			spawn(VGet(0, 0, 0), MGetIdent());
+			respawn();
 		}
 		void Dispose() {
 			this->obj.Dispose();
@@ -814,15 +818,19 @@ private:
 
 			this->reset();
 		}
+		void respawn() {
+			spawn(this->pos_spawn, this->mat_spawn);
+		}
 		void spawn(const VECTOR_ref& pos_, const MATRIX_ref& mat_) {
 			this->reset();
 
-			this->accel = 30.f;
+			this->accel = 60.f;
 			this->speed = 300.f / 3.6f;
 			//リセット
-			this->pos = pos_;
-			this->mat = mat_;
-			this->mat_start = this->mat;
+			this->pos_spawn = pos_;
+			this->mat_spawn = mat_;
+			this->pos = this->pos_spawn;
+			this->mat = this->mat_spawn;
 			//砲
 			for (auto& cg : this->Gun_) {
 				cg.set();
@@ -1351,6 +1359,7 @@ public:
 		//共通項//==================================================
 		vehicles vehicle;
 		VECTOR_ref winpos;
+		VECTOR_ref winpos_if;
 		SoundHandle se_cockpit;
 		SoundHandle se_gun;
 		SoundHandle se_missile;
@@ -1465,14 +1474,14 @@ public:
 									c.pos = c.vec * (0.1f) + position;
 									//貫通
 									if (c.spec.pene_a > a.second * (1.0f / std::abs(vec_t.Norm().dot(normal)))) {
-										auto tt = veh_t.HP;
+										auto ttn = veh_t.HP;
 
 										if (t.p_anime_geardown.second <= 0.5f) {
 											//veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - c.spec.damage_a, 0); //
 											veh_t.HP = std::max<int16_t>(veh_t.HP - c.spec.damage_a, 0); //
 										}
 										//撃破時エフェクト
-										if (veh_t.HP == 0 && tt!= veh_t.HP) {
+										if (veh_t.HP == 0 && ttn != veh_t.HP) {
 											this->vehicle.KILL++;
 											this->vehicle.KILL_ID = (int)(&t - &tgts[0]);
 											veh_t.DEATH++;
