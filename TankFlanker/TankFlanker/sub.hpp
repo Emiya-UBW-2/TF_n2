@@ -23,7 +23,7 @@ enum Effect {
 	ef_smoke1 = 6, //ミサイル炎
 	ef_smoke2 = 7, //銃の軌跡
 	ef_gndsmoke = 8,//地面の軌跡
-	//ef_smoke3 = 9, //飛行機の軌跡
+	ef_smoke3 = 9, //飛行機の軌跡
 	ef_size
 };
 
@@ -427,9 +427,6 @@ public:
 	//
 public:
 	class Chara;
-
-public:
-	class Chara;
 private:
 	class vehicles;
 
@@ -683,6 +680,7 @@ private:
 		bool hit_check = false;						//当たり判定を取るかチェック
 		size_t use_id = 0;						//使用する車両(機材)
 		uint16_t HP = 0;						//体力
+		float HP_r = 0.f;
 		uint16_t KILL = 0;						//体力
 		int KILL_ID = -1;						//体力
 		uint16_t DEATH = 0;						//体力
@@ -825,7 +823,7 @@ private:
 			this->reset();
 
 			this->accel = 60.f;
-			this->speed = 300.f / 3.6f;
+			this->speed = this->use_veh.min_speed_limit;
 			//リセット
 			this->pos_spawn = pos_;
 			this->mat_spawn = mat_;
@@ -1100,244 +1098,6 @@ public:
 	//player
 	class Chara {
 	public:
-		class sendstat {
-
-		public:
-			MATRIX_ref v_mat;
-			VECTOR_ref pos;
-			MATRIX_ref mat;
-			std::vector<Guns> Gun_;						//
-			float speed;
-			struct eff_buf {
-				bool flug{ false };				 //
-				VECTOR_ref pos;					 //
-				VECTOR_ref nor;					 //
-				float scale = 1.f;				 //
-			};
-			std::array<eff_buf, ef_size> effcs_; //effect
-			std::array<ef_guns, 8> effcs_missile_; //effect
-			std::array<ef_guns, 12> effcs_gun_;    //effect
-			std::array<float, 3> gndsmkeffcs_; //effect
-			p_animes p_anime_geardown;		    //車輪アニメーション
-			std::array<p_animes, 6> p_animes_rudder;//ラダーアニメーション
-			float wheel_Left = 0.f, wheel_Right = 0.f;			//転輪回転
-			//何故か要る
-			sendstat(void) {
-			}
-			//何故か要る
-			sendstat(const sendstat& p) {
-			}
-			void get_data(Chara& data) {
-				auto& veh = data.vehicle;
-
-				this->speed = veh.speed;
-				this->v_mat = veh.obj.GetMatrix();
-				this->mat = veh.mat;
-				this->pos = veh.pos;
-				this->Gun_ = veh.Gun_;
-
-				this->p_anime_geardown = data.p_anime_geardown;		    //車輪アニメーション
-				this->p_animes_rudder = data.p_animes_rudder;//ラダーアニメーション
-
-				this->wheel_Left = veh.wheel_Left;
-				this->wheel_Right = veh.wheel_Right;
-
-
-				for (int i = 0; i < ef_size; i++) {
-					this->effcs_[i].flug = data.effcs[i].flug;
-					this->effcs_[i].pos = data.effcs[i].pos;
-					this->effcs_[i].nor = data.effcs[i].nor;
-					this->effcs_[i].scale = data.effcs[i].scale;
-				}
-				for (int i = 0; i < 8; i++) {
-					effcs_missile_[i].first.flug = data.effcs_missile[i].first.flug;
-					effcs_missile_[i].first.pos = data.effcs_missile[i].first.pos;
-					effcs_missile_[i].first.nor = data.effcs_missile[i].first.nor;
-					effcs_missile_[i].first.scale = data.effcs_missile[i].first.scale;
-					effcs_missile_[i].flug = data.effcs_missile[i].flug;
-					effcs_missile_[i].n_l = data.effcs_missile[i].n_l;
-					effcs_missile_[i].count = data.effcs_missile[i].count;
-				}
-				for (int i = 0; i < 12; i++) {
-					effcs_gun_[i].first.flug = data.effcs_gun[i].first.flug;
-					effcs_gun_[i].first.pos = data.effcs_gun[i].first.pos;
-					effcs_gun_[i].first.nor = data.effcs_gun[i].first.nor;
-					effcs_gun_[i].first.scale = data.effcs_gun[i].first.scale;
-					effcs_gun_[i].flug = data.effcs_gun[i].flug;
-					effcs_gun_[i].n_l = data.effcs_gun[i].n_l;
-					effcs_gun_[i].count = data.effcs_gun[i].count;
-				}
-				{
-					int i = 0;
-					for (auto& t : veh.use_veh.wheelframe) {
-						gndsmkeffcs_[i] = t.gndsmkeffcs.scale;
-						i++;
-					}
-				}
-			}
-			void put_data(Chara& data) {
-				auto& veh = data.vehicle;
-
-				veh.speed = this->speed;
-				veh.obj.SetMatrix(this->v_mat);
-				veh.mat = this->mat;
-				veh.pos = this->pos;
-				{
-					veh.Gun_ = this->Gun_;
-					int i = 0, j = 0;
-					for (auto& p : veh.Gun_) {
-						auto& t = this->Gun_[i];
-						j = 0;
-						for (auto& a : p.bullet) {
-							auto& b = t.bullet[j];
-							a.flug = b.flug;
-							a.pos = b.pos;
-							a.repos = b.repos;
-							a.spec.caliber_a = b.spec.caliber_a;
-							a.color = b.color;
-							j++;
-						}
-						i++;
-					}
-				}
-
-				data.p_anime_geardown = this->p_anime_geardown;		    //車輪アニメーション
-				data.p_animes_rudder = this->p_animes_rudder;//ラダーアニメーション
-				veh.wheel_Left = this->wheel_Left;
-				veh.wheel_Right = this->wheel_Right;
-
-				for (int i = 0; i < ef_size; i++) {
-					data.effcs[i].flug = this->effcs_[i].flug;
-					data.effcs[i].pos = this->effcs_[i].pos;
-					data.effcs[i].nor = this->effcs_[i].nor;
-					data.effcs[i].scale = this->effcs_[i].scale;
-				}
-				for (int i = 0; i < 8; i++) {
-					data.effcs_missile[i].first.flug = effcs_missile_[i].first.flug;
-					data.effcs_missile[i].first.pos = effcs_missile_[i].first.pos;
-					data.effcs_missile[i].first.nor = effcs_missile_[i].first.nor;
-					data.effcs_missile[i].first.scale = effcs_missile_[i].first.scale;
-					data.effcs_missile[i].flug = effcs_missile_[i].flug;
-					data.effcs_missile[i].n_l = effcs_missile_[i].n_l;
-					data.effcs_missile[i].count = effcs_missile_[i].count;
-				}
-				for (int i = 0; i < 12; i++) {
-					data.effcs_gun[i].first.flug = effcs_gun_[i].first.flug;
-					data.effcs_gun[i].first.pos = effcs_gun_[i].first.pos;
-					data.effcs_gun[i].first.nor = effcs_gun_[i].first.nor;
-					data.effcs_gun[i].first.scale = effcs_gun_[i].first.scale;
-					data.effcs_gun[i].flug = effcs_gun_[i].flug;
-					data.effcs_gun[i].n_l = effcs_gun_[i].n_l;
-					data.effcs_gun[i].count = effcs_gun_[i].count;
-				}
-				{
-					int i = 0;
-					for (auto& t : veh.use_veh.wheelframe) {
-						t.gndsmkeffcs.scale = gndsmkeffcs_[i];
-						i++;
-					}
-				}
-			}
-			void write(std::ofstream& fout) {
-				fout.write((char *)&this->speed, sizeof(this->speed));
-				fout.write((char *)&this->v_mat, sizeof(this->v_mat));
-				fout.write((char *)&this->mat, sizeof(this->mat));
-				fout.write((char *)&this->pos, sizeof(this->pos));
-				for (auto& p : this->Gun_) {
-					for (auto& a : p.bullet) {
-						fout.write((char *)&a.flug, sizeof(a.flug));
-						fout.write((char *)&a.pos, sizeof(a.pos));
-						fout.write((char *)&a.repos, sizeof(a.repos));
-						fout.write((char *)&a.spec.caliber_a, sizeof(a.spec.caliber_a));
-						fout.write((char *)&a.color, sizeof(a.color));
-					}
-				}
-				fout.write((char *)&this->p_anime_geardown, sizeof(this->p_anime_geardown));
-				fout.write((char *)&this->p_animes_rudder, sizeof(this->p_animes_rudder));
-
-				fout.write((char *)&this->wheel_Left, sizeof(this->wheel_Left));
-				fout.write((char *)&this->wheel_Right, sizeof(this->wheel_Right));
-
-				for (auto& e : this->effcs_) {
-					fout.write((char *)&e.flug, sizeof(e.flug));
-					fout.write((char *)&e.pos, sizeof(e.pos));
-					fout.write((char *)&e.nor, sizeof(e.nor));
-					fout.write((char *)&e.scale, sizeof(e.scale));
-				}
-				for (auto& e : this->effcs_missile_) {
-					fout.write((char *)&e.first.flug, sizeof(e.first.flug));
-					fout.write((char *)&e.first.pos, sizeof(e.first.pos));
-					fout.write((char *)&e.first.nor, sizeof(e.first.nor));
-					fout.write((char *)&e.first.scale, sizeof(e.first.scale));
-					fout.write((char *)&e.flug, sizeof(e.flug));
-					fout.write((char *)&e.n_l, sizeof(e.n_l));
-					fout.write((char *)&e.count, sizeof(e.count));
-				}
-				for (auto& e : this->effcs_gun_) {
-					fout.write((char *)&e.first.flug, sizeof(e.first.flug));
-					fout.write((char *)&e.first.pos, sizeof(e.first.pos));
-					fout.write((char *)&e.first.nor, sizeof(e.first.nor));
-					fout.write((char *)&e.first.scale, sizeof(e.first.scale));
-					fout.write((char *)&e.flug, sizeof(e.flug));
-					fout.write((char *)&e.n_l, sizeof(e.n_l));
-					fout.write((char *)&e.count, sizeof(e.count));
-				}
-				for (auto& e : this->gndsmkeffcs_) {
-					fout.write((char *)&e, sizeof(e));
-				}
-			}
-			void read(std::ifstream& fout) {
-				fout.read((char *)&this->speed, sizeof(this->speed));
-				fout.read((char *)&this->v_mat, sizeof(this->v_mat));
-				fout.read((char *)&this->mat, sizeof(this->mat));
-				fout.read((char *)&this->pos, sizeof(this->pos));
-				this->Gun_.clear();
-				this->Gun_.resize(5);
-				for (auto& p : this->Gun_) {
-					for (auto& a : p.bullet) {
-						fout.read((char *)&a.flug, sizeof(a.flug));
-						fout.read((char *)&a.pos, sizeof(a.pos));
-						fout.read((char *)&a.repos, sizeof(a.repos));
-						fout.read((char *)&a.spec.caliber_a, sizeof(a.spec.caliber_a));
-						fout.read((char *)&a.color, sizeof(a.color));
-					}
-				}
-				fout.read((char *)&this->p_anime_geardown, sizeof(this->p_anime_geardown));
-				fout.read((char *)&this->p_animes_rudder, sizeof(this->p_animes_rudder));
-
-				fout.read((char *)&this->wheel_Left, sizeof(this->wheel_Left));
-				fout.read((char *)&this->wheel_Right, sizeof(this->wheel_Right));
-
-				for (auto& e : this->effcs_) {
-					fout.read((char *)&e.flug, sizeof(e.flug));
-					fout.read((char *)&e.pos, sizeof(e.pos));
-					fout.read((char *)&e.nor, sizeof(e.nor));
-					fout.read((char *)&e.scale, sizeof(e.scale));
-				}
-				for (auto& e : this->effcs_missile_) {
-					fout.read((char *)&e.first.flug, sizeof(e.first.flug));
-					fout.read((char *)&e.first.pos, sizeof(e.first.pos));
-					fout.read((char *)&e.first.nor, sizeof(e.first.nor));
-					fout.read((char *)&e.first.scale, sizeof(e.first.scale));
-					fout.read((char *)&e.flug, sizeof(e.flug));
-					fout.read((char *)&e.n_l, sizeof(e.n_l));
-					fout.read((char *)&e.count, sizeof(e.count));
-				}
-				for (auto& e : this->effcs_gun_) {
-					fout.read((char *)&e.first.flug, sizeof(e.first.flug));
-					fout.read((char *)&e.first.pos, sizeof(e.first.pos));
-					fout.read((char *)&e.first.nor, sizeof(e.first.nor));
-					fout.read((char *)&e.first.scale, sizeof(e.first.scale));
-					fout.read((char *)&e.flug, sizeof(e.flug));
-					fout.read((char *)&e.n_l, sizeof(e.n_l));
-					fout.read((char *)&e.count, sizeof(e.count));
-				}
-				for (auto& e : this->gndsmkeffcs_) {
-					fout.read((char *)&e, sizeof(e));
-				}
-			}
-		};
-		std::list<sendstat> rep;
 		//====================================================
 		std::array<EffectS, ef_size> effcs; //effect
 		std::array<ef_guns, 8> effcs_missile; //effect
@@ -1345,6 +1105,10 @@ public:
 		size_t missile_effcnt = 0;
 		size_t gun_effcnt = 0;
 		size_t id;
+		size_t aim_cnt = 0;//狙われている相手の数
+
+		float death_timer = 0.f;
+		bool death = false;
 		//操作関連//==================================================
 		std::array<bool, 18> key{ false };    //キー
 		float view_xrad = 0.f, view_yrad = 0.f; //砲塔操作用ベクトル

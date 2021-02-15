@@ -97,22 +97,22 @@ public:
 					for (auto& c : chara) {
 						auto& veh = c.vehicle;
 						//戦闘機
-						for (int i = 0; i < veh.use_veh.module_mesh[0].second; i++) {
-							veh.obj.DrawMesh(i);
-						}
 						for (auto& h : veh.HP_m) {
 							size_t i = &h - &veh.HP_m[0];
 							if (i >= 3) {
 								if (h > 0) {
-									veh.obj.DrawMesh(veh.use_veh.module_mesh[i-3].second);
+									veh.obj.DrawMesh(veh.use_veh.module_mesh[int(i-3)].second);
 								}
 								else {
 									if (veh.info_break[i].per > 0.1f) {
 										veh.obj_break.SetMatrix(veh.info_break[i].mat * MATRIX_ref::Mtrans(veh.info_break[i].pos));
-										veh.obj_break.DrawMesh(veh.use_veh.module_mesh[i-3].second);
+										veh.obj_break.DrawMesh(veh.use_veh.module_mesh[int(i-3)].second);
 									}
 								}
 							}
+						}
+						for (int i = 0; i < veh.use_veh.module_mesh[0].second; i++) {
+							veh.obj.DrawMesh(i);
 						}
 					}
 				}
@@ -173,9 +173,9 @@ public:
 					float rad = deg2rad(-130);
 					c.vehicle.spawn(VGet(
 
-						float(5000 * (i / (chara.size() / 2)))*sin(rad) + float(100 * (i % (chara.size() / 2)))*cos(rad),
+						float(-2000+4000 * int(i / (chara.size() / 2)))*sin(rad) + float(100 * (i % (chara.size() / 2)))*cos(rad),
 						1500.f,
-						float(5000 * (i / (chara.size() / 2)))*cos(rad) - float(100 * (i % (chara.size() / 2)))*sin(rad)
+						float(-2000+4000 * int(i / (chara.size() / 2)))*cos(rad) - float(100 * (i % (chara.size() / 2)))*sin(rad)
 					), MATRIX_ref::RotY(deg2rad(((c.id == 0) ? 180 : 0) - 130)));
 
 					//キャラ設定
@@ -196,7 +196,6 @@ public:
 				eye_pos_ads = VGet(0, 0.58f, 0);
 				auto& mine = chara[0];
 				switchs start_stop;
-				std::vector< std::list<Mainclass::Chara::sendstat>::iterator> chara_rep;
 				//開始
 				{
 					eyevec = mine.vehicle.mat.zvec() * -1.f;
@@ -213,7 +212,6 @@ public:
 				for (auto& c : chara) {
 					c.se_cockpit.play(DX_PLAYTYPE_LOOP, TRUE);
 					c.se_cockpit.vol(64);
-					chara_rep.emplace_back(c.rep.begin());
 				}
 				SetMouseDispFlag(FALSE);
 				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
@@ -232,6 +230,9 @@ public:
 								}
 								veh.hit_check = false;
 							}
+							c.aim_cnt = 0;
+
+							easing_set(&veh.HP_r, float(veh.HP), 0.95f);
 						}
 					}
 
@@ -299,7 +300,8 @@ public:
 									c.key[0] = false;//GetRand(100) <= 10;   //射撃
 									c.key[1] = false;//GetRand(100) <= 1; //マシンガン
 
-
+									bool ret = false;
+									bool up = false;
 									size_t id = chara.size();
 									VECTOR_ref tgt_pos;
 
@@ -308,7 +310,8 @@ public:
 										//弾関連
 										if (&c == &t ||
 											c.id == t.id ||
-											(c.vehicle.pos-t.vehicle.pos).size() >=c.vehicle.use_veh.canlook_dist
+											(c.vehicle.pos - t.vehicle.pos).size() >= c.vehicle.use_veh.canlook_dist ||
+											t.aim_cnt > 2
 											) {
 											continue;
 										}
@@ -319,43 +322,65 @@ public:
 											tgt_pos = t.vehicle.pos;
 										}
 									}
+
 									if (id == chara.size()) {
 										tgt_pos = veh.pos - veh.mat.zvec();
 									}
+									else {
+										chara[id].aim_cnt++;
+									}
+									{
+										auto tmpv = veh.pos;
+										tmpv.y(0);
+										if (tmpv.size() >= 5000) {
+											tgt_pos = VGet(0, 0, 0);
+											ret = true;
+										}
+										if (veh.pos.y() <= 400) {
+											tmpv.y(500);
+											tgt_pos = tmpv;
+											up = true;
+										}
+									}
+
 									VECTOR_ref tgt_zvec = (tgt_pos - veh.pos).Norm();
 									VECTOR_ref my_xvec = veh.mat.xvec();
 									VECTOR_ref my_yvec = veh.mat.yvec();
 									VECTOR_ref my_zvec = veh.mat.zvec();
+									//ピッチ
 									{
-										//ピッチ
-										if (id != chara.size()) {
-											auto tgt_yvec = tgt_zvec.cross(my_xvec);
-											auto cross_yvec = tgt_zvec.cross(tgt_yvec);
-											auto cross_vec = tgt_zvec.cross(my_zvec);
-											auto dot = cross_vec.dot(cross_yvec);
-											if (dot >= 0.1f) {
-												c.key[2] = GetRand(10) <= 5;
-												c.key[3] = false;
-												c.key[12] = GetRand(10) <= 5;
+										if (id == chara.size() && !ret && !up) {
+											tgt_zvec.y(0.f);
+											tgt_zvec = tgt_zvec.Norm();
+										}
+										auto tgt_yvec = tgt_zvec.cross(my_xvec);
+										auto cross_yvec = tgt_zvec.cross(tgt_yvec);
+										auto cross_vec = tgt_zvec.cross(my_zvec);
+										auto dot = cross_vec.dot(cross_yvec);
+										if (dot >= 0.1f) {
+											c.key[2] = GetRand(10) <= 5;
+											c.key[3] = false;
+											c.key[12] = GetRand(10) <= 5;
+											c.key[13] = false;
+										}
+										else if (dot <= -0.1f) {
+											c.key[2] = false;
+											c.key[3] = GetRand(10) <= 5;
+											c.key[12] = false;
+											c.key[13] = GetRand(10) <= 5;
+										}
+										else {
+											c.key[2] = false;
+											c.key[3] = false;
+											if (dot >= 0.f) {
+												c.key[12] = true;
 												c.key[13] = false;
 											}
-											else if (dot <= -0.1f) {
-												c.key[2] = false;
-												c.key[3] = GetRand(10) <= 5;
-												c.key[12] = false;
-												c.key[13] = GetRand(10) <= 5;
-											}
 											else {
-												c.key[2] = false;
-												c.key[3] = false;
-												if (dot >= 0.f) {
-													c.key[12] = true;
-													c.key[13] = false;
-												}
-												else {
-													c.key[12] = false;
-													c.key[13] = true;
-												}
+												c.key[12] = false;
+												c.key[13] = true;
+											}
+											if (id != chara.size() && !ret && !up) {
 												if ((tgt_pos - c.vehicle.pos).size() <= 300) {
 													c.key[0] = GetRand(100) <= 20;   //射撃
 												}
@@ -364,102 +389,41 @@ public:
 												}
 											}
 										}
-										else {
-											tgt_zvec.y(0.f);
-											tgt_zvec = tgt_zvec.Norm();
-											auto tgt_yvec = tgt_zvec.cross(my_xvec);
-											auto cross_yvec = tgt_zvec.cross(tgt_yvec);
-											auto cross_vec = tgt_zvec.cross(my_zvec);
-											auto dot = cross_vec.dot(cross_yvec);
-											if (dot >= 0.1f) {
-												c.key[2] = GetRand(10) <= 5;
-												c.key[3] = false;
-												c.key[12] = GetRand(10) <= 5;
-												c.key[13] = false;
-											}
-											else if (dot <= -0.1f) {
-												c.key[2] = false;
-												c.key[3] = GetRand(10) <= 5;
-												c.key[12] = false;
-												c.key[13] = GetRand(10) <= 5;
-											}
-											else {
-												c.key[2] = false;
-												c.key[3] = false;
-												if (dot >= 0.f) {
-													c.key[12] = true;
-													c.key[13] = false;
-												}
-												else {
-													c.key[12] = false;
-													c.key[13] = true;
-												}
-											}
-										}
 									}
 									//ロール
 									{
-										if (id != chara.size()) {
-											auto tgt_xvec = tgt_zvec.cross(my_zvec).Norm();
-											auto tgt_yvec = tgt_xvec.cross(my_zvec);
-											auto cross_vec = tgt_xvec.cross(my_xvec);
-											auto dot = cross_vec.dot(tgt_xvec.cross(tgt_yvec));
-											if (dot >= 0.1f) {
-												c.key[4] = GetRand(10) <= 5;
-												c.key[5] = false;
-												c.key[14] = GetRand(10) <= 5;
-												c.key[15] = false;
-											}
-											else if (dot <= -0.1f) {
-												c.key[4] = false;
-												c.key[5] = GetRand(10) <= 5;
-												c.key[14] = false;
-												c.key[15] = GetRand(10) <= 5;
-											}
-											else {
-												c.key[4] = false;
-												c.key[5] = false;
-												if (dot >= 0.f) {
-													c.key[14] = true;
-													c.key[15] = false;
-												}
-												else {
-													c.key[14] = false;
-													c.key[15] = true;
-												}
-											}
+										if (id == chara.size() && !ret && !up) {
+											tgt_zvec = VGet(0, 1, 0);
+										}
+										auto tgt_xvec = tgt_zvec.cross(my_zvec).Norm();
+										auto tgt_yvec = tgt_xvec.cross(my_zvec);
+										auto cross_vec = tgt_xvec.cross(my_xvec);
+										auto dot = cross_vec.dot(tgt_xvec.cross(tgt_yvec));
+										if (dot >= 0.1f) {
+											c.key[4] = GetRand(10) <= 5;
+											c.key[5] = false;
+											c.key[14] = GetRand(10) <= 5;
+											c.key[15] = false;
+										}
+										else if (dot <= -0.1f) {
+											c.key[4] = false;
+											c.key[5] = GetRand(10) <= 5;
+											c.key[14] = false;
+											c.key[15] = GetRand(10) <= 5;
 										}
 										else {
-											tgt_zvec = VGet(0, 1, 0);
-											auto tgt_xvec = tgt_zvec.cross(my_zvec).Norm();
-											auto tgt_yvec = tgt_xvec.cross(my_zvec);
-											auto cross_vec = tgt_xvec.cross(my_xvec);
-											auto dot = cross_vec.dot(tgt_xvec.cross(tgt_yvec));
-											if (dot >= 0.1f) {
-												c.key[4] = GetRand(10) <= 5;
-												c.key[5] = false;
-												c.key[14] = GetRand(10) <= 5;
+											c.key[4] = false;
+											c.key[5] = false;
+											if (dot >= 0.f) {
+												c.key[14] = true;
 												c.key[15] = false;
 											}
-											else if (dot <= -0.1f) {
-												c.key[4] = false;
-												c.key[5] = GetRand(10) <= 5;
-												c.key[14] = false;
-												c.key[15] = GetRand(10) <= 5;
-											}
 											else {
-												c.key[4] = false;
-												c.key[5] = false;
-												if (dot >= 0.f) {
-													c.key[14] = true;
-													c.key[15] = false;
-												}
-												else {
-													c.key[14] = false;
-													c.key[15] = true;
-												}
+												c.key[14] = false;
+												c.key[15] = true;
 											}
 										}
+
 									}
 
 									//ヨー
@@ -485,54 +449,7 @@ public:
 									c.key[16] = false;
 									c.key[17] = false; 
 								}
-								/*
-								c.key[0] = false;
-								c.key[1] = false;
-								c.key[2] = false;
-								c.key[3] = false;
-								c.key[4] = false;
-								c.key[5] = false;
-								c.key[6] = false;
-								c.key[7] = false;
-								c.key[8] = false;
-								c.key[9] = false;
-								c.key[10] = false;
-								c.key[11] = false;
-								c.key[12] = false;
-								c.key[13] = false;
-								c.key[14] = false;
-								c.key[15] = false;
-								c.key[16] = false;
-								c.key[17] = false;
-								*/
 							}
-							/*
-							if (Drawparts->use_vr) {
-								chara[1].key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //射撃
-								chara[1].key[1] = ((GetMouseInput() & MOUSE_INPUT_MIDDLE) != 0); //マシンガン
-								chara[1].key[2] = (CheckHitKey(KEY_INPUT_W) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
-								chara[1].key[3] = (CheckHitKey(KEY_INPUT_S) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
-								chara[1].key[4] = (CheckHitKey(KEY_INPUT_D) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
-								chara[1].key[5] = (CheckHitKey(KEY_INPUT_A) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
-								//ヨー
-								chara[1].key[6] = (CheckHitKey(KEY_INPUT_Q) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
-								chara[1].key[7] = (CheckHitKey(KEY_INPUT_E) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
-								//スロットル
-								chara[1].key[8] = (CheckHitKey(KEY_INPUT_R) != 0);
-								chara[1].key[9] = (CheckHitKey(KEY_INPUT_F) != 0);
-								//脚
-								chara[1].key[10] = false;
-								//ブレーキ
-								chara[1].key[11] = (CheckHitKey(KEY_INPUT_G) != 0);
-								//精密操作
-								chara[1].key[12] = (CheckHitKey(KEY_INPUT_W) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								chara[1].key[13] = (CheckHitKey(KEY_INPUT_S) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								chara[1].key[14] = (CheckHitKey(KEY_INPUT_D) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								chara[1].key[15] = (CheckHitKey(KEY_INPUT_A) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								chara[1].key[16] = (CheckHitKey(KEY_INPUT_Q) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								chara[1].key[17] = (CheckHitKey(KEY_INPUT_E) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-							}
-							//*/
 							//通常、VR共通
 							if (!Drawparts->use_vr) {
 								mine.key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //射撃
@@ -628,6 +545,28 @@ public:
 										}
 										//
 									}
+								}
+							}
+							for (auto& c : chara) {
+								if (c.death) {
+									c.key[0] = false;
+									c.key[1] = false;
+									c.key[2] = false;
+									c.key[3] = false;
+									c.key[4] = false;
+									c.key[5] = false;
+									c.key[6] = false;
+									c.key[7] = false;
+									c.key[8] = false;
+									c.key[9] = false;
+									c.key[10] = false;
+									c.key[11] = false;
+									c.key[12] = false;
+									c.key[13] = false;
+									c.key[14] = false;
+									c.key[15] = false;
+									c.key[16] = false;
+									c.key[17] = false;
 								}
 							}
 						}
@@ -890,6 +829,19 @@ public:
 									}
 									veh.pos += veh.add + (veh.mat.zvec() * (-veh.speed / GetFPS()));
 								}
+								//死亡関連
+								{
+									if (c.death) {
+										c.death_timer -= 1.f / GetFPS();
+										if (c.death_timer <= 0.f) {
+											c.death = false;
+											c.death_timer = 0.f;
+											veh.respawn();
+											c.p_anime_geardown.second = 1.f;
+											c.changegear.first = true;
+										}
+									}
+								}
 								//壁の当たり判定
 								{
 									bool hitb = false;
@@ -925,10 +877,10 @@ public:
 											hitb = true;
 										}
 									}
-									if (hitb) {
-										veh.respawn();
-										c.p_anime_geardown.second = 1.f;
-										c.changegear.first = true;
+									if (hitb && !c.death) {
+										veh.HP = 0;
+										c.death_timer = 3.f;
+										c.death = true;
 									}
 								}
 							}
@@ -1017,11 +969,7 @@ public:
 						//effect
 						for (auto& t : c.effcs) {
 							const size_t index = &t - &c.effcs[0];
-							if (index != ef_smoke1 && index != ef_smoke2
-								
-								//&& index != ef_smoke3
-								
-								) {
+							if (index != ef_smoke1 && index != ef_smoke2 && index != ef_smoke3) {
 								t.put(Drawparts->get_effHandle(int(index)));
 							}
 						}
@@ -1033,8 +981,13 @@ public:
 						}
 						for (auto& t : veh.use_veh.wingframe) {
 							t.smkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), 10.f);
-							if (start_c2) {
-								//t.smkeffcs.set_loop(Drawparts->get_effHandle(ef_smoke3));
+							if (/*start_c2*/ c.death) {
+								if (c.death_timer == 3.f) {
+									t.smkeffcs.set_loop(Drawparts->get_effHandle(ef_smoke3));
+								}
+							}
+							else {
+								t.smkeffcs.handle.Stop();
 							}
 						}
 						//銃砲
@@ -1268,7 +1221,6 @@ public:
 			//解放
 			{
 				for (auto& c : chara) {
-					c.rep.clear();
 					auto& veh = c.vehicle;
 					//エフェクト
 					for (auto& t : c.effcs_gun) {
