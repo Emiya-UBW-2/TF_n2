@@ -447,5 +447,3 @@ MigrationBackup/
 !.vscode/extensions.json
 
 
-/TankFlanker/TankFlanker/data/file.txt
-*.txt
