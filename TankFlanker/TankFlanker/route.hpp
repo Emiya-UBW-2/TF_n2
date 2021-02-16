@@ -149,7 +149,7 @@ public:
 				start_c = true;
 				start_c2 = true;
 				//キャラ選択
-				if (!UIparts->select_window(&chara[0], &Vehicles)) {
+				if (!UIparts->select_window(&chara[0], &Vehicles,Drawparts)) {
 					break;
 				}
 				//マップ読み込み

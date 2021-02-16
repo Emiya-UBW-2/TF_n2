@@ -225,13 +225,25 @@ public:
 			for (auto& t : *veh_) {
 				MV1::Load(std::string(name) + t.name + "/model.mv1", &t.obj, Async);
 				MV1::Load(std::string(name) + t.name + "/col.mv1", &t.col, Async);
+				if (Async) {
+					SetUseASyncLoadFlag(TRUE);
+				}
 				t.ui_pic = GraphHandle::Load(std::string(name) + t.name + "/pic.png");
+				if (Async) {
+					SetUseASyncLoadFlag(FALSE);
+				}
 				//todo
+				if (Async) {
+					SetUseASyncLoadFlag(TRUE);
+				}
 				t.graph_HP_m.resize(7);
 				for (int i = 0; i < t.graph_HP_m.size(); i++) {
 					t.graph_HP_m[i] = GraphHandle::Load(std::string(name) + t.name + "/parts" + std::to_string(i + 1) + ".png");
 				}
 				t.graph_HP_m_all = GraphHandle::Load(std::string(name) + t.name + "/parts_all.png");
+				if (Async) {
+					SetUseASyncLoadFlag(FALSE);
+				}
 			}
 		}
 		//ƒƒCƒ““Ç‚Ýž‚Ý
@@ -765,6 +777,7 @@ private:
 			}
 			//ƒ‚ƒWƒ…[ƒ‹‘Ï‹v
 			this->HP_m.resize(this->col.mesh_num());
+
 			for (auto& p : vehcs.graph_HP_m) {
 				this->graph_HP_m.resize(this->graph_HP_m.size() + 1);
 				this->graph_HP_m.back() = p.Duplicate();
@@ -804,9 +817,9 @@ private:
 			for (auto& p : this->graph_HP_m) {
 				p.Dispose();
 			}
+			this->graph_HP_m.clear();
 			this->graph_HP_m_all.Dispose();
 			this->HP_m.clear();
-			this->graph_HP_m.clear();
 			this->wheel_Left = 0.f;
 			this->wheel_Right = 0.f;
 			this->wheel_Leftadd = 0.f;
