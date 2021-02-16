@@ -312,7 +312,7 @@ public:
 					else if (p.find("バーナー", 0) != std::string::npos) {
 						t.burner.resize(t.burner.size() + 1);
 						t.burner.back().first = i;
-						t.burner.back().second = t.obj.frame(t.burner.back().first);
+						t.burner.back().second = t.obj.GetFrameLocalMatrix(t.burner.back().first).pos();
 					}
 					else if (p.find("フック", 0) != std::string::npos) {
 						t.hook.first = i;

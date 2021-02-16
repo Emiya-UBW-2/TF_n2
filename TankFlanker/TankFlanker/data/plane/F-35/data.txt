@@ -1,0 +1,20 @@
+isfloat=false
+maxspeed=850
+midspeed=475
+minspeed=225
+rad=100
+HP=200
+canlook=2500
+gun_0_name=M61
+gun_0_loadcnt=0.04
+gun_0_round=1000
+gun_0_useammo0=vulcan 20
+gun_1_name=MISSILE1
+gun_1_loadcnt=7
+gun_1_round=16
+gun_1_useammo0=AIM9-X
+gun_2_name=MISSILE2
+gun_2_loadcnt=7
+gun_2_round=16
+gun_2_useammo0=AIM9-X
+end
