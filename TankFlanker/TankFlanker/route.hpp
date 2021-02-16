@@ -25,10 +25,13 @@ class main_c : Mainclass {
 	std::vector<Mainclass::Ammos> Ammo;		//弾薬
 	std::vector<Mainclass::Vehcs> Vehicles;	//車輛データ
 	SoundHandle se_cockpit;
+	SoundHandle se_engine;
 	SoundHandle se_gun;
 	SoundHandle se_missile;
 	SoundHandle se_hit;
 	SoundHandle se_alert;
+	SoundHandle bgm_title;
+	SoundHandle bgm_main;
 	//設定
 	bool oldv = false;
 	bool start_c = true;
@@ -63,11 +66,15 @@ public:
 	//その他
 		SetCreate3DSoundFlag(TRUE);
 		se_cockpit = SoundHandle::Load("data/audio/fighter-cockpit1.wav");
+		se_engine = SoundHandle::Load("data/audio/engine.wav");
 		se_gun = SoundHandle::Load("data/audio/hit.wav");
 		se_missile = SoundHandle::Load("data/audio/rolling_rocket.wav");
 		se_hit = SoundHandle::Load("data/audio/destruction.wav");
 		SetCreate3DSoundFlag(FALSE);
 		se_alert = SoundHandle::Load("data/audio/alert.wav");
+
+		bgm_title = SoundHandle::Load("data/audio/BGM/title.wav");
+		bgm_main = SoundHandle::Load("data/audio/BGM/main.wav");
 		//
 		Mainclass::Vehcs::set_vehicles_pre("data/plane/", &Vehicles, true);
 		MV1::Load("data/model/cockpit/model.mv1", &cockpit, true);
@@ -149,9 +156,16 @@ public:
 				start_c = true;
 				start_c2 = true;
 				//キャラ選択
+				bgm_title.play(DX_PLAYTYPE_LOOP, TRUE);
+				bgm_title.vol(255);
 				if (!UIparts->select_window(&chara[0], &Vehicles,Drawparts)) {
 					break;
 				}
+				for (int i = 0; i < 255; i++) {
+					bgm_title.vol(255-i);
+					ScreenFlip();
+				}
+				bgm_title.stop();
 				//マップ読み込み
 				mapparts->set_map_pre();
 				UIparts->load_window("マップモデル");			   //ロード画面
@@ -183,10 +197,12 @@ public:
 					c.cocks.set_(cockpit);			//コックピット
 					//
 					c.se_cockpit = se_cockpit.Duplicate();
+					c.se_engine = se_engine.Duplicate();
 					c.se_gun = se_gun.Duplicate();
 					c.se_missile = se_missile.Duplicate();
 					c.se_hit = se_hit.Duplicate();
 					c.se_cockpit.Radius(600.f);
+					c.se_engine.Radius(600.f);
 					c.se_gun.Radius(300.f);
 					c.se_missile.Radius(300.f);
 					c.se_hit.Radius(900.f);
@@ -212,7 +228,11 @@ public:
 				for (auto& c : chara) {
 					c.se_cockpit.play(DX_PLAYTYPE_LOOP, TRUE);
 					c.se_cockpit.vol(64);
+					c.se_engine.play(DX_PLAYTYPE_LOOP, TRUE);
 				}
+
+				bgm_main.play(DX_PLAYTYPE_LOOP, TRUE);
+				bgm_main.vol(255);
 				SetMouseDispFlag(FALSE);
 				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 
@@ -231,8 +251,10 @@ public:
 								veh.hit_check = false;
 							}
 							c.aim_cnt = 0;
-
+							c.missile_cnt = 0;
 							easing_set(&veh.HP_r, float(veh.HP), 0.95f);
+
+							c.se_engine.vol(64 + int(192.f * c.vehicle.accel / 100.f));
 						}
 					}
 
@@ -381,11 +403,13 @@ public:
 												c.key[13] = true;
 											}
 											if (id != chara.size() && !ret && !up) {
-												if ((tgt_pos - c.vehicle.pos).size() <= 300) {
-													c.key[0] = GetRand(100) <= 20;   //射撃
-												}
-												if ((tgt_pos - c.vehicle.pos).size() <= 1500) {
-													c.key[1] = GetRand(200) <= 1; //マシンガン
+												if ((c.vehicle.mat.zvec()).dot(tgt_pos - c.vehicle.pos) < 0) {
+													if ((tgt_pos - c.vehicle.pos).size() <= 300) {
+														c.key[0] = GetRand(100) <= 20;   //射撃
+													}
+													if ((tgt_pos - c.vehicle.pos).size() <= 1500) {
+														c.key[1] = GetRand(200) <= 1; //マシンガン
+													}
 												}
 											}
 										}
@@ -1027,6 +1051,7 @@ public:
 						for (auto& c : chara) {
 							auto& veh = c.vehicle;
 							c.se_cockpit.SetPosition(veh.pos);
+							c.se_engine.SetPosition(veh.pos);
 							c.se_hit.SetPosition(veh.pos);
 							c.se_gun.SetPosition(veh.pos);
 							c.se_missile.SetPosition(veh.pos);
@@ -1209,9 +1234,17 @@ public:
 					}
 					//
 				}
+
+				for (int i = 0; i < 255; i++) {
+					bgm_main.vol(255 - i);
+					ScreenFlip();
+				}
+				bgm_main.stop();
+
 				SetMouseDispFlag(TRUE);
 				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 				for (auto& c : chara) {
+					c.se_engine.stop();
 					c.se_cockpit.stop(); //gun
 					c.se_gun.stop(); //gun
 					c.se_missile.stop();
