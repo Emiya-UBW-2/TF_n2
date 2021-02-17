@@ -437,6 +437,16 @@ public:
 										font->DrawString(xp, yp + y_r(36, out_disp_y) * ccc, "GEAR DOWN", GetColor(255, 255, 0));
 										ccc++;
 									}
+									if (chara.aim_cnt > 0) {
+										if ((GetNowHiPerformanceCount() / 80000) % 4 <= 2) {
+											font->DrawString(xp, yp + y_r(36, out_disp_y) * ccc, "ENEMY ALERT", GetColor(255, 225, 0));
+										}
+										ccc++;
+									}
+									if (chara.missile_cnt > 0) {
+										font->DrawString(xp, yp + y_r(36, out_disp_y) * ccc, "MISSILE ALERT", GetColor(255, 0, 0));
+										ccc++;
+									}
 								}
 							}
 							else {

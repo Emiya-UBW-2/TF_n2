@@ -626,6 +626,7 @@ private:
 										}
 									}
 									if (id != chara->size()) {
+										(*chara)[id].missile_cnt++;
 										//”½‰f
 										auto vec_a = (a.pos - pos).Norm();
 										auto vec_z = a.vec;
@@ -1119,6 +1120,7 @@ public:
 		size_t gun_effcnt = 0;
 		size_t id;
 		size_t aim_cnt = 0;//‘_‚í‚ê‚Ä‚¢‚é‘Šè‚Ì”
+		size_t missile_cnt = 0;//‘_‚í‚ê‚Ä‚¢‚é‘Šè‚Ì”
 
 		float death_timer = 0.f;
 		bool death = false;
@@ -1138,6 +1140,7 @@ public:
 		VECTOR_ref winpos;
 		VECTOR_ref winpos_if;
 		SoundHandle se_cockpit;
+		SoundHandle se_engine;
 		SoundHandle se_gun;
 		SoundHandle se_missile;
 		SoundHandle se_hit;
