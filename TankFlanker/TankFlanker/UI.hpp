@@ -50,17 +50,16 @@ public:
 	~UI() {
 	}
 	bool select_window(Mainclass::Chara* chara, std::vector<Mainclass::Vehcs>* vehcs, std::unique_ptr<DXDraw, std::default_delete<DXDraw>>& Drawparts) {
+		auto& veh = chara->vehicle;
 		if (1) {
 			VECTOR_ref campos = VGet(0.f, 0.f, -15.f);
 			VECTOR_ref camaim = VGet(0.f, 3.f, 0.f);
 			uint8_t rtct = 0, ltct = 0;
 			float fov = deg2rad(90 / 2);
-
-			chara->vehicle.use_id %= (*vehcs).size(); //飛行機
-
+			veh.use_id %= (*vehcs).size(); //飛行機
+			MV1AttachAnim((*vehcs)[veh.use_id].obj.get(), 1);
 			float speed = 0.f;
 			VECTOR_ref pos;
-
 			pos.y(1.8f);
 			bool endp = false;
 			bool startp = false;
@@ -96,7 +95,6 @@ public:
 
 				easing_set(&ber_r, float(out_disp_y / 4), 0.95f);
 
-				auto& veh = chara->vehicle;
 				{
 					if (CheckHitKey(KEY_INPUT_SPACE) != 0 || speed != 0.f) {
 						speed = std::clamp(speed + 1.5f / 3.6f / GetFPS(), 0.f, 20.f / 3.6f / GetFPS());
@@ -119,6 +117,7 @@ public:
 						camaim = pos + VGet(0.f, 3.f, 0.f);
 						if (ltct == 1) {
 							++veh.use_id %= (*vehcs).size();
+							MV1AttachAnim((*vehcs)[veh.use_id].obj.get(), 1);
 						}
 						if (rtct == 1) {
 							if (veh.use_id == 0) {
@@ -127,6 +126,7 @@ public:
 							else {
 								--veh.use_id;
 							}
+							MV1AttachAnim((*vehcs)[veh.use_id].obj.get(), 1);
 						}
 					}
 					else {
@@ -194,6 +194,8 @@ public:
 					{
 						garage.DrawModel();
 						(*vehcs)[veh.use_id].obj.SetMatrix(MATRIX_ref::Mtrans(pos));
+						(*vehcs)[veh.use_id].obj.get_anime();
+						MV1SetAttachAnimBlendRate((*vehcs)[veh.use_id].obj.get(), 1,1.f);
 						(*vehcs)[veh.use_id].obj.DrawModel();
 						SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(255 - int(255.f * pos.z() / -10.f), 0, 255));
 						bufScreen.DrawGraph(0, 0, true);
@@ -214,7 +216,7 @@ public:
 
 		}
 		else {
-			chara->vehicle.use_id = 1; //飛行機
+			veh.use_id = 1; //飛行機
 		}
 		return (CheckHitKey(KEY_INPUT_ESCAPE) == 0);
 	}
