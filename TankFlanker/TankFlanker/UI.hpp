@@ -728,9 +728,10 @@ public:
 
 							if (int(c.winpos.x()) < 0 || int(c.winpos.x()) > disp_x || int(c.winpos.y()) < 0 || int(c.winpos.y()) > disp_y) {
 								auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
+								auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, 200.f);
 								DrawLine(
-									disp_x / 2 + int(120.f*sin(rad)),
-									disp_y / 2 + int(120.f*cos(rad)),
+									disp_x / 2 + int(dis*sin(rad)),
+									disp_y / 2 + int(dis*cos(rad)),
 									disp_x / 2 + int(200.f*sin(rad)),
 									disp_y / 2 + int(200.f*cos(rad)),
 									col);

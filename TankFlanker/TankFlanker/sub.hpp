@@ -694,6 +694,10 @@ private:
 		size_t use_id = 0;						//使用する車両(機材)
 		uint16_t HP = 0;						//体力
 		float HP_r = 0.f;
+		bool dmgf = false;						//体力
+		bool deathf = false;
+		bool hitf = false;						//体力
+		bool killf = false;						//体力
 		uint16_t KILL = 0;						//体力
 		int KILL_ID = -1;						//体力
 		uint16_t DEATH = 0;						//体力
@@ -806,6 +810,10 @@ private:
 			this->col.Dispose();
 			this->hit_check = false;
 			this->HP = 0;
+			this->dmgf = false;
+			this->deathf = false;
+			this->hitf = false;
+			this->killf = false;
 			this->KILL = 0;						//体力
 			this->KILL_ID = -1;						//体力
 			this->DEATH = 0;						//体力
@@ -1261,9 +1269,13 @@ public:
 											veh_t.HP = std::max<int16_t>(veh_t.HP - c.spec.damage_a, 0); //
 										}
 										//撃破時エフェクト
+										veh_t.dmgf = true;
+										this->vehicle.hitf = true;
 										if (veh_t.HP == 0 && ttn != veh_t.HP) {
 											this->vehicle.KILL++;
 											this->vehicle.KILL_ID = (int)(&t - &tgts[0]);
+											veh_t.deathf = true;
+											this->vehicle.killf = true;
 											veh_t.DEATH++;
 											veh_t.DEATH_ID = (int)(this - &tgts[0]);
 											t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));

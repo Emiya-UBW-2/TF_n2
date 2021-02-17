@@ -30,8 +30,18 @@ class main_c : Mainclass {
 	SoundHandle se_missile;
 	SoundHandle se_hit;
 	SoundHandle se_alert;
+	SoundHandle se_alert2;
 	SoundHandle bgm_title;
 	SoundHandle bgm_main;
+	float se_vol = 0.35f;
+	class voices{
+	public:
+		std::vector<SoundHandle> handle;
+		float timer = 0.f;
+		int select = 0;
+	};
+	std::vector<voices> voice_;
+
 	//設定
 	bool oldv = false;
 	bool start_c = true;
@@ -72,9 +82,31 @@ public:
 		se_hit = SoundHandle::Load("data/audio/destruction.wav");
 		SetCreate3DSoundFlag(FALSE);
 		se_alert = SoundHandle::Load("data/audio/alert.wav");
+		se_alert2 = SoundHandle::Load("data/audio/alert2.wav");
 
 		bgm_title = SoundHandle::Load("data/audio/BGM/title.wav");
 		bgm_main = SoundHandle::Load("data/audio/BGM/main.wav");
+
+		{
+			WIN32_FIND_DATA win32fdt;
+			HANDLE hFind;
+			int pt = -1;
+			hFind = FindFirstFile("data/audio/voice/*", &win32fdt);
+			if (hFind != INVALID_HANDLE_VALUE) {
+				do {
+					if (win32fdt.cFileName[0] != '.') {
+						int ttm = win32fdt.cFileName[0] - '0';
+						if (pt != ttm) {
+							voice_.resize(voice_.size() + 1);
+						}
+						pt = ttm;
+						voice_.back().handle.resize(voice_.back().handle.size() + 1);
+						voice_.back().handle.back() = SoundHandle::Load(std::string("data/audio/voice/") + win32fdt.cFileName);
+					}
+				} while (FindNextFile(hFind, &win32fdt));
+			} //else{ return false; }
+			FindClose(hFind);
+		}
 		//
 		Mainclass::Vehcs::set_vehicles_pre("data/plane/", &Vehicles, true);
 		MV1::Load("data/model/cockpit/model.mv1", &cockpit, true);
@@ -157,13 +189,9 @@ public:
 				start_c2 = true;
 				//キャラ選択
 				bgm_title.play(DX_PLAYTYPE_LOOP, TRUE);
-				bgm_title.vol(255);
+				bgm_title.vol(int(float(255)*0.5f));
 				if (!UIparts->select_window(&chara[0], &Vehicles,Drawparts)) {
 					break;
-				}
-				for (int i = 0; i < 255; i++) {
-					bgm_title.vol(255-i);
-					ScreenFlip();
 				}
 				bgm_title.stop();
 				//マップ読み込み
@@ -207,7 +235,8 @@ public:
 					c.se_missile.Radius(300.f);
 					c.se_hit.Radius(900.f);
 				}
-				se_alert.vol(64);
+				se_alert.vol(int(float(192)*se_vol));
+				se_alert2.vol(int(float(192)*se_vol));
 				//開始共通
 				eye_pos_ads = VGet(0, 0.58f, 0);
 				auto& mine = chara[0];
@@ -227,14 +256,19 @@ public:
 				}
 				for (auto& c : chara) {
 					c.se_cockpit.play(DX_PLAYTYPE_LOOP, TRUE);
-					c.se_cockpit.vol(64);
+					c.se_cockpit.vol(int(float(128)*se_vol));
 					c.se_engine.play(DX_PLAYTYPE_LOOP, TRUE);
 				}
 
 				bgm_main.play(DX_PLAYTYPE_LOOP, TRUE);
-				bgm_main.vol(255);
+				bgm_main.vol(int(float(255)*0.5f));
 				SetMouseDispFlag(FALSE);
 				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
+
+				voice_[0].handle[0].play(DX_PLAYTYPE_BACK, TRUE);
+				voice_[0].handle[0].vol(255);
+				voice_[5].timer = 0.f;
+				voice_[6].timer = 0.f;
 
 				while (ProcessMessage() == 0) {
 					const auto waits = GetNowHiPerformanceCount();
@@ -254,7 +288,7 @@ public:
 							c.missile_cnt = 0;
 							easing_set(&veh.HP_r, float(veh.HP), 0.95f);
 
-							c.se_engine.vol(64 + int(192.f * c.vehicle.accel / 100.f));
+							c.se_engine.vol(int(float(128 + int(127.f * c.vehicle.accel / 100.f))*se_vol));
 						}
 					}
 
@@ -468,10 +502,10 @@ public:
 									}
 
 									c.key[10] = false;
-									c.key[11] = false; 
+									c.key[11] = false;
 
 									c.key[16] = false;
-									c.key[17] = false; 
+									c.key[17] = false;
 								}
 							}
 							//通常、VR共通
@@ -592,6 +626,79 @@ public:
 									c.key[16] = false;
 									c.key[17] = false;
 								}
+								if (&c != &mine && (c.id == mine.id)) {
+									if (c.vehicle.HP > 0) {
+										if (c.key[0] && GetRand(100) < 10 && voice_[1].timer == 0.f) {
+											voice_[1].select = GetRand(voice_[1].handle.size() - 1);
+											voice_[1].handle[voice_[1].select].play(DX_PLAYTYPE_BACK, TRUE);
+											voice_[1].handle[voice_[1].select].vol(255);
+											voice_[1].timer = float(GetRand(170) + 30) / 10.f;
+										}
+										if (c.key[1] && GetRand(100) < 10 && voice_[2].timer == 0.f) {
+											voice_[2].select = GetRand(voice_[2].handle.size() - 1);
+											voice_[2].handle[voice_[2].select].play(DX_PLAYTYPE_BACK, TRUE);
+											voice_[2].handle[voice_[2].select].vol(255);
+											voice_[2].timer = float(GetRand(170) + 30) / 10.f;
+										}
+										if (c.vehicle.hitf) {
+											if (voice_[3].timer == 0.f) {
+												voice_[3].select = GetRand(voice_[3].handle.size() - 1);
+												voice_[3].handle[voice_[3].select].play(DX_PLAYTYPE_BACK, TRUE);
+												voice_[3].handle[voice_[3].select].vol(255);
+												voice_[3].timer = float(GetRand(170) + 30) / 10.f;
+											}
+											c.vehicle.hitf = false;
+										}
+										if (c.vehicle.killf) {
+											voice_[4].select = GetRand(voice_[4].handle.size() - 1);
+											if (CheckSoundMem(voice_[4].handle[voice_[4].select].get()) != TRUE) {
+												voice_[4].handle[voice_[4].select].play(DX_PLAYTYPE_BACK, TRUE);
+												voice_[4].handle[voice_[4].select].vol(255);
+											}
+											c.vehicle.killf = false;
+										}
+										if (c.aim_cnt > 0 && GetRand(100) < 10 && voice_[5].timer == 0.f) {
+											voice_[5].select = GetRand(voice_[5].handle.size() - 1);
+											if (CheckSoundMem(voice_[5].handle[voice_[5].select].get()) != TRUE) {
+												voice_[5].handle[voice_[5].select].play(DX_PLAYTYPE_BACK, TRUE);
+												voice_[5].handle[voice_[5].select].vol(255);
+											}
+											voice_[5].timer = float(GetRand(170) + 30) / 10.f;
+										}
+										if (c.missile_cnt > 0 && GetRand(100) < 10 && voice_[6].timer == 0.f) {
+											voice_[6].select = GetRand(voice_[6].handle.size() - 1);
+											if (CheckSoundMem(voice_[6].handle[voice_[6].select].get()) != TRUE) {
+												voice_[6].handle[voice_[6].select].play(DX_PLAYTYPE_BACK, TRUE);
+												voice_[6].handle[voice_[6].select].vol(255);
+											}
+
+											voice_[6].timer = float(GetRand(170) + 30) / 10.f;
+										}
+										if (c.vehicle.dmgf) {
+											voice_[7].select = GetRand(voice_[7].handle.size() - 1);
+											if (voice_[7].timer == 0.f) {
+												if (CheckSoundMem(voice_[7].handle[voice_[7].select].get()) != TRUE) {
+													voice_[7].handle[voice_[7].select].play(DX_PLAYTYPE_BACK, TRUE);
+													voice_[7].handle[voice_[7].select].vol(255);
+												}
+												voice_[7].timer = float(GetRand(170) + 30) / 10.f;
+											}
+											c.vehicle.dmgf = false;
+										}
+									}
+									if (c.vehicle.deathf) {
+										voice_[8].select = GetRand(voice_[8].handle.size() - 1);
+										if (CheckSoundMem(voice_[8].handle[voice_[8].select].get()) != TRUE) {
+											voice_[8].handle[voice_[8].select].play(DX_PLAYTYPE_BACK, TRUE);
+											voice_[8].handle[voice_[8].select].vol(255);
+										}
+										c.vehicle.deathf = false;
+									}
+								}
+							}
+							//
+							for (auto&v : voice_) {
+								v.timer = std::max(v.timer - 1.f / GetFPS(), 0.f);
 							}
 						}
 						//マウスと視点角度をリンク
@@ -1057,13 +1164,39 @@ public:
 							c.se_missile.SetPosition(veh.pos);
 						}
 						//アラート
-						if (mine.vehicle.pos.y() <= 30.f) {
-							if (CheckSoundMem(se_alert.get()) != TRUE) {
-								se_alert.play(DX_PLAYTYPE_LOOP, TRUE);
+						{
+							bool ttttt = false;
+							if (mine.vehicle.speed < mine.vehicle.use_veh.min_speed_limit) {
+								if (CheckSoundMem(se_alert2.get()) != TRUE) {
+									se_alert2.play(DX_PLAYTYPE_LOOP, TRUE);
+								}
+								ttttt = true;
 							}
-						}
-						else {
-							se_alert.stop();
+							if (mine.missile_cnt > 0) {
+								if (CheckSoundMem(se_alert2.get()) != TRUE) {
+									se_alert2.play(DX_PLAYTYPE_LOOP, TRUE);
+								}
+								ttttt = true;
+							}
+							if (!ttttt) {
+								se_alert2.stop();
+							}
+							ttttt = false;
+							if (mine.vehicle.pos.y() <= 30.f) {
+								if (CheckSoundMem(se_alert.get()) != TRUE) {
+									se_alert.play(DX_PLAYTYPE_LOOP, TRUE);
+								}
+								ttttt = true;
+							}
+							if (mine.aim_cnt > 0) {
+								if (CheckSoundMem(se_alert.get()) != TRUE) {
+									se_alert.play(DX_PLAYTYPE_LOOP, TRUE);
+								}
+								ttttt = true;
+							}
+							if (!ttttt) {
+								se_alert.stop();
+							}
 						}
 					}
 					//影用意
@@ -1235,10 +1368,6 @@ public:
 					//
 				}
 
-				for (int i = 0; i < 255; i++) {
-					bgm_main.vol(255 - i);
-					ScreenFlip();
-				}
 				bgm_main.stop();
 
 				SetMouseDispFlag(TRUE);

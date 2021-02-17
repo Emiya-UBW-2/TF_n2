@@ -11,4 +11,11 @@ caliber    =0.127
 penetration=120
 speed      =600
 damage     =64
+
+name       =vulcan 25
+type       =1
+caliber    =0.025
+penetration=30
+speed      =1000
+damage     =32
 end
