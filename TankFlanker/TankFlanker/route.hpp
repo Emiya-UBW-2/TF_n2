@@ -7,7 +7,7 @@ class main_c : Mainclass {
 
 	cam_info cam_easy;
 	VECTOR_ref eyevec, eyevec2;																	//視点
-	//FontHandle font18;
+	FontHandle font18;
 	//描画スクリーン
 	GraphHandle outScreen2;
 	GraphHandle UI_Screen, UI_Screen2;
@@ -36,11 +36,19 @@ class main_c : Mainclass {
 	float se_vol = 0.35f;
 	class voices{
 	public:
+		std::vector <std::string> str;
 		std::vector<SoundHandle> handle;
 		float timer = 0.f;
 		int select = 0;
 	};
 	std::vector<voices> voice_;
+
+	class voice_strs {
+	public:
+		std::string str;
+		SoundHandle *handle;
+	};
+	std::vector<voice_strs> voice_str;
 
 	//設定
 	bool oldv = false;
@@ -72,7 +80,7 @@ public:
 		UI_Screen2 = GraphHandle::Make(deskx, desky, true);																//フルスクリーン向けUI
 		auto mapparts = std::make_unique<Mapclass>();																	//map
 		outScreen2 = GraphHandle::Make(deskx, desky, true);	//描画スクリーン
-		//font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
+		font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 	//その他
 		SetCreate3DSoundFlag(TRUE);
 		se_cockpit = SoundHandle::Load("data/audio/fighter-cockpit1.wav");
@@ -102,6 +110,9 @@ public:
 						pt = ttm;
 						voice_.back().handle.resize(voice_.back().handle.size() + 1);
 						voice_.back().handle.back() = SoundHandle::Load(std::string("data/audio/voice/") + win32fdt.cFileName);
+						voice_.back().str.resize(voice_.back().str.size() + 1);
+						voice_.back().str.back() = win32fdt.cFileName;
+						voice_.back().str.back() = voice_.back().str.back().substr(2, voice_.back().str.back().find('.') - 2);
 					}
 				} while (FindNextFile(hFind, &win32fdt));
 			} //else{ return false; }
@@ -128,7 +139,7 @@ public:
 				//海
 				mapparts->sea_draw();
 				//雲
-				//mapparts->cloud_draw();//2
+				mapparts->cloud_draw();//2
 				//機体
 				SetFogStartEnd(0.0f, 3000.f);
 				SetFogColor(128, 128, 128);
@@ -267,6 +278,10 @@ public:
 
 				voice_[0].handle[0].play(DX_PLAYTYPE_BACK, TRUE);
 				voice_[0].handle[0].vol(255);
+				voice_str.resize(voice_str.size() + 1);
+				voice_str.back().handle = &voice_[0].handle[0];
+				voice_str.back().str = voice_[0].str[0];
+
 				voice_[5].timer = 0.f;
 				voice_[6].timer = 0.f;
 
@@ -633,12 +648,18 @@ public:
 											voice_[1].handle[voice_[1].select].play(DX_PLAYTYPE_BACK, TRUE);
 											voice_[1].handle[voice_[1].select].vol(255);
 											voice_[1].timer = float(GetRand(170) + 30) / 10.f;
+											voice_str.resize(voice_str.size() + 1);
+											voice_str.back().handle = &voice_[1].handle[voice_[1].select];
+											voice_str.back().str = voice_[1].str[voice_[1].select];
 										}
 										if (c.key[1] && GetRand(100) < 10 && voice_[2].timer == 0.f) {
 											voice_[2].select = GetRand(voice_[2].handle.size() - 1);
 											voice_[2].handle[voice_[2].select].play(DX_PLAYTYPE_BACK, TRUE);
 											voice_[2].handle[voice_[2].select].vol(255);
 											voice_[2].timer = float(GetRand(170) + 30) / 10.f;
+											voice_str.resize(voice_str.size() + 1);
+											voice_str.back().handle = &voice_[2].handle[voice_[2].select];
+											voice_str.back().str = voice_[2].str[voice_[2].select];
 										}
 										if (c.vehicle.hitf) {
 											if (voice_[3].timer == 0.f) {
@@ -646,6 +667,9 @@ public:
 												voice_[3].handle[voice_[3].select].play(DX_PLAYTYPE_BACK, TRUE);
 												voice_[3].handle[voice_[3].select].vol(255);
 												voice_[3].timer = float(GetRand(170) + 30) / 10.f;
+												voice_str.resize(voice_str.size() + 1);
+												voice_str.back().handle = &voice_[3].handle[voice_[3].select];
+												voice_str.back().str = voice_[3].str[voice_[3].select];
 											}
 											c.vehicle.hitf = false;
 										}
@@ -654,6 +678,9 @@ public:
 											if (CheckSoundMem(voice_[4].handle[voice_[4].select].get()) != TRUE) {
 												voice_[4].handle[voice_[4].select].play(DX_PLAYTYPE_BACK, TRUE);
 												voice_[4].handle[voice_[4].select].vol(255);
+												voice_str.resize(voice_str.size() + 1);
+												voice_str.back().handle = &voice_[4].handle[voice_[4].select];
+												voice_str.back().str = voice_[4].str[voice_[4].select];
 											}
 											c.vehicle.killf = false;
 										}
@@ -662,6 +689,9 @@ public:
 											if (CheckSoundMem(voice_[5].handle[voice_[5].select].get()) != TRUE) {
 												voice_[5].handle[voice_[5].select].play(DX_PLAYTYPE_BACK, TRUE);
 												voice_[5].handle[voice_[5].select].vol(255);
+												voice_str.resize(voice_str.size() + 1);
+												voice_str.back().handle = &voice_[5].handle[voice_[5].select];
+												voice_str.back().str = voice_[5].str[voice_[5].select];
 											}
 											voice_[5].timer = float(GetRand(170) + 30) / 10.f;
 										}
@@ -670,6 +700,9 @@ public:
 											if (CheckSoundMem(voice_[6].handle[voice_[6].select].get()) != TRUE) {
 												voice_[6].handle[voice_[6].select].play(DX_PLAYTYPE_BACK, TRUE);
 												voice_[6].handle[voice_[6].select].vol(255);
+												voice_str.resize(voice_str.size() + 1);
+												voice_str.back().handle = &voice_[6].handle[voice_[6].select];
+												voice_str.back().str = voice_[6].str[voice_[6].select];
 											}
 
 											voice_[6].timer = float(GetRand(170) + 30) / 10.f;
@@ -680,6 +713,9 @@ public:
 												if (CheckSoundMem(voice_[7].handle[voice_[7].select].get()) != TRUE) {
 													voice_[7].handle[voice_[7].select].play(DX_PLAYTYPE_BACK, TRUE);
 													voice_[7].handle[voice_[7].select].vol(255);
+													voice_str.resize(voice_str.size() + 1);
+													voice_str.back().handle = &voice_[7].handle[voice_[7].select];
+													voice_str.back().str = voice_[7].str[voice_[7].select];
 												}
 												voice_[7].timer = float(GetRand(170) + 30) / 10.f;
 											}
@@ -691,6 +727,9 @@ public:
 										if (CheckSoundMem(voice_[8].handle[voice_[8].select].get()) != TRUE) {
 											voice_[8].handle[voice_[8].select].play(DX_PLAYTYPE_BACK, TRUE);
 											voice_[8].handle[voice_[8].select].vol(255);
+											voice_str.resize(voice_str.size() + 1);
+											voice_str.back().handle = &voice_[8].handle[voice_[8].select];
+											voice_str.back().str = voice_[8].str[voice_[8].select];
 										}
 										c.vehicle.deathf = false;
 									}
@@ -699,6 +738,12 @@ public:
 							//
 							for (auto&v : voice_) {
 								v.timer = std::max(v.timer - 1.f / GetFPS(), 0.f);
+							}
+							for (auto& v : voice_str) {
+								if (CheckSoundMem(v.handle->get()) != TRUE) {
+									voice_str.erase(voice_str.begin() + (&v - &voice_str[0]));
+									break;
+								}
 							}
 						}
 						//マウスと視点角度をリンク
@@ -1339,6 +1384,22 @@ public:
 										else {
 											this->UI_Screen.DrawGraph(0, 0, TRUE);
 										}
+
+										//
+										{
+											int yyy = 30;
+											for (auto& v : voice_str) {
+												if (CheckSoundMem(v.handle->get()) == TRUE) {
+													auto wide = font18.GetDrawWidth(v.str);
+													SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
+													DrawBox(Drawparts->disp_x / 2 - wide / 2, yyy - 2, Drawparts->disp_x / 2 + wide / 2, yyy + 18 + 2, GetColor(0, 0, 0), TRUE);
+													SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
+
+													font18.DrawString_MID(Drawparts->disp_x / 2, yyy, v.str, GetColor(100, 150, 255));
+													yyy += 24;
+												}
+											}
+										}
 									}
 								}, cam_s.cam);
 							}
@@ -1355,7 +1416,6 @@ public:
 							Debugparts->end_way();
 							Debugparts->debug(10, 10, float(GetNowHiPerformanceCount() - waits) / 1000.f);
 						}
-						//
 					}
 					Drawparts->Screen_Flip(waits);
 					if (CheckHitKey(KEY_INPUT_ESCAPE) != 0) {
