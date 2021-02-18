@@ -1366,7 +1366,6 @@ public:
 									{
 										Hostpassparts->get_main().DrawGraph(0, 0, true);
 
-										UIparts->item_draw(chara, mine, tmp_cams);
 
 										SetCameraNearFar(0.01f, 2.f);
 										//コックピット
@@ -1377,14 +1376,14 @@ public:
 											//UI
 											SetUseZBuffer3D(FALSE);												//zbufuse
 											SetWriteZBuffer3D(FALSE);											//zbufwrite
-											DrawBillboard3D((tmp_cams.cam.campos + (tmp_cams.cam.camvec - tmp_cams.cam.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.8f, 0.f, UI_Screen.get(), TRUE);
+											DrawBillboard3D((cam_s.cam.campos + (cam_s.cam.camvec - cam_s.cam.campos).Norm()*1.0f).get(), 0.5f, 0.5f, 1.8f, 0.f, UI_Screen.get(), TRUE);
 											SetUseZBuffer3D(TRUE);												//zbufuse
 											SetWriteZBuffer3D(TRUE);											//zbufwrite
 										}
 										else {
 											this->UI_Screen.DrawGraph(0, 0, TRUE);
 										}
-
+										UIparts->item_draw(chara, mine, tmp_cams, cam_s.Rot, Drawparts->use_vr);
 										//
 										{
 											int yyy = 30;
