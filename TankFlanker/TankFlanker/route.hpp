@@ -72,7 +72,7 @@ public:
 		}
 		//
 		auto Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);						//汎用クラス
-		auto UIparts = std::make_unique<UI>();																			//UI
+		auto UIparts = std::make_unique<UI>(Drawparts->disp_x, Drawparts->disp_y);										//UI
 		auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);															//デバッグ
 		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);	//ホストパスエフェクト
 		UI_Screen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);										//VR、フルスクリーン共用UI
