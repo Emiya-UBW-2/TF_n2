@@ -30,6 +30,7 @@ private:
 	VECTOR_ref aimpos_2;
 	VECTOR_ref altpos;
 	VECTOR_ref spdpos;
+	size_t id_near = 0;
 public:
 	UI(void) {
 		out_disp_x = deskx;
@@ -683,6 +684,19 @@ public:
 					}
 				}
 			}
+
+			{
+				float d = 10000.f;
+				for (auto&c : charas) {
+					if (&c != &chara && c.vehicle.HP > 0 && c.id != chara.id && (chara.vehicle.mat.zvec()).dot((c.vehicle.pos - chara.vehicle.pos).Norm()) < -cos(15)) {
+						auto dt = (c.vehicle.pos - chara.vehicle.pos).size();
+						if (d > dt) {
+							id_near = &c - &charas[0];
+							d = dt;
+						}
+					}
+				}
+			}
 			for (auto&c : charas) {
 				if (&c != &chara) {
 					int siz = int(32.f);
@@ -701,9 +715,9 @@ public:
 						siz_per = std::clamp((1.f - sqrtf(powf(c.winpos.x() - disp_x / 2, 2) + powf(c.winpos.y() - disp_y / 2, 2)) / float(disp_x / 2)), 0.f, 1.f);
 
 						siz = int(32.f*siz_per);
-						DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), col, FALSE);
+						DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), (&c - &charas[0] == id_near) ? GetColor(255, 255, 0) : col, FALSE);
 						siz = int(42.f*siz_per);
-						DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), col, FALSE);
+						DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), (&c - &charas[0] == id_near) ? GetColor(255, 255, 0) : col, FALSE);
 
 						xp = int(c.winpos.x()) - y_r(siz, out_disp_y);
 						yp = int(c.winpos.y()) + y_r(siz, out_disp_y);
@@ -725,16 +739,27 @@ public:
 						font->DrawStringFormat(xp, yp + 18, col, "%d m", int((VECTOR_ref(c.vehicle.pos) - chara.vehicle.pos).size()));
 
 						if (c.id != chara.id) {
-
-							if (int(c.winpos.x()) < 0 || int(c.winpos.x()) > disp_x || int(c.winpos.y()) < 0 || int(c.winpos.y()) > disp_y) {
+							if ((int(c.winpos.x()) < 0 || int(c.winpos.x()) > disp_x || int(c.winpos.y()) < 0 || int(c.winpos.y()) > disp_y) || (&c - &charas[0] != id_near)) {
 								auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
 								auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, 200.f);
 								DrawLine(
-									disp_x / 2 + int(dis*sin(rad)),
-									disp_y / 2 + int(dis*cos(rad)),
+									disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))),
+									disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))),
 									disp_x / 2 + int(200.f*sin(rad)),
 									disp_y / 2 + int(200.f*cos(rad)),
-									col);
+									col, 2);
+								DrawLine(
+									disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))),
+									disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))),
+									disp_x / 2 + int(200.f*sin(rad)),
+									disp_y / 2 + int(200.f*cos(rad)),
+									col, 2);
+								DrawLine(
+									disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))),
+									disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))),
+									disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))),
+									disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))),
+									col, 2);
 							}
 							if (aimpos.z() >= 0.f && aimpos.z() <= 1.f) {
 								if (c.winpos_if.z() >= 0.f && c.winpos_if.z() <= 1.f) {
@@ -760,31 +785,77 @@ public:
 					}
 				}
 			}
+			if (id_near != &chara - &charas[0]) {
+				auto&c = charas[id_near];
+				//if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
+					auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
+					auto dis2 = std::clamp(sqrtf(powf(float(int(c.winpos.x()) - disp_x / 2), 2.f) + powf(float(int(c.winpos.y()) - disp_y / 2), 2.f)), 0.f, 200.f);
+					auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, dis2);
+					DrawLine(
+						disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))),
+						disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))),
+						disp_x / 2 + int(dis2*sin(rad)),
+						disp_y / 2 + int(dis2*cos(rad)),
+						GetColor(255, 255, 0), 2);
+					DrawLine(
+						disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))),
+						disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))),
+						disp_x / 2 + int(dis2*sin(rad)),
+						disp_y / 2 + int(dis2*cos(rad)),
+						GetColor(255, 255, 0), 2);
+					DrawLine(
+						disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))),
+						disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))),
+						disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))),
+						disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))),
+						GetColor(255, 255, 0), 2);
+				//}
+			}
 			if (chara.vehicle.KILL_ID != -1) {
 				font->DrawStringFormat(disp_x / 4, disp_y / 3, GetColor(255, 0, 0), "KILL : %d", chara.vehicle.KILL);
 				font->DrawStringFormat(disp_x / 4, disp_y / 3 + y_r(18, out_disp_y), GetColor(255, 0, 0), "KILL ID : %d", chara.vehicle.KILL_ID);
 			}
 		}
+		else {
+			auto& c = charas[chara.vehicle.DEATH_ID];
+			int siz = int(32.f);
+			float siz_per = 1.f;
+
+			unsigned int col = 0;
+
+			if (c.id == chara.id) {
+				col = GetColor(0, 255, 0);
+			}
+			else {
+				col = GetColor(255, 0, 0);
+			}
+
+			if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f && !c.death) {
+				siz_per = std::clamp((1.f - sqrtf(powf(c.winpos.x() - disp_x / 2, 2) + powf(c.winpos.y() - disp_y / 2, 2)) / float(disp_x / 2)), 0.f, 1.f);
+				siz = int(32.f*siz_per);
+				DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), col, FALSE);
+				siz = int(42.f*siz_per);
+				DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), col, FALSE);
+			}
+		}
 	}
 
 	void item_draw(std::vector<Mainclass::Chara>& charas, Mainclass::Chara& chara, const Mainclass::CAMS& cam_s) {
-		if (!chara.death) {
-			SetCameraNearFar(0.01f, chara.vehicle.use_veh.canlook_dist*3.f);
+		SetCameraNearFar(0.01f, chara.vehicle.use_veh.canlook_dist*3.f);
 
-			VECTOR_ref aimp = (VECTOR_ref)(chara.vehicle.pos) + chara.vehicle.mat.zvec() * (-chara.vehicle.use_veh.canlook_dist*0.8f);
-			//mapparts->map_col_line_nearest(chara.vehicle.pos, &aimp);				//地形
-			aimpos = ConvWorldPosToScreenPos(aimp.get());
-			for (auto& c : charas) {
-				c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - c.vehicle.pos).size() / (600.f / GetFPS()))).get());
-				//pos = c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - pos).size() / (a.spec.speed_a));
-				c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
-			}
-			if (cam_s.Rot >= ADS) {
-				altpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.alt_100_f.first) - (chara.cocks.obj.frame(chara.cocks.alt_100_2_f.first) - chara.cocks.obj.frame(chara.cocks.alt_100_f.first)).Norm()*0.05f).get());
-				spdpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.speed_f.first) - (chara.cocks.obj.frame(chara.cocks.speed2_f.first) - chara.cocks.obj.frame(chara.cocks.speed_f.first)).Norm()*0.05f).get());
-				auto& veh = chara.vehicle;
-				aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
-			}
+		VECTOR_ref aimp = (VECTOR_ref)(chara.vehicle.pos) + chara.vehicle.mat.zvec() * (-chara.vehicle.use_veh.canlook_dist*0.8f);
+		//mapparts->map_col_line_nearest(chara.vehicle.pos, &aimp);				//地形
+		aimpos = ConvWorldPosToScreenPos(aimp.get());
+		for (auto& c : charas) {
+			c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - c.vehicle.pos).size() / (600.f / GetFPS()))).get());
+			//pos = c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - pos).size() / (a.spec.speed_a));
+			c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
+		}
+		if (cam_s.Rot >= ADS) {
+			altpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.alt_100_f.first) - (chara.cocks.obj.frame(chara.cocks.alt_100_2_f.first) - chara.cocks.obj.frame(chara.cocks.alt_100_f.first)).Norm()*0.05f).get());
+			spdpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.speed_f.first) - (chara.cocks.obj.frame(chara.cocks.speed2_f.first) - chara.cocks.obj.frame(chara.cocks.speed_f.first)).Norm()*0.05f).get());
+			auto& veh = chara.vehicle;
+			aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
 		}
 	}
 };
