@@ -67,7 +67,7 @@ public:
 			VECTOR_ref pos;
 			pos.y(1.8f);
 
-			VECTOR_ref pos_mine=VGet(0,15.f,0);
+			VECTOR_ref pos_mine=VGet(15.f, 0, 0);
 
 			bool endp = false;
 			bool startp = false;
@@ -91,9 +91,9 @@ public:
 						if (&ptr_LEFTHAND != nullptr) {
 							if (ptr_LEFTHAND.turn && ptr_LEFTHAND.now) {
 								//
-								if ((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) {
-									ltct = std::clamp<uint8_t>(ltct + 1, 0, ((ptr_LEFTHAND.touch.x() < -0.5f) ? 2 : 0));
-									rtct = std::clamp<uint8_t>(rtct + 1, 0, ((ptr_LEFTHAND.touch.x() > 0.5f) ? 2 : 0));
+								{
+									ltct = std::clamp<uint8_t>(ltct + 1, 0, ((((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) && ptr_LEFTHAND.touch.x() < -0.5f) ? 2 : 0));
+									rtct = std::clamp<uint8_t>(rtct + 1, 0, ((((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) && ptr_LEFTHAND.touch.x() > 0.5f) ? 2 : 0));
 									if (ltct == 1) {
 										++veh.use_id %= (*vehcs).size();
 										MV1AttachAnim((*vehcs)[veh.use_id].obj.get(), 1);
@@ -110,7 +110,7 @@ public:
 								}
 								//
 								if ((ptr_LEFTHAND.on[0] & BUTTON_TRIGGER) != 0) {
-									startp = true;
+									break;
 								}
 								//
 							}
@@ -179,7 +179,8 @@ public:
 					HMDpos = HMDpos - rec_HMD;
 					HMDmat = MATRIX_ref::Axis1(HMDmat.xvec()*-1.f, HMDmat.yvec(), HMDmat.zvec()*-1.f);
 					cam_s.cam.campos = pos_mine + HMDpos;
-					cam_s.cam.camvec = cam_s.cam.campos + HMDmat.zvec();
+					cam_s.cam.camvec = cam_s.cam.campos - HMDmat.zvec();
+					cam_s.cam.camup = HMDmat.yvec();
 				}
 				else {
 					if (!startp) {
@@ -190,6 +191,7 @@ public:
 						easing_set(&cam_s.cam.campos, VGet((1.f - (pos.z() / -120.f)), (1.f - (pos.z() / -120.f)) + 3.f, (1.f - (pos.z() / -120.f)) + 10.f), 0.95f);
 						easing_set(&cam_s.cam.camvec, pos + VGet((1.f - (pos.z() / -120.f)), (1.f - (pos.z() / -120.f)) + 1.f, (1.f - (pos.z() / -120.f))), 0.95f);
 					}
+					cam_s.cam.camup = VGet(0.f, 1.f, 0.f);
 				}
 				//UI_buf
 				{
@@ -243,8 +245,6 @@ public:
 				{
 					//cam_s.cam
 					{
-						//campos,camvec,camupŽæ“¾
-						cam_s.cam.camup = VGet(0.f, 1.f, 0.f);
 						//farŽæ“¾
 						cam_s.cam.far_ = 300.f;
 						//nearŽæ“¾
