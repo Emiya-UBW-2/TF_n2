@@ -1129,7 +1129,6 @@ public:
 		size_t id;
 		size_t aim_cnt = 0;//‘_‚í‚ê‚Ä‚¢‚é‘Šè‚Ì”
 		size_t missile_cnt = 0;//‘_‚í‚ê‚Ä‚¢‚é‘Šè‚Ì”
-
 		float death_timer = 0.f;
 		bool death = false;
 		//‘€ìŠÖ˜A//==================================================

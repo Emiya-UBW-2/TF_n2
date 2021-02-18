@@ -31,6 +31,7 @@ class main_c : Mainclass {
 	SoundHandle se_hit;
 	SoundHandle se_alert;
 	SoundHandle se_alert2;
+	SoundHandle se_timer;
 	SoundHandle bgm_title;
 	SoundHandle bgm_main;
 	float se_vol = 0.35f;
@@ -49,7 +50,9 @@ class main_c : Mainclass {
 		SoundHandle *handle;
 	};
 	std::vector<voice_strs> voice_str;
-
+	//timer
+	float timer = 0.f;
+	float ready_timer = 0.f;
 	//Ý’è
 	bool oldv = false;
 	bool start_c = true;
@@ -91,6 +94,7 @@ public:
 		SetCreate3DSoundFlag(FALSE);
 		se_alert = SoundHandle::Load("data/audio/alert.wav");
 		se_alert2 = SoundHandle::Load("data/audio/alert2.wav");
+		se_timer = SoundHandle::Load("data/audio/timer.wav");
 
 		bgm_title = SoundHandle::Load("data/audio/BGM/title.wav");
 		bgm_main = SoundHandle::Load("data/audio/BGM/main.wav");
@@ -276,15 +280,14 @@ public:
 				SetMouseDispFlag(FALSE);
 				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 
-				voice_[0].handle[0].play(DX_PLAYTYPE_BACK, TRUE);
-				voice_[0].handle[0].vol(255);
+				voice_[0].select = GetRand(voice_[0].handle.size() - 1);
+				voice_[0].handle[voice_[0].select].play(DX_PLAYTYPE_BACK, TRUE);
+				voice_[0].handle[voice_[0].select].vol(255);
 				voice_str.resize(voice_str.size() + 1);
 				voice_str.back().handle = &voice_[0].handle[0];
 				voice_str.back().str = voice_[0].str[0];
-
-				voice_[5].timer = 0.f;
-				voice_[6].timer = 0.f;
-
+				timer = 60.f*5.f;
+				ready_timer = 5.f;
 				while (ProcessMessage() == 0) {
 					const auto waits = GetNowHiPerformanceCount();
 					Debugparts->put_way();
@@ -641,29 +644,39 @@ public:
 									c.key[16] = false;
 									c.key[17] = false;
 								}
+								//
+								if (ready_timer >= 0.f || timer <= 0.f) {
+									c.key[0] = false;
+									c.key[1] = false;
+								}
+								//
 								if (&c != &mine && (c.id == mine.id)) {
 									if (c.vehicle.HP > 0) {
-										if (c.key[0] && GetRand(100) < 10 && voice_[1].timer == 0.f) {
-											voice_[1].select = GetRand(voice_[1].handle.size() - 1);
-											voice_[1].handle[voice_[1].select].play(DX_PLAYTYPE_BACK, TRUE);
-											voice_[1].handle[voice_[1].select].vol(255);
-											voice_[1].timer = float(GetRand(170) + 30) / 10.f;
-											voice_str.resize(voice_str.size() + 1);
-											voice_str.back().handle = &voice_[1].handle[voice_[1].select];
-											voice_str.back().str = voice_[1].str[voice_[1].select];
+										if (c.key[0] && GetRand(100) < 10) {
+											if (CheckSoundMem(voice_[1].handle[voice_[1].select].get()) != TRUE && voice_[1].timer == 0.f) {
+												voice_[1].select = GetRand(voice_[1].handle.size() - 1);
+												voice_[1].handle[voice_[1].select].play(DX_PLAYTYPE_BACK, TRUE);
+												voice_[1].handle[voice_[1].select].vol(255);
+												voice_[1].timer = float(GetRand(170) + 30) / 10.f;
+												voice_str.resize(voice_str.size() + 1);
+												voice_str.back().handle = &voice_[1].handle[voice_[1].select];
+												voice_str.back().str = voice_[1].str[voice_[1].select];
+											}
 										}
-										if (c.key[1] && GetRand(100) < 10 && voice_[2].timer == 0.f) {
-											voice_[2].select = GetRand(voice_[2].handle.size() - 1);
-											voice_[2].handle[voice_[2].select].play(DX_PLAYTYPE_BACK, TRUE);
-											voice_[2].handle[voice_[2].select].vol(255);
-											voice_[2].timer = float(GetRand(170) + 30) / 10.f;
-											voice_str.resize(voice_str.size() + 1);
-											voice_str.back().handle = &voice_[2].handle[voice_[2].select];
-											voice_str.back().str = voice_[2].str[voice_[2].select];
+										if (c.key[1] && GetRand(100) < 10) {
+											if (CheckSoundMem(voice_[2].handle[voice_[2].select].get()) != TRUE && voice_[2].timer == 0.f) {
+												voice_[2].select = GetRand(voice_[2].handle.size() - 1);
+												voice_[2].handle[voice_[2].select].play(DX_PLAYTYPE_BACK, TRUE);
+												voice_[2].handle[voice_[2].select].vol(255);
+												voice_[2].timer = float(GetRand(170) + 30) / 10.f;
+												voice_str.resize(voice_str.size() + 1);
+												voice_str.back().handle = &voice_[2].handle[voice_[2].select];
+												voice_str.back().str = voice_[2].str[voice_[2].select];
+											}
 										}
 										if (c.vehicle.hitf) {
-											if (voice_[3].timer == 0.f) {
-												voice_[3].select = GetRand(voice_[3].handle.size() - 1);
+											voice_[3].select = GetRand(voice_[3].handle.size() - 1);
+											if (CheckSoundMem(voice_[3].handle[voice_[3].select].get()) != TRUE && voice_[3].timer == 0.f) {
 												voice_[3].handle[voice_[3].select].play(DX_PLAYTYPE_BACK, TRUE);
 												voice_[3].handle[voice_[3].select].vol(255);
 												voice_[3].timer = float(GetRand(170) + 30) / 10.f;
@@ -675,58 +688,57 @@ public:
 										}
 										if (c.vehicle.killf) {
 											voice_[4].select = GetRand(voice_[4].handle.size() - 1);
-											if (CheckSoundMem(voice_[4].handle[voice_[4].select].get()) != TRUE) {
+											if (CheckSoundMem(voice_[4].handle[voice_[4].select].get()) != TRUE && voice_[4].timer == 0.f) {
 												voice_[4].handle[voice_[4].select].play(DX_PLAYTYPE_BACK, TRUE);
 												voice_[4].handle[voice_[4].select].vol(255);
+												voice_[4].timer = 0.f;
 												voice_str.resize(voice_str.size() + 1);
 												voice_str.back().handle = &voice_[4].handle[voice_[4].select];
 												voice_str.back().str = voice_[4].str[voice_[4].select];
 											}
 											c.vehicle.killf = false;
 										}
-										if (c.aim_cnt > 0 && GetRand(100) < 10 && voice_[5].timer == 0.f) {
+										if (c.aim_cnt > 0 && GetRand(100) < 10) {
 											voice_[5].select = GetRand(voice_[5].handle.size() - 1);
-											if (CheckSoundMem(voice_[5].handle[voice_[5].select].get()) != TRUE) {
+											if (CheckSoundMem(voice_[5].handle[voice_[5].select].get()) != TRUE && voice_[5].timer == 0.f) {
 												voice_[5].handle[voice_[5].select].play(DX_PLAYTYPE_BACK, TRUE);
 												voice_[5].handle[voice_[5].select].vol(255);
+												voice_[5].timer = float(GetRand(170) + 30) / 10.f;
 												voice_str.resize(voice_str.size() + 1);
 												voice_str.back().handle = &voice_[5].handle[voice_[5].select];
 												voice_str.back().str = voice_[5].str[voice_[5].select];
 											}
-											voice_[5].timer = float(GetRand(170) + 30) / 10.f;
 										}
-										if (c.missile_cnt > 0 && GetRand(100) < 10 && voice_[6].timer == 0.f) {
+										if (c.missile_cnt > 0 && GetRand(100) < 10) {
 											voice_[6].select = GetRand(voice_[6].handle.size() - 1);
-											if (CheckSoundMem(voice_[6].handle[voice_[6].select].get()) != TRUE) {
+											if (CheckSoundMem(voice_[6].handle[voice_[6].select].get()) != TRUE && voice_[6].timer == 0.f) {
 												voice_[6].handle[voice_[6].select].play(DX_PLAYTYPE_BACK, TRUE);
 												voice_[6].handle[voice_[6].select].vol(255);
+												voice_[6].timer = float(GetRand(170) + 30) / 10.f;
 												voice_str.resize(voice_str.size() + 1);
 												voice_str.back().handle = &voice_[6].handle[voice_[6].select];
 												voice_str.back().str = voice_[6].str[voice_[6].select];
 											}
-
-											voice_[6].timer = float(GetRand(170) + 30) / 10.f;
 										}
 										if (c.vehicle.dmgf) {
 											voice_[7].select = GetRand(voice_[7].handle.size() - 1);
-											if (voice_[7].timer == 0.f) {
-												if (CheckSoundMem(voice_[7].handle[voice_[7].select].get()) != TRUE) {
-													voice_[7].handle[voice_[7].select].play(DX_PLAYTYPE_BACK, TRUE);
-													voice_[7].handle[voice_[7].select].vol(255);
-													voice_str.resize(voice_str.size() + 1);
-													voice_str.back().handle = &voice_[7].handle[voice_[7].select];
-													voice_str.back().str = voice_[7].str[voice_[7].select];
-												}
+											if (CheckSoundMem(voice_[7].handle[voice_[7].select].get()) != TRUE && voice_[7].timer == 0.f) {
+												voice_[7].handle[voice_[7].select].play(DX_PLAYTYPE_BACK, TRUE);
+												voice_[7].handle[voice_[7].select].vol(255);
 												voice_[7].timer = float(GetRand(170) + 30) / 10.f;
+												voice_str.resize(voice_str.size() + 1);
+												voice_str.back().handle = &voice_[7].handle[voice_[7].select];
+												voice_str.back().str = voice_[7].str[voice_[7].select];
 											}
 											c.vehicle.dmgf = false;
 										}
 									}
 									if (c.vehicle.deathf) {
 										voice_[8].select = GetRand(voice_[8].handle.size() - 1);
-										if (CheckSoundMem(voice_[8].handle[voice_[8].select].get()) != TRUE) {
+										if (CheckSoundMem(voice_[8].handle[voice_[8].select].get()) != TRUE && voice_[8].timer == 0.f) {
 											voice_[8].handle[voice_[8].select].play(DX_PLAYTYPE_BACK, TRUE);
 											voice_[8].handle[voice_[8].select].vol(255);
+											voice_[8].timer = 0.f;
 											voice_str.resize(voice_str.size() + 1);
 											voice_str.back().handle = &voice_[8].handle[voice_[8].select];
 											voice_str.back().str = voice_[8].str[voice_[8].select];
@@ -1399,6 +1411,16 @@ public:
 												}
 											}
 										}
+										//
+										{
+											if ((ready_timer <= 0.f) || (ready_timer > 0.f && ((GetNowHiPerformanceCount() / 100000) % 10 > 5))) {
+												font18.DrawStringFormat_MID(Drawparts->disp_x / 2, Drawparts->disp_y / 2 - Drawparts->disp_y / 6, GetColor(255, 255, 0), "%02d:%02d", int(timer) / 60, int(timer) % 60);
+											}
+											if (timer <= 0.f) {
+												//ƒŠƒUƒ‹ƒg
+												UIparts->res_draw(mine, Drawparts->use_vr);
+											}
+										}
 									}
 								}, cam_s.cam);
 							}
@@ -1425,6 +1447,20 @@ public:
 						break;
 					}
 					//
+					{
+						if (ready_timer <= 0.f) {
+							timer -= 1.f / GetFPS();
+						}
+						else {
+							ready_timer -= 1.f / GetFPS();
+
+							if ((GetNowHiPerformanceCount() / 100000) % 10 == 0) {
+								if (CheckSoundMem(se_timer.get()) != TRUE) {
+									se_timer.play(DX_PLAYTYPE_BACK, TRUE);
+								}
+							}
+						}
+					}
 				}
 
 				bgm_main.stop();

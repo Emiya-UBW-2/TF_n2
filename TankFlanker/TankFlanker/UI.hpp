@@ -32,6 +32,7 @@ private:
 	//
 	VECTOR_ref aimpos;
 	VECTOR_ref aimpos_2;
+	VECTOR_ref aimpos_3;
 	VECTOR_ref altpos;
 	VECTOR_ref spdpos;
 	size_t id_near = 0;
@@ -749,6 +750,10 @@ public:
 			auto& veh = chara.vehicle;
 			aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
 		}
+		{
+			auto& veh = chara.vehicle;
+			aimpos_3 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(0.f, 0.58f, -1.f), veh.mat)).get());
+		}
 
 		if (!chara.death) {
 			auto& veh = chara.vehicle;
@@ -914,29 +919,29 @@ public:
 
 			if (id_near != &chara - &charas[0]) {
 				auto&c = charas[id_near];
-				//if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
-				auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
-				auto dis2 = std::clamp(sqrtf(powf(float(int(c.winpos.x()) - disp_x / 2), 2.f) + powf(float(int(c.winpos.y()) - disp_y / 2), 2.f)), 0.f, 200.f);
-				auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, dis2);
-				DrawLine(
-					disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))),
-					disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))),
-					disp_x / 2 + int(dis2*sin(rad)),
-					disp_y / 2 + int(dis2*cos(rad)),
-					GetColor(255, 255, 0), 2);
-				DrawLine(
-					disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))),
-					disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))),
-					disp_x / 2 + int(dis2*sin(rad)),
-					disp_y / 2 + int(dis2*cos(rad)),
-					GetColor(255, 255, 0), 2);
-				DrawLine(
-					disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))),
-					disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))),
-					disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))),
-					disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))),
-					GetColor(255, 255, 0), 2);
-				//}
+				if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
+					auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
+					auto dis2 = std::clamp(sqrtf(powf(float(int(c.winpos.x()) - disp_x / 2), 2.f) + powf(float(int(c.winpos.y()) - disp_y / 2), 2.f)), 0.f, 200.f);
+					auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, dis2);
+					DrawLine(
+						disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))),
+						disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))),
+						disp_x / 2 + int(dis2*sin(rad)),
+						disp_y / 2 + int(dis2*cos(rad)),
+						GetColor(255, 255, 0), 2);
+					DrawLine(
+						disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))),
+						disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))),
+						disp_x / 2 + int(dis2*sin(rad)),
+						disp_y / 2 + int(dis2*cos(rad)),
+						GetColor(255, 255, 0), 2);
+					DrawLine(
+						disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))),
+						disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))),
+						disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))),
+						disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))),
+						GetColor(255, 255, 0), 2);
+				}
 			}
 		}
 		else {
@@ -962,5 +967,34 @@ public:
 			}
 		}
 
+	}
+
+	void res_draw(Mainclass::Chara& chara, bool uses_vr = true) {
+		int yyy = 0;
+		int xs = 0, xp = 0, ys = 0, yp = 0;
+		FontHandle* font = (!uses_vr) ? &font18 : &font36;
+		auto ysize = (!uses_vr) ? y_r(18, out_disp_y) : y_r(36, out_disp_y);
+		yyy += ysize;
+		if (aimpos_3.z() >= 0.f && aimpos_3.z() <= 1.f) {
+			xp = (int)(aimpos_3.x());
+			yp = (int)(aimpos_3.y());
+			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
+			DrawBox(xp - disp_x / 6, yp - disp_y / 6, xp + disp_x / 6, yp + disp_y / 6, GetColor(0, 0, 0), TRUE);
+			SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
+
+			font->DrawString(xp - disp_x / 6, yp - disp_y / 6 + yyy, "KILL", GetColor(255, 255, 255));
+			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp - disp_y / 6 + yyy, GetColor(255, 255, 255), "%02d", chara.vehicle.KILL);
+			yyy += ysize*2;
+			font->DrawString(xp - disp_x / 6, yp - disp_y / 6 + yyy, "DEATH", GetColor(255, 255, 255));
+			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp - disp_y / 6 + yyy, GetColor(255, 255, 255), "%02d", chara.vehicle.DEATH);
+			yyy += ysize*2;
+
+			font->DrawString(xp - disp_x / 6, yp + disp_y / 6 - ysize, "SCORE", GetColor(255, 255, 255));
+			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp + disp_y / 6 - ysize, GetColor(255, 255, 255), "%s", 
+				(chara.vehicle.KILL < 3) ? "Airman" : 
+				((chara.vehicle.KILL < 5) ? "Senior Master" : 
+				((chara.vehicle.KILL < 7) ? "Captain" : 
+				((chara.vehicle.KILL < 10) ? "Major" : "General"))));
+		}
 	}
 };
