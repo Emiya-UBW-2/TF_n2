@@ -774,7 +774,7 @@ public:
 								oldv = ptr_.turn && ptr_.now;
 								HMDpos = HMDpos - rec_HMD;
 								HMDmat = MATRIX_ref::Axis1(HMDmat.xvec()*-1.f, HMDmat.yvec(), HMDmat.zvec()*-1.f);
-								eye_pos_ads = HMDpos + VGet(0, -0.28f, 0);
+								eye_pos_ads = HMDpos + VGet(0, -0.42f, 0);
 								eye_pos_ads = VGet(
 									std::clamp(eye_pos_ads.x(), -0.18f, 0.18f),
 									std::clamp(eye_pos_ads.y(), 0.f, 0.8f),
