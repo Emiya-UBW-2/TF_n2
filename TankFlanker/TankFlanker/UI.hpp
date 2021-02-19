@@ -16,6 +16,7 @@ private:
 	GraphHandle bufScreen;
 	//font
 	FontHandle font36;
+	FontHandle font24;
 	FontHandle font18;
 	FontHandle font12;
 	//
@@ -51,6 +52,7 @@ public:
 		bufScreen = GraphHandle::Make(disp_x, disp_y, true);
 
 		font36 = FontHandle::Create(y_r(36, out_disp_y), DX_FONTTYPE_EDGE);
+		font24 = FontHandle::Create(y_r(24, out_disp_y), DX_FONTTYPE_EDGE);
 		font18 = FontHandle::Create(y_r(18, out_disp_y), DX_FONTTYPE_EDGE);
 		font12 = FontHandle::Create(y_r(12, out_disp_y), DX_FONTTYPE_EDGE);
 		MV1::Load("data/model/garage/model.mv1", &garage, false);
@@ -972,8 +974,8 @@ public:
 	void res_draw(Mainclass::Chara& chara, bool uses_vr = true) {
 		int yyy = 0;
 		int xs = 0, xp = 0, ys = 0, yp = 0;
-		FontHandle* font = (!uses_vr) ? &font18 : &font36;
-		auto ysize = (!uses_vr) ? y_r(18, out_disp_y) : y_r(36, out_disp_y);
+		FontHandle* font = (!uses_vr) ? &font24 : &font36;
+		auto ysize = (!uses_vr) ? y_r(24, out_disp_y) : y_r(36, out_disp_y);
 		yyy += ysize;
 		if (aimpos_3.z() >= 0.f && aimpos_3.z() <= 1.f) {
 			xp = (int)(aimpos_3.x());

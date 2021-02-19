@@ -97,7 +97,7 @@ public:
 		se_timer = SoundHandle::Load("data/audio/timer.wav");
 
 		bgm_title = SoundHandle::Load("data/audio/BGM/title.wav");
-		bgm_main = SoundHandle::Load("data/audio/BGM/main.wav");
+		bgm_main = SoundHandle::Load("data/audio/BGM/main2.wav");
 
 		{
 			WIN32_FIND_DATA win32fdt;
