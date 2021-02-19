@@ -24,11 +24,8 @@ class main_c : Mainclass {
 	std::vector<Mainclass::Chara> chara;	//キャラ
 	std::vector<Mainclass::Ammos> Ammo;		//弾薬
 	std::vector<Mainclass::Vehcs> Vehicles;	//車輛データ
-	SoundHandle se_cockpit;
-	SoundHandle se_engine;
-	SoundHandle se_gun;
-	SoundHandle se_missile;
-	SoundHandle se_hit;
+	sounds_3D se;
+
 	SoundHandle se_alert;
 	SoundHandle se_alert2;
 	SoundHandle se_timer;
@@ -85,13 +82,7 @@ public:
 		outScreen2 = GraphHandle::Make(deskx, desky, true);	//描画スクリーン
 		font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 		//その他
-		SetCreate3DSoundFlag(TRUE);
-		se_cockpit = SoundHandle::Load("data/audio/fighter-cockpit1.wav");
-		se_engine = SoundHandle::Load("data/audio/engine.wav");
-		se_gun = SoundHandle::Load("data/audio/hit.wav");
-		se_missile = SoundHandle::Load("data/audio/rolling_rocket.wav");
-		se_hit = SoundHandle::Load("data/audio/destruction.wav");
-		SetCreate3DSoundFlag(FALSE);
+		se.Load();
 		se_alert = SoundHandle::Load("data/audio/alert.wav");
 		se_alert2 = SoundHandle::Load("data/audio/alert2.wav");
 		se_timer = SoundHandle::Load("data/audio/timer.wav");
@@ -155,12 +146,12 @@ public:
 							size_t i = &h - &veh.HP_m[0];
 							if (i >= 3) {
 								if (h > 0) {
-									veh.obj.DrawMesh(veh.use_veh.module_mesh[int(i - 3)].second);
+									veh.obj.DrawMesh(int(veh.use_veh.module_mesh[int(i - 3)].second));
 								}
 								else {
 									if (veh.info_break[i].per > 0.1f) {
 										veh.obj_break.SetMatrix(veh.info_break[i].mat * MATRIX_ref::Mtrans(veh.info_break[i].pos));
-										veh.obj_break.DrawMesh(veh.use_veh.module_mesh[int(i - 3)].second);
+										veh.obj_break.DrawMesh(int(veh.use_veh.module_mesh[int(i - 3)].second));
 									}
 								}
 							}
@@ -239,16 +230,7 @@ public:
 					c.set_human(Vehicles, Ammo);	//
 					c.cocks.set_(cockpit);			//コックピット
 					//
-					c.se_cockpit = se_cockpit.Duplicate();
-					c.se_engine = se_engine.Duplicate();
-					c.se_gun = se_gun.Duplicate();
-					c.se_missile = se_missile.Duplicate();
-					c.se_hit = se_hit.Duplicate();
-					c.se_cockpit.Radius(600.f);
-					c.se_engine.Radius(600.f);
-					c.se_gun.Radius(300.f);
-					c.se_missile.Radius(300.f);
-					c.se_hit.Radius(900.f);
+					c.se.Duplicate(se);
 				}
 				se_alert.vol(int(float(192)*se_vol));
 				se_alert2.vol(int(float(192)*se_vol));
@@ -270,9 +252,9 @@ public:
 					}
 				}
 				for (auto& c : chara) {
-					c.se_cockpit.play(DX_PLAYTYPE_LOOP, TRUE);
-					c.se_cockpit.vol(int(float(128)*se_vol));
-					c.se_engine.play(DX_PLAYTYPE_LOOP, TRUE);
+					c.se.cockpit.play(DX_PLAYTYPE_LOOP, TRUE);
+					c.se.cockpit.vol(int(float(128)*se_vol));
+					c.se.engine.play(DX_PLAYTYPE_LOOP, TRUE);
 				}
 
 				bgm_main.play(DX_PLAYTYPE_LOOP, TRUE);
@@ -306,7 +288,7 @@ public:
 							c.missile_cnt = 0;
 							easing_set(&veh.HP_r, float(veh.HP), 0.95f);
 
-							c.se_engine.vol(int(float(128 + int(127.f * c.vehicle.accel / 100.f))*se_vol));
+							c.se.engine.vol(int(float(128 + int(127.f * c.vehicle.accel / 100.f))*se_vol));
 						}
 					}
 
@@ -1214,11 +1196,11 @@ public:
 					{
 						for (auto& c : chara) {
 							auto& veh = c.vehicle;
-							c.se_cockpit.SetPosition(veh.pos);
-							c.se_engine.SetPosition(veh.pos);
-							c.se_hit.SetPosition(veh.pos);
-							c.se_gun.SetPosition(veh.pos);
-							c.se_missile.SetPosition(veh.pos);
+							c.se.cockpit.SetPosition(veh.pos);
+							c.se.engine.SetPosition(veh.pos);
+							c.se.hit.SetPosition(veh.pos);
+							c.se.gun.SetPosition(veh.pos);
+							c.se.missile.SetPosition(veh.pos);
 						}
 						//アラート
 						{
@@ -1468,11 +1450,11 @@ public:
 				SetMouseDispFlag(TRUE);
 				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 				for (auto& c : chara) {
-					c.se_engine.stop();
-					c.se_cockpit.stop(); //gun
-					c.se_gun.stop(); //gun
-					c.se_missile.stop();
-					c.se_hit.stop(); //gun
+					c.se.engine.stop();
+					c.se.cockpit.stop(); //gun
+					c.se.gun.stop(); //gun
+					c.se.missile.stop();
+					c.se.hit.stop(); //gun
 				}
 			}
 			//解放

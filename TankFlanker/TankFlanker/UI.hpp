@@ -726,7 +726,7 @@ public:
 				}
 			}
 			if (chara.vehicle.KILL_ID != -1) {
-				font->DrawStringFormat(disp_x / 4, disp_y / 3, GetColor(255, 0, 0), "KILL : %d", chara.vehicle.KILL);
+				font->DrawStringFormat(disp_x / 4, disp_y / 3, GetColor(255, 0, 0), "KILL : %d", chara.vehicle.KILL_COUNT);
 				font->DrawStringFormat(disp_x / 4, disp_y / 3 + y_r(18, out_disp_y), GetColor(255, 0, 0), "KILL ID : %d", chara.vehicle.KILL_ID);
 			}
 		}
@@ -848,9 +848,9 @@ public:
 						siz_per = std::clamp((1.f - sqrtf(powf(c.winpos.x() - disp_x / 2, 2) + powf(c.winpos.y() - disp_y / 2, 2)) / float(disp_x / 2)), 0.f, 1.f);
 
 						siz = int(32.f*siz_per);
-						DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), (&c - &charas[0] == id_near) ? GetColor(255, 255, 0) : col, FALSE);
+						DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), (&c - &charas[0] == int(id_near)) ? GetColor(255, 255, 0) : col, FALSE);
 						siz = int(42.f*siz_per);
-						DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), (&c - &charas[0] == id_near) ? GetColor(255, 255, 0) : col, FALSE);
+						DrawBox(int(c.winpos.x()) - y_r(siz, out_disp_y), int(c.winpos.y()) - y_r(siz, out_disp_y), int(c.winpos.x()) + y_r(siz, out_disp_y), int(c.winpos.y()) + y_r(siz, out_disp_y), (&c - &charas[0] == int(id_near)) ? GetColor(255, 255, 0) : col, FALSE);
 
 						xp = int(c.winpos.x()) - y_r(siz, out_disp_y);
 						yp = int(c.winpos.y()) + y_r(siz, out_disp_y);
@@ -872,7 +872,7 @@ public:
 						font->DrawStringFormat(xp, yp + 18, col, "%d m", int((VECTOR_ref(c.vehicle.pos) - chara.vehicle.pos).size()));
 
 						if (c.id != chara.id) {
-							if ((int(c.winpos.x()) < 0 || int(c.winpos.x()) > disp_x || int(c.winpos.y()) < 0 || int(c.winpos.y()) > disp_y) || (&c - &charas[0] != id_near)) {
+							if ((int(c.winpos.x()) < 0 || int(c.winpos.x()) > disp_x || int(c.winpos.y()) < 0 || int(c.winpos.y()) > disp_y) || (&c - &charas[0] != int(id_near))) {
 								auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
 								auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, 200.f);
 								DrawLine(
@@ -919,7 +919,7 @@ public:
 				}
 			}
 
-			if (id_near != &chara - &charas[0]) {
+			if (int(id_near) != &chara - &charas[0]) {
 				auto&c = charas[id_near];
 				if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
 					auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
@@ -985,18 +985,18 @@ public:
 			SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
 
 			font->DrawString(xp - disp_x / 6, yp - disp_y / 6 + yyy, "KILL", GetColor(255, 255, 255));
-			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp - disp_y / 6 + yyy, GetColor(255, 255, 255), "%02d", chara.vehicle.KILL);
+			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp - disp_y / 6 + yyy, GetColor(255, 255, 255), "%02d", chara.vehicle.KILL_COUNT);
 			yyy += ysize * 2;
 			font->DrawString(xp - disp_x / 6, yp - disp_y / 6 + yyy, "DEATH", GetColor(255, 255, 255));
-			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp - disp_y / 6 + yyy, GetColor(255, 255, 255), "%02d", chara.vehicle.DEATH);
+			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp - disp_y / 6 + yyy, GetColor(255, 255, 255), "%02d", chara.vehicle.DEATH_COUNT);
 			yyy += ysize * 2;
 
-			font->DrawString(xp - disp_x / 6, yp + disp_y / 6 - ysize, "SCORE", GetColor(255, 255, 255));
+			font->DrawString(xp - disp_x / 6, yp + disp_y / 6 - ysize, "CLASS", GetColor(255, 255, 255));
 			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp + disp_y / 6 - ysize, GetColor(255, 255, 255), "%s",
-				(chara.vehicle.KILL < 3) ? "Airman" :
-				((chara.vehicle.KILL < 5) ? "Senior Master" :
-				((chara.vehicle.KILL < 7) ? "Captain" :
-					((chara.vehicle.KILL < 10) ? "Major" : "General"))));
+				(chara.vehicle.KILL_COUNT < 3) ? "Airman" :
+				((chara.vehicle.KILL_COUNT < 5) ? "Senior Master" :
+				((chara.vehicle.KILL_COUNT < 7) ? "Captain" :
+					((chara.vehicle.KILL_COUNT < 10) ? "Major" : "General"))));
 		}
 	}
 };

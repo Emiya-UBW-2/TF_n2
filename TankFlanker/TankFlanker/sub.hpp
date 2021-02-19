@@ -134,8 +134,6 @@ public:
 		std::vector<std::pair<size_t, float>> armer_mesh; //装甲ID
 		std::vector<size_t> space_mesh;			  //装甲ID
 		std::vector<std::pair<size_t, size_t>> module_mesh;		  //装甲ID
-		int camo_tex = 0;				  //
-		std::vector<int> camog;				  //
 		bool isfloat = false;			  //浮くかどうか
 		float down_in_water = 0.f;			  //沈む判定箇所
 		float max_speed_limit = 0.f;			  //最高速度(km/h)
@@ -183,8 +181,6 @@ public:
 			this->armer_mesh = t.armer_mesh;
 			this->space_mesh = t.space_mesh;
 			this->module_mesh = t.module_mesh;
-			this->camo_tex = t.camo_tex;
-			this->camog = t.camog;
 			this->isfloat = t.isfloat;
 			this->down_in_water = t.down_in_water;
 			this->max_speed_limit = t.max_speed_limit;
@@ -367,35 +363,6 @@ public:
 						}
 					}
 				}
-				//迷彩
-				{
-					t.camo_tex = -1;
-					for (int i = 0; i < MV1GetTextureNum(t.obj.get()); i++) {
-						std::string p = MV1GetTextureName(t.obj.get(), i);
-						if (p.find("b.", 0) != std::string::npos || p.find("B.", 0) != std::string::npos) {
-							t.camo_tex = i;
-							break;
-						}
-					}
-
-					//t.camo.resize(t.camo.size() + 1);
-					{
-						SetUseTransColor(FALSE);
-						WIN32_FIND_DATA win32fdt;
-						HANDLE hFind;
-						hFind = FindFirstFile(("data/plane/"s + t.name + "/B*.jpg").c_str(), &win32fdt);
-						if (hFind != INVALID_HANDLE_VALUE) {
-							do {
-								if (win32fdt.cFileName[0] != '.') {
-									t.camog.resize(t.camog.size() + 1);
-									t.camog.back() = LoadGraph(("data/plane/"s + t.name + "/" + win32fdt.cFileName).c_str());
-								}
-							} while (FindNextFile(hFind, &win32fdt));
-						} //else{ return false; }
-						FindClose(hFind);
-						SetUseTransColor(TRUE);
-					}
-				}
 				//データ取得
 				{
 					int mdata = FileRead_open(("data/plane/" + t.name + "/data.txt").c_str(), FALSE);
@@ -507,7 +474,7 @@ private:
 						//c->effcs_gun[c->gun_effcnt].count = 0.f;
 						//++c->gun_effcnt %= c->effcs_gun.size();
 					}
-					c->se_gun.play(DX_PLAYTYPE_BACK, TRUE);
+					c->se.gun.play(DX_PLAYTYPE_BACK, TRUE);
 				}
 				else {
 					c->effcs_missile[c->missile_effcnt].first.set(c->vehicle.obj.frame(this->gun_info.frame3.first), u.vec);
@@ -515,7 +482,7 @@ private:
 					c->effcs_missile[c->missile_effcnt].count = 0.f;
 					++c->missile_effcnt %= c->effcs_missile.size();
 
-					c->se_missile.play(DX_PLAYTYPE_BACK, TRUE);
+					c->se.missile.play(DX_PLAYTYPE_BACK, TRUE);
 				}
 			}
 			this->loadcnt = std::max(this->loadcnt - 1.f / GetFPS(), 0.f);
@@ -698,9 +665,9 @@ private:
 		bool deathf = false;
 		bool hitf = false;						//体力
 		bool killf = false;						//体力
-		uint16_t KILL = 0;						//体力
+		uint16_t KILL_COUNT = 0;				//体力
 		int KILL_ID = -1;						//体力
-		uint16_t DEATH = 0;						//体力
+		uint16_t DEATH_COUNT = 0;				//体力
 		int DEATH_ID = -1;						//体力
 		VECTOR_ref pos;							//車体座標
 		MATRIX_ref mat;							//車体回転行列
@@ -728,7 +695,6 @@ private:
 		};
 		std::vector<breaks> info_break;					//ライフ
 
-		size_t camo_sel = 0;						//
 		float wheel_Left = 0.f, wheel_Right = 0.f;			//転輪回転
 		float wheel_Leftadd = 0.f, wheel_Rightadd = 0.f;		//転輪回転
 
@@ -783,20 +749,10 @@ private:
 			//モジュール耐久
 			this->HP_m.resize(this->col.mesh_num());
 
-			for (auto& p : vehcs.graph_HP_m) {
-				this->graph_HP_m.resize(this->graph_HP_m.size() + 1);
-				this->graph_HP_m.back() = p.Duplicate();
-			}
+			this->graph_HP_m.clear();
+			for (auto& p : vehcs.graph_HP_m) { this->graph_HP_m.emplace_back(p.Duplicate()); }
 			graph_HP_m_all = vehcs.graph_HP_m_all.Duplicate();
 			this->info_break.resize(this->col.mesh_num());
-			//迷彩
-			if (this->use_veh.camog.size() > 0) {
-				this->camo_sel %= this->use_veh.camog.size();
-				//GraphBlend(MV1GetTextureGraphHandle(this->obj.get(), this->use_veh.camo_tex), this->use_veh.camog[this->camo_sel], 255, DX_GRAPH_BLEND_NORMAL);
-				MV1SetTextureGraphHandle(this->obj.get(), this->use_veh.camo_tex, this->use_veh.camog[this->camo_sel], FALSE);
-				//GraphBlend(MV1GetTextureGraphHandle(this->obj_break.get(), this->use_veh.camo_tex), this->use_veh.camog[this->camo_sel], 255, DX_GRAPH_BLEND_NORMAL);
-				MV1SetTextureGraphHandle(this->obj_break.get(), this->use_veh.camo_tex, this->use_veh.camog[this->camo_sel], FALSE);
-			}
 			//砲
 			this->Gun_.resize(this->use_veh.gunframe.size());
 			for (auto& cg : this->Gun_) {
@@ -808,15 +764,16 @@ private:
 			this->obj.Dispose();
 			this->obj_break.Dispose();
 			this->col.Dispose();
+
 			this->hit_check = false;
 			this->HP = 0;
 			this->dmgf = false;
 			this->deathf = false;
 			this->hitf = false;
 			this->killf = false;
-			this->KILL = 0;						//体力
+			this->KILL_COUNT = 0;						//体力
 			this->KILL_ID = -1;						//体力
-			this->DEATH = 0;						//体力
+			this->DEATH_COUNT = 0;						//体力
 			this->DEATH_ID = -1;						//体力
 
 			for (auto& hz : this->hits) {
@@ -833,7 +790,7 @@ private:
 			this->wheel_Right = 0.f;
 			this->wheel_Leftadd = 0.f;
 			this->wheel_Rightadd = 0.f;
-			for (auto& cg : this->Gun_) { cg.clear(); }
+			std::for_each(this->Gun_.begin(), this->Gun_.end(), [](Guns& g) {g.clear(); });					//砲
 			this->Gun_.clear();
 
 			this->reset();
@@ -846,26 +803,14 @@ private:
 
 			this->accel = 60.f;
 			this->speed = this->use_veh.min_speed_limit;
-			//リセット
+
 			this->pos_spawn = pos_;
 			this->mat_spawn = mat_;
 			this->pos = this->pos_spawn;
 			this->mat = this->mat_spawn;
-			//砲
-			for (auto& cg : this->Gun_) {
-				cg.set();
-			}
-			//ヒットポイント
-			this->HP = this->use_veh.HP;
-			//モジュール耐久
-			for (auto& h : this->HP_m) {
-				h = this->use_veh.HP;
-			}
-			if (this->HP_m.size() > 2) {
-				this->HP_m[0] = 1;
-				this->HP_m[1] = 1;
-				this->HP_m[2] = 1;
-			}
+			std::for_each(this->Gun_.begin(), this->Gun_.end(), [](Guns& g) {g.set(); });					//砲
+			this->HP = this->use_veh.HP;																	//ヒットポイント
+			std::for_each(this->HP_m.begin(), this->HP_m.end(), [&](int16_t& m) {m = this->use_veh.HP; });	//モジュール耐久
 		}
 	};
 public:
@@ -884,6 +829,38 @@ public:
 	};
 	typedef std::pair<int, float> p_animes;
 	class Chara;
+	//
+	class sounds_3D {
+	public:
+		SoundHandle cockpit;
+		SoundHandle engine;
+		SoundHandle gun;
+		SoundHandle missile;
+		SoundHandle hit;
+
+		void Load() {
+			SetCreate3DSoundFlag(TRUE);
+			this->cockpit = SoundHandle::Load("data/audio/fighter-cockpit1.wav");
+			this->engine = SoundHandle::Load("data/audio/engine.wav");
+			this->gun = SoundHandle::Load("data/audio/hit.wav");
+			this->missile = SoundHandle::Load("data/audio/rolling_rocket.wav");
+			this->hit = SoundHandle::Load("data/audio/destruction.wav");
+			SetCreate3DSoundFlag(FALSE);
+		}
+
+		void Duplicate(sounds_3D& handle) {
+			this->cockpit = handle.cockpit.Duplicate();
+			this->engine = handle.engine.Duplicate();
+			this->gun = handle.gun.Duplicate();
+			this->missile = handle.missile.Duplicate();
+			this->hit = handle.hit.Duplicate();
+			this->cockpit.Radius(600.f);
+			this->engine.Radius(600.f);
+			this->gun.Radius(300.f);
+			this->missile.Radius(300.f);
+			this->hit.Radius(900.f);
+		}
+	};
 	//コックピット
 	class cockpits {
 	public:
@@ -1146,13 +1123,10 @@ public:
 		vehicles vehicle;
 		VECTOR_ref winpos;
 		VECTOR_ref winpos_if;
-		SoundHandle se_cockpit;
-		SoundHandle se_engine;
-		SoundHandle se_gun;
-		SoundHandle se_missile;
-		SoundHandle se_hit;
 
-		cockpits cocks;	//コックピット
+		sounds_3D se;
+		//コックピット
+		cockpits cocks;
 		//セット
 		void set_human(const std::vector<Vehcs>& vehcs, const std::vector<Ammos>& Ammo_) {
 			std::fill(this->key.begin(), this->key.end(), false); //操作
@@ -1234,7 +1208,7 @@ public:
 							continue;
 						}
 						//
-						t.se_hit.play(DX_PLAYTYPE_BACK, TRUE);
+						t.se.hit.play(DX_PLAYTYPE_BACK, TRUE);
 						//当たり判定を近い順にソート
 						std::sort(veh_t.hits.begin(), veh_t.hits.end(), [](const hit_data& x, const hit_data& y) { return x.sort.second < y.sort.second; });
 						//ダメージ面に届くまで判定
@@ -1271,11 +1245,11 @@ public:
 										veh_t.dmgf = true;
 										this->vehicle.hitf = true;
 										if (veh_t.HP == 0 && ttn != veh_t.HP) {
-											this->vehicle.KILL++;
+											this->vehicle.KILL_COUNT++;
 											this->vehicle.KILL_ID = (int)(&t - &tgts[0]);
 											veh_t.deathf = true;
 											this->vehicle.killf = true;
-											veh_t.DEATH++;
+											veh_t.DEATH_COUNT++;
 											veh_t.DEATH_ID = (int)(this - &tgts[0]);
 											t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
 										}
