@@ -874,18 +874,19 @@ public:
 						if (c.id != chara.id) {
 							if ((int(c.winpos.x()) < 0 || int(c.winpos.x()) > disp_x || int(c.winpos.y()) < 0 || int(c.winpos.y()) > disp_y) || (&c - &charas[0] != int(id_near))) {
 								auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
-								auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, 200.f);
+								auto dis2 = std::clamp(sqrtf(powf(float(int(c.winpos.x()) - disp_x / 2), 2.f) + powf(float(int(c.winpos.y()) - disp_y / 2), 2.f)), 0.f, 200.f);
+								auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, dis2);
 								DrawLine(
 									disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))),
 									disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))),
-									disp_x / 2 + int(200.f*sin(rad)),
-									disp_y / 2 + int(200.f*cos(rad)),
+									disp_x / 2 + int(dis2*sin(rad)),
+									disp_y / 2 + int(dis2*cos(rad)),
 									col, 2);
 								DrawLine(
 									disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))),
 									disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))),
-									disp_x / 2 + int(200.f*sin(rad)),
-									disp_y / 2 + int(200.f*cos(rad)),
+									disp_x / 2 + int(dis2*sin(rad)),
+									disp_y / 2 + int(dis2*cos(rad)),
 									col, 2);
 								DrawLine(
 									disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))),
