@@ -70,7 +70,7 @@ public:
 			VECTOR_ref pos;
 			pos.y(1.8f);
 
-			VECTOR_ref pos_mine=VGet(15.f, 0, 0);
+			VECTOR_ref pos_mine = VGet(15.f, 0, 0);
 
 			bool endp = false;
 			bool startp = false;
@@ -341,7 +341,7 @@ public:
 
 	void draw(
 		std::vector<Mainclass::Chara>& charas,
-		Mainclass::Chara& chara,	
+		Mainclass::Chara& chara,
 		const bool& adss,
 		const DXDraw::system_VR& vr_sys,
 		bool uses_vr = true
@@ -732,7 +732,7 @@ public:
 		}
 	}
 
-	void item_draw(std::vector<Mainclass::Chara>& charas, Mainclass::Chara& chara, const Mainclass::CAMS& cam_s, const bool& adss,bool uses_vr = true) {
+	void item_draw(std::vector<Mainclass::Chara>& charas, Mainclass::Chara& chara, const Mainclass::CAMS& cam_s, const bool& adss, bool uses_vr = true) {
 		int xs = 0, xp = 0, ys = 0, yp = 0;
 		FontHandle* font = (!uses_vr) ? &font18 : &font36;
 
@@ -986,17 +986,17 @@ public:
 
 			font->DrawString(xp - disp_x / 6, yp - disp_y / 6 + yyy, "KILL", GetColor(255, 255, 255));
 			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp - disp_y / 6 + yyy, GetColor(255, 255, 255), "%02d", chara.vehicle.KILL);
-			yyy += ysize*2;
+			yyy += ysize * 2;
 			font->DrawString(xp - disp_x / 6, yp - disp_y / 6 + yyy, "DEATH", GetColor(255, 255, 255));
 			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp - disp_y / 6 + yyy, GetColor(255, 255, 255), "%02d", chara.vehicle.DEATH);
-			yyy += ysize*2;
+			yyy += ysize * 2;
 
 			font->DrawString(xp - disp_x / 6, yp + disp_y / 6 - ysize, "SCORE", GetColor(255, 255, 255));
-			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp + disp_y / 6 - ysize, GetColor(255, 255, 255), "%s", 
-				(chara.vehicle.KILL < 3) ? "Airman" : 
-				((chara.vehicle.KILL < 5) ? "Senior Master" : 
-				((chara.vehicle.KILL < 7) ? "Captain" : 
-				((chara.vehicle.KILL < 10) ? "Major" : "General"))));
+			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp + disp_y / 6 - ysize, GetColor(255, 255, 255), "%s",
+				(chara.vehicle.KILL < 3) ? "Airman" :
+				((chara.vehicle.KILL < 5) ? "Senior Master" :
+				((chara.vehicle.KILL < 7) ? "Captain" :
+					((chara.vehicle.KILL < 10) ? "Major" : "General"))));
 		}
 	}
 };

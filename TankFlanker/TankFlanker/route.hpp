@@ -35,7 +35,7 @@ class main_c : Mainclass {
 	SoundHandle bgm_title;
 	SoundHandle bgm_main;
 	float se_vol = 0.35f;
-	class voices{
+	class voices {
 	public:
 		std::vector <std::string> str;
 		std::vector<SoundHandle> handle;
@@ -84,7 +84,7 @@ public:
 		auto mapparts = std::make_unique<Mapclass>();																	//map
 		outScreen2 = GraphHandle::Make(deskx, desky, true);	//描画スクリーン
 		font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
-	//その他
+		//その他
 		SetCreate3DSoundFlag(TRUE);
 		se_cockpit = SoundHandle::Load("data/audio/fighter-cockpit1.wav");
 		se_engine = SoundHandle::Load("data/audio/engine.wav");
@@ -155,12 +155,12 @@ public:
 							size_t i = &h - &veh.HP_m[0];
 							if (i >= 3) {
 								if (h > 0) {
-									veh.obj.DrawMesh(veh.use_veh.module_mesh[int(i-3)].second);
+									veh.obj.DrawMesh(veh.use_veh.module_mesh[int(i - 3)].second);
 								}
 								else {
 									if (veh.info_break[i].per > 0.1f) {
 										veh.obj_break.SetMatrix(veh.info_break[i].mat * MATRIX_ref::Mtrans(veh.info_break[i].pos));
-										veh.obj_break.DrawMesh(veh.use_veh.module_mesh[int(i-3)].second);
+										veh.obj_break.DrawMesh(veh.use_veh.module_mesh[int(i - 3)].second);
 									}
 								}
 							}
@@ -205,7 +205,7 @@ public:
 				//キャラ選択
 				bgm_title.play(DX_PLAYTYPE_LOOP, TRUE);
 				bgm_title.vol(int(float(255)*0.5f));
-				if (!UIparts->select_window(&chara[0], &Vehicles,Drawparts)) {
+				if (!UIparts->select_window(&chara[0], &Vehicles, Drawparts)) {
 					break;
 				}
 				bgm_title.stop();
@@ -230,9 +230,9 @@ public:
 					float rad = deg2rad(-130);
 					c.vehicle.spawn(VGet(
 
-						float(-2000+4000 * int(i / (chara.size() / 2)))*sin(rad) + float(100 * (i % (chara.size() / 2)))*cos(rad),
+						float(-2000 + 4000 * int(i / (chara.size() / 2)))*sin(rad) + float(100 * (i % (chara.size() / 2)))*cos(rad),
 						1500.f,
-						float(-2000+4000 * int(i / (chara.size() / 2)))*cos(rad) - float(100 * (i % (chara.size() / 2)))*sin(rad)
+						float(-2000 + 4000 * int(i / (chara.size() / 2)))*cos(rad) - float(100 * (i % (chara.size() / 2)))*sin(rad)
 					), MATRIX_ref::RotY(deg2rad(((c.id == 0) ? 180 : 0) - 130)));
 
 					//キャラ設定

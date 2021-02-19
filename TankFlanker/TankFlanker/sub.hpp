@@ -87,7 +87,7 @@ public:
 				this->gndsmkeffcs.scale = 0.1f;
 			}
 			template<class Y, class D>
-			void math(std::unique_ptr<Y, D>& mapparts , Chara* c,bool *hit_f) {
+			void math(std::unique_ptr<Y, D>& mapparts, Chara* c, bool *hit_f) {
 				auto& veh = c->vehicle;
 				easing_set(&this->gndsmkeffcs.scale, 0.01f, 0.9f);
 				auto tmp = veh.obj.frame(int(this->frame.first + 1)) - VGet(0.f, 0.2f, 0.f);
@@ -333,7 +333,7 @@ public:
 					else if (p.find("視点", 0) != std::string::npos) {
 						t.fps_view.first = i;
 						t.fps_view.second = t.obj.frame(t.fps_view.first);
-					}	
+					}
 					else if (p.find("センター", 0) != std::string::npos) {
 						t.wingframe.resize(t.wingframe.size() + 1);
 						t.wingframe.back().frame.first = i;
@@ -482,7 +482,7 @@ private:
 				}
 			}
 		}
-		void math(const bool& key,Chara* c) {
+		void math(const bool& key, Chara* c) {
 			if (key && this->loadcnt == 0 && this->rounds > 0) {
 				auto& u = this->bullet[this->usebullet];
 				++this->usebullet %= this->bullet.size();
@@ -522,7 +522,7 @@ private:
 		}
 		//要改善
 		template<class Y, class D>
-		void math_reco(std::unique_ptr<Y, D>& mapparts,Chara* c, std::vector<Chara>* chara) {
+		void math_reco(std::unique_ptr<Y, D>& mapparts, Chara* c, std::vector<Chara>* chara) {
 			for (auto& a : this->bullet) {
 				float size = 3.f;
 				for (int z = 0; z < int(size); z++) {
@@ -622,7 +622,7 @@ private:
 										if (dist > p) {
 											dist = p;
 											id = &t - &(*chara)[0];
-											pos = t.vehicle.pos+ (t.vehicle.mat.zvec() * (-t.vehicle.speed / GetFPS()))*((a.pos - pos).size()/ (a.spec.speed_a));
+											pos = t.vehicle.pos + (t.vehicle.mat.zvec() * (-t.vehicle.speed / GetFPS()))*((a.pos - pos).size() / (a.spec.speed_a));
 										}
 									}
 									if (id != chara->size()) {
@@ -719,7 +719,7 @@ private:
 		std::vector<int16_t> HP_m;					//ライフ
 		std::vector<GraphHandle> graph_HP_m;		//ライフ
 		GraphHandle graph_HP_m_all;
-		struct breaks{
+		struct breaks {
 			VECTOR_ref pos;							//車体座標
 			MATRIX_ref mat;							//車体回転行列
 			VECTOR_ref add;							//車体加速度

@@ -1,6 +1,6 @@
 #pragma once
 
-class Mapclass:Mainclass {
+class Mapclass :Mainclass {
 private:
 	//マップ
 	MV1 map, map_col;					    //地面
