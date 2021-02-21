@@ -1,0 +1,32 @@
+仮名｢フライト趣味レーター｣ 体験版 by 笑也素人　2018/08/21
+
+最低動作環境
+　windows vista以降
+　CPU Celeron 2.0GHz~
+　RAM 512MB以上
+　1024x768以上のモニター
+
+推奨動作環境
+　windows vista以降
+　CPU Corei3 2.0GHz~
+　RAM 1GB以上
+　1260x768以上のモニター
+
+遊び方
+　zipを解凍後game.exeを起動することでゲームが開始できます。(インストールは不要です。)
+
+素材
+　■サイト名：On-Jin ～音人～　　　　　　　様　■サイトアドレス：https://on-jin.com/
+　　　　　　　効果音辞典　　 　　　　　　　様　　　　　　　　　　https://sounddictionary.info/
+　　　　　　　フリー音楽素材/魔王魂　　　　様　　　　　　　　　　https://maoudamashii.jokersounds.com/
+　　　　　　　フリー効果音素材 くらげ工匠　様　　　　　　　　　　http://www.kurage-kosho.info/index.html
+　　　　　　　ポケットサウンド　　　　　　 様 　　　　　　　　　 https://pocket-se.info/
+　　　　　　　効果音ラボ　　　　　　　　　 様　　　　　　　　　　https://soundeffect-lab.info/
+　　　　　　　Music is VFR　　　　　　　　 様　　　　　　　　　　http://musicisvfr.com/
+　　　　　　　＝ Jagd Tiger = 　　　　　　 様 　　　　　　　　　 http://commons.nicovideo.jp/material/nc95449
+　　　　　　　国土地理院　　　　　　　　　 様 　　　　　　　　　 https://cyberjapandata.gsi.go.jp/3d/　を加工して作成
+
+バージョン情報
+　2018/08/21　体験版0.1.0公開
+　2018/08/27　0.2.0公開
+　2018/09/02　0.3.0公開

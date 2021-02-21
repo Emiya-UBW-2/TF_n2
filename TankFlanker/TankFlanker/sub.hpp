@@ -844,7 +844,7 @@ public:
 			this->engine = SoundHandle::Load("data/audio/engine.wav");
 			this->gun = SoundHandle::Load("data/audio/hit.wav");
 			this->missile = SoundHandle::Load("data/audio/rolling_rocket.wav");
-			this->hit = SoundHandle::Load("data/audio/destruction.wav");
+			this->hit = SoundHandle::Load("data/audio/fall.wav");
 			SetCreate3DSoundFlag(FALSE);
 		}
 

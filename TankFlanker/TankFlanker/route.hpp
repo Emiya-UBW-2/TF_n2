@@ -31,6 +31,7 @@ class main_c : Mainclass {
 	SoundHandle se_timer;
 	SoundHandle bgm_title;
 	SoundHandle bgm_main;
+	SoundHandle bgm_win;
 	float se_vol = 0.35f;
 	class voices {
 	public:
@@ -55,6 +56,7 @@ class main_c : Mainclass {
 	bool start_c = true;
 	bool start_c2 = true;
 	bool ending = true;
+	bool ending_win = true;
 	float fov_pc = 45.f;
 public:
 	main_c() {
@@ -88,7 +90,8 @@ public:
 		se_timer = SoundHandle::Load("data/audio/timer.wav");
 
 		bgm_title = SoundHandle::Load("data/audio/BGM/title.wav");
-		bgm_main = SoundHandle::Load("data/audio/BGM/main2.wav");
+		bgm_main = SoundHandle::Load(std::string("data/audio/BGM/bgm")+std::to_string(GetRand(3))+".wav");
+		bgm_win = SoundHandle::Load("data/audio/BGM/win.wav");
 
 		{
 			WIN32_FIND_DATA win32fdt;
@@ -258,10 +261,11 @@ public:
 				}
 
 				bgm_main.play(DX_PLAYTYPE_LOOP, TRUE);
+
 				bgm_main.vol(int(float(255)*0.5f));
+				bgm_win.vol(int(float(255)*0.5f));
 				SetMouseDispFlag(FALSE);
 				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
-
 				voice_[0].select = GetRand(voice_[0].handle.size() - 1);
 				voice_[0].handle[voice_[0].select].play(DX_PLAYTYPE_BACK, TRUE);
 				voice_[0].handle[voice_[0].select].vol(255);
@@ -1432,6 +1436,14 @@ public:
 					{
 						if (ready_timer <= 0.f) {
 							timer -= 1.f / GetFPS();
+							if (timer <= 0.f && ending_win) {
+								bgm_main.stop();
+								bgm_win.play(DX_PLAYTYPE_BACK, TRUE);
+								ending_win = false;
+							}
+							if (timer <= 0.f) {
+								timer = 0.f;
+							}
 						}
 						else {
 							ready_timer -= 1.f / GetFPS();
@@ -1445,7 +1457,9 @@ public:
 					}
 				}
 
+				ending_win = true;
 				bgm_main.stop();
+				bgm_win.stop();
 
 				SetMouseDispFlag(TRUE);
 				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
@@ -1456,6 +1470,8 @@ public:
 					c.se.missile.stop();
 					c.se.hit.stop(); //gun
 				}
+				se_alert.stop();
+				se_alert2.stop();
 			}
 			//‰ð•ú
 			{
