@@ -58,6 +58,17 @@ class main_c : Mainclass {
 	bool ending = true;
 	bool ending_win = true;
 	float fov_pc = 45.f;
+	//
+	struct keys {
+		int mac = 0, px = 0, py = 0;
+		char onhandle[256], offhandle[256];
+	};
+	struct keyhandle {
+		keys key;
+		GraphHandle onhandle, offhandle;
+	};
+	std::vector<keyhandle> keyg;
+	std::vector < std::pair<int, std::string> > key_use_ID;
 public:
 	main_c() {
 		//設定読み込み
@@ -92,6 +103,49 @@ public:
 		bgm_title = SoundHandle::Load("data/audio/BGM/title.wav");
 		bgm_main = SoundHandle::Load(std::string("data/audio/BGM/bgm")+std::to_string(GetRand(3))+".wav");
 		bgm_win = SoundHandle::Load("data/audio/BGM/win.wav");
+
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_W,"下降"));
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_A, "左ロール"));
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_S, "上昇"));
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_D, "右ロール"));
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_Q, "左ヨー"));
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_E, "右ヨー"));
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_R, "スロットル開く"));
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_F, "スロットル絞る"));
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_G, "ランディングブレーキ"));
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_LSHIFT, "精密動作"));
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_O, "タイトル画面に戻る"));
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_ESCAPE, "強制終了"));
+		{
+			std::fstream file;
+			/*
+			std::vector<keys> key;
+			file.open("data/1.dat", std::ios::binary | std::ios::out);
+			for (auto& m : key)
+				file.write((char*)&m, sizeof(m));
+			file.close();
+			//*/
+			//*
+			file.open("data/1.dat", std::ios::binary | std::ios::in);
+			keys keytmp;
+			while (true) {
+				file.read((char*)&keytmp, sizeof(keytmp));
+				if (file.eof()) {
+					break;
+				}
+				for (auto& k : key_use_ID) {
+					if (keytmp.mac == k.first) {
+						keyg.resize(keyg.size() + 1);
+						keyg.back().key = keytmp;
+						keyg.back().onhandle = GraphHandle::Load(keyg.back().key.onhandle);
+						keyg.back().offhandle = GraphHandle::Load(keyg.back().key.offhandle);
+						break;
+					}
+				}
+			}
+			file.close();
+			//*/
+		}
 
 		{
 			WIN32_FIND_DATA win32fdt;
@@ -293,6 +347,17 @@ public:
 							easing_set(&veh.HP_r, float(veh.HP), 0.95f);
 
 							c.se.engine.vol(int(float(128 + int(127.f * c.vehicle.accel / 100.f))*se_vol));
+
+							if (veh.kill_f) {
+								veh.kill_time -= 1.f / GetFPS();
+								if (veh.kill_time <= 0.f) {
+									veh.kill_time = 0.f;
+									veh.kill_f = false;
+								}
+							}
+							if (veh.HP == 0) {
+								veh.HP_m[GetRand(veh.HP_m.size() - 1)] = 0;
+							}
 						}
 					}
 
@@ -516,53 +581,32 @@ public:
 							if (!Drawparts->use_vr) {
 								mine.key[0] = ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0);   //射撃
 								mine.key[1] = ((GetMouseInput() & MOUSE_INPUT_MIDDLE) != 0); //マシンガン
-								mine.key[2] = (CheckHitKey(KEY_INPUT_W) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
-								mine.key[3] = (CheckHitKey(KEY_INPUT_S) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
-								mine.key[4] = (CheckHitKey(KEY_INPUT_D) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
-								mine.key[5] = (CheckHitKey(KEY_INPUT_A) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
+								mine.key[2] = (CheckHitKey(key_use_ID[0].first) != 0) && (CheckHitKey(key_use_ID[9].first) == 0);
+								mine.key[3] = (CheckHitKey(key_use_ID[2].first) != 0) && (CheckHitKey(key_use_ID[9].first) == 0);
+								mine.key[4] = (CheckHitKey(key_use_ID[3].first) != 0) && (CheckHitKey(key_use_ID[9].first) == 0);
+								mine.key[5] = (CheckHitKey(key_use_ID[1].first) != 0) && (CheckHitKey(key_use_ID[9].first) == 0);
 								//ヨー
-								mine.key[6] = (CheckHitKey(KEY_INPUT_Q) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
-								mine.key[7] = (CheckHitKey(KEY_INPUT_E) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) == 0);
+								mine.key[6] = (CheckHitKey(key_use_ID[4].first) != 0) && (CheckHitKey(key_use_ID[9].first) == 0);
+								mine.key[7] = (CheckHitKey(key_use_ID[5].first) != 0) && (CheckHitKey(key_use_ID[9].first) == 0);
 								//スロットル
-								mine.key[8] = (CheckHitKey(KEY_INPUT_R) != 0);
-								mine.key[9] = (CheckHitKey(KEY_INPUT_F) != 0);
+								mine.key[8] = (CheckHitKey(key_use_ID[6].first) != 0);
+								mine.key[9] = (CheckHitKey(key_use_ID[7].first) != 0);
 								//脚
 								mine.key[10] = false;
 								//ブレーキ
-								mine.key[11] = (CheckHitKey(KEY_INPUT_G) != 0);
+								mine.key[11] = (CheckHitKey(key_use_ID[8].first) != 0);
 								//精密操作
-								mine.key[12] = (CheckHitKey(KEY_INPUT_W) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								mine.key[13] = (CheckHitKey(KEY_INPUT_S) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								mine.key[14] = (CheckHitKey(KEY_INPUT_D) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								mine.key[15] = (CheckHitKey(KEY_INPUT_A) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								mine.key[16] = (CheckHitKey(KEY_INPUT_Q) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
-								mine.key[17] = (CheckHitKey(KEY_INPUT_E) != 0) && (CheckHitKey(KEY_INPUT_LSHIFT) != 0);
+								mine.key[12] = (CheckHitKey(key_use_ID[0].first) != 0) && (CheckHitKey(key_use_ID[9].first) != 0);
+								mine.key[13] = (CheckHitKey(key_use_ID[2].first) != 0) && (CheckHitKey(key_use_ID[9].first) != 0);
+								mine.key[14] = (CheckHitKey(key_use_ID[3].first) != 0) && (CheckHitKey(key_use_ID[9].first) != 0);
+								mine.key[15] = (CheckHitKey(key_use_ID[1].first) != 0) && (CheckHitKey(key_use_ID[9].first) != 0);
+
+								mine.key[16] = (CheckHitKey(key_use_ID[4].first) != 0) && (CheckHitKey(key_use_ID[9].first) != 0);
+								mine.key[17] = (CheckHitKey(key_use_ID[5].first) != 0) && (CheckHitKey(key_use_ID[9].first) != 0);
 							}
 							//VR専用
 							if (Drawparts->use_vr) {
-								mine.key[0] = false;   //射撃
-								mine.key[1] = false; //マシンガン
-								mine.key[2] = false;
-								mine.key[3] = false;
-								mine.key[4] = false;
-								mine.key[5] = false;
-								//ヨー
-								mine.key[6] = false;
-								mine.key[7] = false;
-								//スロットル
-								mine.key[8] = false;
-								mine.key[9] = false;
-								//脚
-								mine.key[10] = false;
-								//ブレーキ
-								mine.key[11] = false;
-								//精密操作
-								mine.key[12] = false;
-								mine.key[13] = false;
-								mine.key[14] = false;
-								mine.key[15] = false;
-								mine.key[16] = false;
-								mine.key[17] = false;
+								std::for_each(mine.key.begin(), mine.key.end(), [](bool& g) {g = false; });
 
 								auto& ptr_LEFTHAND = *Drawparts->get_device_hand1();
 								if (&ptr_LEFTHAND != nullptr) {
@@ -570,7 +614,7 @@ public:
 										//メイン武器
 										mine.key[0] = mine.key[0] || ((ptr_LEFTHAND.on[0] & BUTTON_TRIGGER) != 0);
 										//サブ武器
-										mine.key[1] = mine.key[1] || ((ptr_LEFTHAND.on[1] & vr::ButtonMaskFromId(vr::EVRButtonId::k_EButton_IndexController_B)) != 0);
+										mine.key[1] = mine.key[1] || ((ptr_LEFTHAND.on[1] & BUTTON_TOPBUTTON_B) != 0);
 										//ピッチ
 										mine.key[2] = mine.key[2] || (ptr_LEFTHAND.yvec.y() > sinf(deg2rad(24)));
 										mine.key[3] = mine.key[3] || (ptr_LEFTHAND.yvec.y() < sinf(deg2rad(-18)));
@@ -611,24 +655,7 @@ public:
 							}
 							for (auto& c : chara) {
 								if (c.death) {
-									c.key[0] = false;
-									c.key[1] = false;
-									c.key[2] = false;
-									c.key[3] = false;
-									c.key[4] = false;
-									c.key[5] = false;
-									c.key[6] = false;
-									c.key[7] = false;
-									c.key[8] = false;
-									c.key[9] = false;
-									c.key[10] = false;
-									c.key[11] = false;
-									c.key[12] = false;
-									c.key[13] = false;
-									c.key[14] = false;
-									c.key[15] = false;
-									c.key[16] = false;
-									c.key[17] = false;
+									std::for_each(c.key.begin(), c.key.end(), [](bool& g) {g = false; });
 								}
 								//
 								if (ready_timer >= 0.f || timer <= 0.f) {
@@ -1099,7 +1126,7 @@ public:
 										}
 										if (a.count >= 0.f) {
 											a.count += 1.f / GetFPS();
-											if (a.count >= 3.f) {
+											if (a.count >= 4.5f) {
 												a.first.handle.Stop();
 												a.count = -1.f;
 											}
@@ -1118,7 +1145,7 @@ public:
 										}
 										if (a.count >= 0.f) {
 											a.count += 1.f / GetFPS();
-											if (a.count >= 3.f) {
+											if (a.count >= 4.5f) {
 												a.first.handle.Stop();
 												a.count = -1.f;
 											}
@@ -1187,7 +1214,7 @@ public:
 									veh.info_break[i].per = 1.f;
 								}
 								else {
-									veh.info_break[i].add.yadd(M_GR / powf(GetFPS(), 2.f));
+									veh.info_break[i].add.yadd(M_GR / powf(GetFPS(), 2.f)/2.f);
 									veh.info_break[i].pos += veh.info_break[i].add + (veh.info_break[i].mat.zvec() * (-veh.info_break[i].speed / GetFPS()));
 									veh.info_break[i].per = std::max(veh.info_break[i].per - 1.f / GetFPS() / 10.f, 0.f);
 								}
@@ -1420,16 +1447,35 @@ public:
 							else {
 								Drawparts->outScreen[0].DrawGraph(0, 0, false);
 							}
+
+							{
+								int xp_s = 100, yp_s = 300, y_size = 25;
+								int xp_t = 0, yp_t = 0;
+								for (auto& m : keyg) {
+									for (auto& i : key_use_ID) {
+										if (m.key.mac == i.first) {
+											if (CheckHitKey(m.key.mac) != 0) {
+												m.onhandle.DrawRotaGraph(xp_s + y_size / 2, yp_s + y_size / 2, float(y_size - 2) / 30.f, 0.f, false);
+											}
+											else {
+												m.offhandle.DrawRotaGraph(xp_s + y_size / 2, yp_s + y_size / 2, float(y_size - 2) / 30.f, 0.f, false);
+											}
+											font18.DrawString(xp_s + y_size * 2, yp_s + y_size - 18, i.second, GetColor(255, 255, 255)); yp_s += y_size;
+										}
+									}
+								}
+							}
+
 							Debugparts->end_way();
 							Debugparts->debug(10, 10, float(GetNowHiPerformanceCount() - waits) / 1000.f);
 						}
 					}
 					Drawparts->Screen_Flip(waits);
-					if (CheckHitKey(KEY_INPUT_ESCAPE) != 0) {
+					if (CheckHitKey(key_use_ID[11].first) != 0) {
 						ending = false;
 						break;
 					}
-					if (CheckHitKey(KEY_INPUT_O) != 0) {
+					if (CheckHitKey(key_use_ID[10].first) != 0) {
 						break;
 					}
 					//

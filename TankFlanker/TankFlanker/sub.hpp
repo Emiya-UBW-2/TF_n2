@@ -620,7 +620,7 @@ private:
 						}
 
 						//消す(2秒たった、スピードが100以下、貫通が0以下)
-						if (a.count >= 2.f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
+						if (a.count >= 4.f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
 							a.flug = false;
 						}
 						if (!a.flug) {
@@ -665,6 +665,8 @@ private:
 		bool deathf = false;
 		bool hitf = false;						//体力
 		bool killf = false;						//体力
+		bool kill_f = false;
+		float kill_time = 0.f;
 		uint16_t KILL_COUNT = 0;				//体力
 		int KILL_ID = -1;						//体力
 		uint16_t DEATH_COUNT = 0;				//体力
@@ -1248,7 +1250,11 @@ public:
 											this->vehicle.KILL_COUNT++;
 											this->vehicle.KILL_ID = (int)(&t - &tgts[0]);
 											veh_t.deathf = true;
+
 											this->vehicle.killf = true;
+											this->vehicle.kill_f = true;
+											this->vehicle.kill_time = 7.f;
+
 											veh_t.DEATH_COUNT++;
 											veh_t.DEATH_ID = (int)(this - &tgts[0]);
 											t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));

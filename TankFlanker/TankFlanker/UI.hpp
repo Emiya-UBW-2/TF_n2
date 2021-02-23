@@ -348,6 +348,7 @@ public:
 	) {
 		int xs = 0, xp = 0, ys = 0, yp = 0;
 		FontHandle* font = (!uses_vr) ? &font18 : &font36;
+		const int font_bighight = (!uses_vr) ? y_r(18, out_disp_y) : y_r(36, out_disp_y);
 		if (uses_vr) {
 			GetScreenState(&disp_x, &disp_y, nullptr);
 		}
@@ -728,6 +729,28 @@ public:
 			if (chara.vehicle.KILL_ID != -1) {
 				font->DrawStringFormat(disp_x / 4, disp_y / 3, GetColor(255, 0, 0), "KILL : %d", chara.vehicle.KILL_COUNT);
 				font->DrawStringFormat(disp_x / 4, disp_y / 3 + y_r(18, out_disp_y), GetColor(255, 0, 0), "KILL ID : %d", chara.vehicle.KILL_ID);
+			}
+
+			//キル
+			if (chara.vehicle.kill_f) {
+				if (uses_vr) {
+					xp = disp_x / 2;
+					yp = disp_y / 2 - disp_y / 6 + font_bighight * 3;
+				}
+				else {
+					xp = disp_x / 2;
+					yp = disp_y / 2 - disp_y / 6 + font_bighight * 3;
+				}
+				int per = std::clamp(int(255.f*((chara.vehicle.kill_time * 7) / 7.f)) - 255 * 6, 0, 255);
+
+				SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
+				DrawBox(
+					xp - int(pow(per, 2)) * disp_x / 2 / int(pow(255, 2)), yp,
+					xp + int(pow(per, 2)) * disp_x / 2 / int(pow(255, 2)), yp + font_bighight + 2,
+					GetColor(255, 255, 255), TRUE);
+				SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(int(255.f*((chara.vehicle.kill_time * 2) / 7.f)), 0, 255));
+				font->DrawStringFormat_MID(xp, yp, GetColor(255, 0, 0), "プレイヤー%d をキルしました", chara.vehicle.KILL_ID);	//キル
+				SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
 			}
 		}
 	}
