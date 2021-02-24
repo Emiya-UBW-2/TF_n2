@@ -32,6 +32,8 @@ class main_c : Mainclass {
 	SoundHandle bgm_title;
 	SoundHandle bgm_main;
 	SoundHandle bgm_win;
+
+	float danger_height = 300.f;
 	float se_vol = 0.35f;
 	class voices {
 	public:
@@ -356,7 +358,7 @@ public:
 								}
 							}
 							if (veh.HP == 0) {
-								veh.HP_m[GetRand(veh.HP_m.size() - 1)] = 0;
+								veh.HP_m[GetRand(int(veh.HP_m.size() - 1))] = 0;
 							}
 						}
 					}
@@ -1252,7 +1254,7 @@ public:
 								se_alert2.stop();
 							}
 							ttttt = false;
-							if (mine.vehicle.pos.y() <= 30.f) {
+							if (mine.vehicle.pos.y() <= danger_height) {
 								if (CheckSoundMem(se_alert.get()) != TRUE) {
 									se_alert.play(DX_PLAYTYPE_LOOP, TRUE);
 								}
@@ -1362,7 +1364,10 @@ public:
 								//UI
 								UI_Screen.SetDraw_Screen();
 								{
-									UIparts->draw(chara, mine, cam_s.Rot, *Drawparts->get_device_hand1(), Drawparts->use_vr);
+									UIparts->draw(mine, cam_s.Rot >= ADS, *Drawparts->get_device_hand1(), danger_height,
+										Drawparts->use_vr
+										//true
+									);
 								}
 								//VR‚ÉˆÚ‚·
 								Drawparts->draw_VR(
@@ -1408,7 +1413,7 @@ public:
 										else {
 											this->UI_Screen.DrawGraph(0, 0, TRUE);
 										}
-										UIparts->item_draw(chara, mine, tmp_cams, cam_s.Rot, Drawparts->use_vr);
+										UIparts->item_draw(chara, mine, tmp_cams.Rot >= ADS, danger_height, Drawparts->use_vr);
 										//
 										{
 											int yyy = 30;
@@ -1450,7 +1455,6 @@ public:
 
 							{
 								int xp_s = 100, yp_s = 300, y_size = 25;
-								int xp_t = 0, yp_t = 0;
 								for (auto& m : keyg) {
 									for (auto& i : key_use_ID) {
 										if (m.key.mac == i.first) {

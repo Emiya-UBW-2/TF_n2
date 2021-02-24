@@ -32,10 +32,7 @@ private:
 	int disp_y = desky;
 	//
 	VECTOR_ref aimpos;
-	VECTOR_ref aimpos_2;
 	VECTOR_ref aimpos_3;
-	VECTOR_ref altpos;
-	VECTOR_ref spdpos;
 	size_t id_near = 0;
 public:
 	UI(int d_x, int d_y) {
@@ -61,7 +58,7 @@ public:
 	}
 	bool select_window(Mainclass::Chara* chara, std::vector<Mainclass::Vehcs>* vehcs, std::unique_ptr<DXDraw, std::default_delete<DXDraw>>& Drawparts) {
 		auto& veh = chara->vehicle;
-		if (1) {
+		if (0) {
 			uint8_t rtct = 0, ltct = 0;
 			float fov = 45.f;
 			veh.use_id %= (*vehcs).size(); //飛行機
@@ -339,11 +336,10 @@ public:
 		}
 	}
 
-	void draw(std::vector<Mainclass::Chara>& charas, Mainclass::Chara& chara, const bool& adss, const DXDraw::system_VR& vr_sys, bool uses_vr = true) {
+	void draw(Mainclass::Chara& chara, const bool& adss, const DXDraw::system_VR& vr_sys, float danger_height, bool uses_vr = true) {
 		int xs = 0, xp = 0, ys = 0, yp = 0;
-		FontHandle* font = (!uses_vr) ? &font18 : &font36;
-		auto font_hight = (!uses_vr) ? y_r(18) : y_r(36);
-
+		FontHandle* font = (!uses_vr) ? &font18 : &font24;
+		auto font_hight = (!uses_vr) ? y_r(18) : y_r(24);
 		auto& veh = chara.vehicle;
 		//サイズ変更
 		if (uses_vr) {
@@ -367,20 +363,18 @@ public:
 		}
 		//死亡時に非表示
 		if (!chara.death) {
-			//視点中央
-			DrawRotaGraph(int(disp_x / 2), int(disp_y / 2), y_r(64) / 200.f, 0.f, aim.get(), TRUE);//3
 			//弾薬、残弾計
 			{
 				if (!uses_vr) {
 					xs = x_r(200);
 					xp = x_r(20);
-					ys = y_r(18);
+					ys = font_hight;
 					yp = disp_y - y_r(20) - int(veh.Gun_.size()) * (ys * 2 + y_r(7));
 				}
 				else {
 					xs = x_r(200);
 					xp = disp_x / 2 - x_r(20) - xs;
-					ys = y_r(36);
+					ys = font_hight;
 					yp = disp_y / 2 + disp_y / 6 + y_r(20);
 				}
 
@@ -403,323 +397,333 @@ public:
 					yp += ys * 2 + y_r(4);
 				}
 			}
-			//飛行機モード用
-			{
-				//速度計
-				{
-					if (!adss) {
-						if (!uses_vr) {
-							xp = disp_x / 3;
-							yp = disp_y / 2;
-						}
-						else {
-							xp = disp_x / 2 - disp_y / 6 + y_r(240 / 2);
-							yp = disp_y / 2;
-						}
-						font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 0, GetColor(255, 255, 255), "%4.0f km/h", veh.speed * 3.6f);
-
-						if (veh.over_heat) {
-							font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accel);
-							if ((GetNowHiPerformanceCount() / 100000) % 5 <= 2) {
-								font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 2, GetColor(255, 0, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
-							}
-						}
-						else {
-							if (veh.accel >= 100.f) {
-								font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 1, GetColor(255, 255, 0), "POWER %03.0f%%", veh.accel);
-								font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 2, GetColor(255, 255, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
-							}
-							else {
-								font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 1, GetColor(255, 255, 255), "POWER %03.0f%%", veh.accel);
-							}
-						}
-					}
+			//アラート
+			if (!adss) {
+				if (!uses_vr) {
+					xp = disp_x / 2;
+					yp = disp_y / 3;
 				}
-				//高度計
-				{
-					//
-					if (!adss) {
-						//
-						if (!uses_vr) {
-							xp = disp_x * 2 / 3;
-							yp = disp_y / 2;
-						}
-						else {
-							xp = disp_x / 2 + (disp_y / 3 - y_r(240)) / 2;
-							yp = disp_y / 2;
-						}
-						font->DrawStringFormat(xp, yp, GetColor(255, 255, 255), " %4d m", int(veh.pos.y()));
-					}
+				else {
+					xp = disp_x / 2;
+					yp = disp_y / 2 - disp_y / 6 + y_r(60);
 				}
-				//アラート
-				{
-					//
-					if (!adss) {
-						if (!uses_vr) {
-							xp = disp_x / 2;
-							yp = disp_y / 3;
-						}
-						else {
-							xp = disp_x / 2;
-							yp = disp_y / 2 - disp_y / 6 + y_r(60);
-						}
-						int ccc = 0;
-						if (veh.speed < veh.use_veh.min_speed_limit) {
-							font->DrawString_MID(xp, yp + y_r(36) * ccc, "STALL", GetColor(255, 0, 0));
-							ccc++;
-						}
-						if (veh.pos.y() <= 30.f) {
-							font->DrawString_MID(xp, yp + y_r(36) * ccc, "GPWS", GetColor(255, 255, 0));
-							ccc++;
-						}
-						if (chara.p_anime_geardown.second > 0.5f) {
-							font->DrawString_MID(xp, yp + y_r(36) * ccc, "GEAR DOWN", GetColor(255, 255, 0));
-							ccc++;
-						}
-					}
 
+				int ccc = 0;
+				if (veh.speed < veh.use_veh.min_speed_limit) {
+					font->DrawString_MID(xp, yp + y_r(36) * ccc, "STALL", GetColor(255, 0, 0));
+					ccc++;
 				}
-				//HP
-				{
-					if (!uses_vr) {
-						xs = x_r(200);
-						xp = disp_x - x_r(20 + 30) - xs;
-						ys = y_r(42);
-						yp = disp_y - y_r(20) - ys;
-					}
-					else {
-						xs = x_r(200);
-						xp = disp_x / 2 + x_r(20);
-						ys = y_r(36);
-						yp = disp_y / 2 + disp_y / 6 + y_r(20) - ys;
-					}
-
-					//
-					{
-						auto per = 255;
-						DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4)), xp + int(ber), yp + ys / 2 + ys * 2 / 3, GetColor(per, 0, 0), TRUE);
-						easing_set(&ber, float(xs * int(veh.HP) / int(veh.use_veh.HP)), 0.975f);
-						DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4)), xp + xs * int(veh.HP) / int(veh.use_veh.HP), yp + ys / 2 + ys * 2 / 3, GetColor(0, per, 0), TRUE);
-						SetDrawBright(per, per, per);
-						font->DrawStringFormat(
-							xp,
-							yp + ys + (ys * 2 / 3 - y_r(12)) / 2,
-							GetColor(255, 255, 255), "%d / %d", int(veh.HP), int(veh.use_veh.HP));
-
-						font->DrawStringFormat(
-							xp + (xs - font->GetDrawWidthFormat("%s", veh.use_veh.name.c_str())),
-							yp + (ys * 2 / 3 - y_r(12)) / 2,
-							GetColor(255, 255, 255), "%s", veh.use_veh.name.c_str());
-
-						SetDrawBright(255, 255, 255);
-						yp += ys;
-						xp += x_r(30);
-					}
+				if (veh.pos.y() <= danger_height) {
+					font->DrawString_MID(xp, yp + y_r(36) * ccc, "GPWS", GetColor(255, 255, 0));
+					ccc++;
 				}
-				{
-					if (!uses_vr) {
-						xs = x_r(230);
-						xp = disp_x - x_r(20 + 30) - xs;
-						ys = y_r(304);
-						yp = disp_y - y_r(20 + 50) - ys;
-					}
-					else {
-						xs = x_r(230);
-						xp = disp_x / 2 + x_r(20);
-						ys = y_r(304);
-						yp = disp_y / 2 + disp_y / 6 + y_r(20) - ys;
-					}
-					{
-						auto tmp = deg2rad(90 * veh.HP / veh.use_veh.HP);
-						SetDrawBright(std::min(int(255.f*cos(tmp)*2.f), 255), std::min(int(255.f*sin(tmp)*2.f), 255), 0);
-						veh.graph_HP_m_all.DrawExtendGraph(xp, yp, xp + xs, yp + ys, true);
-					}
-					for (auto& p : veh.graph_HP_m) {
-						auto tmp = deg2rad(90 * veh.HP_m[veh.use_veh.module_mesh[&p - &veh.graph_HP_m[0]].first] / veh.use_veh.HP);
-
-						SetDrawBright(std::min(int(255.f*cos(tmp)*2.f), 255), std::min(int(255.f*sin(tmp)*2.f), 255), 0);
-						p.DrawExtendGraph(xp, yp, xp + xs, yp + ys, true);
-					}
-					SetDrawBright(255, 255, 255);
+				if (chara.p_anime_geardown.second > 0.5f) {
+					font->DrawString_MID(xp, yp + y_r(36) * ccc, "GEAR DOWN", GetColor(255, 255, 0));
+					ccc++;
 				}
 			}
+			//HP
+			{
+				if (!uses_vr) {
+					xs = x_r(200);
+					xp = disp_x - x_r(20 + 30) - xs;
+					ys = y_r(42);
+					yp = disp_y - y_r(20) - ys;
+				}
+				else {
+					xs = x_r(200);
+					xp = disp_x / 2 + x_r(20);
+					ys = y_r(36);
+					yp = disp_y / 2 + disp_y / 6 + y_r(20) - ys;
+				}
+
+				{
+					auto per = 255;
+					DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4)), xp + int(ber), yp + ys / 2 + ys * 2 / 3, GetColor(per, 0, 0), TRUE);
+					easing_set(&ber, float(xs * int(veh.HP) / int(veh.use_veh.HP)), 0.975f);
+					DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4)), xp + xs * int(veh.HP) / int(veh.use_veh.HP), yp + ys / 2 + ys * 2 / 3, GetColor(0, per, 0), TRUE);
+					SetDrawBright(per, per, per);
+					font->DrawStringFormat(
+						xp,
+						yp + ys + (ys * 2 / 3 - y_r(12)) / 2,
+						GetColor(255, 255, 255), "%d / %d", int(veh.HP), int(veh.use_veh.HP));
+
+					font->DrawStringFormat(
+						xp + (xs - font->GetDrawWidthFormat("%s", veh.use_veh.name.c_str())),
+						yp + (ys * 2 / 3 - y_r(12)) / 2,
+						GetColor(255, 255, 255), "%s", veh.use_veh.name.c_str());
+
+					SetDrawBright(255, 255, 255);
+					yp += ys;
+					xp += x_r(30);
+				}
+			}
+			//モジュールHP
+			{
+				if (!uses_vr) {
+					xs = x_r(230);
+					xp = disp_x - x_r(20 + 30) - xs;
+					ys = y_r(304);
+					yp = disp_y - y_r(20 + 50) - ys;
+				}
+				else {
+					xs = x_r(230);
+					xp = disp_x / 2 + x_r(20);
+					ys = y_r(304);
+					yp = disp_y / 2 + disp_y / 6 + y_r(20) - ys;
+				}
+
+				{
+					auto tmp = deg2rad(90 * veh.HP / veh.use_veh.HP);
+					SetDrawBright(std::min(int(255.f*cos(tmp)*2.f), 255), std::min(int(255.f*sin(tmp)*2.f), 255), 0);
+					veh.graph_HP_m_all.DrawExtendGraph(xp, yp, xp + xs, yp + ys, true);
+				}
+				for (auto& p : veh.graph_HP_m) {
+					auto tmp = deg2rad(90 * veh.HP_m[veh.use_veh.module_mesh[&p - &veh.graph_HP_m[0]].first] / veh.use_veh.HP);
+					SetDrawBright(std::min(int(255.f*cos(tmp)*2.f), 255), std::min(int(255.f*sin(tmp)*2.f), 255), 0);
+					p.DrawExtendGraph(xp, yp, xp + xs, yp + ys, true);
+				}
+				SetDrawBright(255, 255, 255);
+			}
 			//VR用オプション
-			if (uses_vr) {
+			if (uses_vr && false) {
 				const float vr_sys_yvec_y = vr_sys.yvec.y();
 				const float vr_sys_yvec_x = vr_sys.yvec.x();
 				const float vr_sys_touch_y = ((vr_sys.on[1] & BUTTON_TOUCHPAD) != 0) ? vr_sys.touch.y() : 0.f;
 				const float vr_sys_touch_x = ((vr_sys.on[1] & BUTTON_TOUCHPAD) != 0) ? vr_sys.touch.x() : 0.f;
+				//ピッチ、ロール表示
+				{
+					int size = y_r(10);
+					ys = disp_y / 3 - y_r(240);
+					xp = disp_x / 2 + ys / 2;
+					yp = disp_y / 2 + ys / 2;
+
+
+					for (int i = 0; i < 2; i++) {
+						DrawCircle(xp, yp, size * 2, i ? GetColor(0, 255, 100) : GetColor(0, 0, 0), FALSE, 1 + i);
+						DrawCircle(xp, yp, size, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), FALSE, 1 + i);
+						DrawLine(xp - size / 2, yp, xp - size / 4, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+						DrawLine(xp, yp - size / 2, xp, yp - size / 4, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+						DrawLine(xp + size / 2, yp, xp + size / 4, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+						DrawLine(xp, yp + size / 2, xp, yp + size / 4, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+					}
+
+					int y_pos = int(float(size) * std::clamp(vr_sys_yvec_y / sin(deg2rad(20)), -2.f, 2.f));//ピッチ
+					int x_pos = int(float(size) * std::clamp(vr_sys_yvec_x / sin(deg2rad(20)), -2.f, 2.f));//ロール
+					DrawCircle(xp + x_pos, yp + y_pos, size / 5, GetColor(255, 100, 50), FALSE, 2);
+				}
+				//ヨー
+				{
+					xs = disp_y / 5 - y_r(144);
+					xp = disp_x / 2 - xs / 2;
+					yp = disp_y / 2 + disp_y / 6 - y_r(220 / 2);
+					int z_pos = int(float(xs / 4) * std::clamp(vr_sys_touch_x / 0.5f, -1.5f, 1.5f));//ヨー
+
+					for (int i = 0; i < 2; i++) {
+						DXDraw::Line2D(xp + xs / 2 - xs / 3, yp, xp + xs / 2 + xs / 3, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+						DXDraw::Line2D(xp + xs / 4, yp - 5, xp + xs / 4, yp + 5, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+						DXDraw::Line2D(xp + xs * 3 / 4, yp - 5, xp + xs * 3 / 4, yp + 5, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
+					}
+					DXDraw::Line2D(xp + xs / 2 + z_pos, yp - 5, xp + xs / 2 + z_pos, yp + 5, GetColor(255, 100, 50), 2);
+				}
+			}
+			//ピッチ
+			/*
+			{
+				int ys = disp_y / 3 - y_r(240);
+				int xp = disp_x / 2 - ys / 2;
+				int yp = disp_y / 2 - ys / 2;
+				int y_pos = int(float(ys / 4) * std::clamp(vr_sys_touch_y / 0.5f, -2.f, 2.f));
+
+				DXDraw::Line2D(xp, yp, xp, yp + ys, GetColor(0, 0, 0), 5);
+				DXDraw::Line2D(xp, yp + ys / 2 - (ys / 4), xp, yp + ys / 2 + (ys / 4), GetColor(255, 255, 255), 2);
+				DXDraw::Line2D(xp, yp, xp, yp + ys / 2 - (ys / 4), GetColor(255, 0, 0), 2);
+				DXDraw::Line2D(xp, yp + ys / 2 + (ys / 4), xp, yp + ys, GetColor(255, 0, 0), 2);
+
+				DXDraw::Line2D(xp - 5, yp + ys / 2 + y_pos, xp + 5, yp + ys / 2 + y_pos, GetColor(255, 255, 0), 2);
+				DXDraw::Line2D(xp - 5, yp + ys / 2 - (ys / 4), xp + 5, yp + ys / 2 - (ys / 4), GetColor(0, 255, 0), 2);
+				DXDraw::Line2D(xp - 5, yp + ys / 2 + (ys / 4), xp + 5, yp + ys / 2 + (ys / 4), GetColor(0, 255, 0), 2);
+			}
+			*/
+			//速度計
+			{
+				if (!uses_vr) {
+					xs = 0;
+					xp = disp_x / 2 - disp_y / 7;
+					ys = disp_y / 14;
+					yp = disp_y / 2;
+				}
+				else {
+					xs = 0;
+					xp = disp_x / 2 - disp_y / 6 + y_r(120);
+					ys = disp_y / 6 - y_r(120);
+					yp = disp_y / 2;
+				}
 				//
-				{
-					//ピッチ、ロール表示
-					{
-						int size = y_r(10);
-						ys = disp_y / 3 - y_r(240);
-						xp = disp_x / 2 + ys / 2;
-						yp = disp_y / 2 + ys / 2;
-
-
-						for (int i = 0; i < 2; i++) {
-							DrawCircle(xp, yp, size * 2, i ? GetColor(0, 255, 100) : GetColor(0, 0, 0), FALSE, 1 + i);
-							DrawCircle(xp, yp, size, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), FALSE, 1 + i);
-							DrawLine(xp - size / 2, yp, xp - size / 4, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-							DrawLine(xp, yp - size / 2, xp, yp - size / 4, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-							DrawLine(xp + size / 2, yp, xp + size / 4, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-							DrawLine(xp, yp + size / 2, xp, yp + size / 4, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-						}
-
-						int y_pos = int(float(size) * std::clamp(vr_sys_yvec_y / sin(deg2rad(20)), -2.f, 2.f));//ピッチ
-						int x_pos = int(float(size) * std::clamp(vr_sys_yvec_x / sin(deg2rad(20)), -2.f, 2.f));//ロール
-						DrawCircle(xp + x_pos, yp + y_pos, size / 5, GetColor(255, 100, 50), FALSE, 2);
-					}
-					//ヨー
-					{
-						xs = disp_y / 5 - y_r(144);
-						xp = disp_x / 2 - xs / 2;
-						yp = disp_y / 2 + disp_y / 6 - y_r(220 / 2);
-						int z_pos = int(float(xs / 4) * std::clamp(vr_sys_touch_x / 0.5f, -1.5f, 1.5f));//ヨー
-
-						for (int i = 0; i < 2; i++) {
-							DXDraw::Line2D(xp + xs / 2 - xs / 3, yp, xp + xs / 2 + xs / 3, yp, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-							DXDraw::Line2D(xp + xs / 4, yp - 5, xp + xs / 4, yp + 5, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-							DXDraw::Line2D(xp + xs * 3 / 4, yp - 5, xp + xs * 3 / 4, yp + 5, i ? GetColor(0, 255, 0) : GetColor(0, 0, 0), 1 + i);
-						}
-						DXDraw::Line2D(xp + xs / 2 + z_pos, yp - 5, xp + xs / 2 + z_pos, yp + 5, GetColor(255, 100, 50), 2);
-					}
-				}
-
-			}
-			{
-				//ピッチ
-				/*
-				{
-					int ys = disp_y / 3 - y_r(240);
-					int xp = disp_x / 2 - ys / 2;
-					int yp = disp_y / 2 - ys / 2;
-					int y_pos = int(float(ys / 4) * std::clamp(vr_sys_touch_y / 0.5f, -2.f, 2.f));
-
-					DXDraw::Line2D(xp, yp, xp, yp + ys, GetColor(0, 0, 0), 5);
-					DXDraw::Line2D(xp, yp + ys / 2 - (ys / 4), xp, yp + ys / 2 + (ys / 4), GetColor(255, 255, 255), 2);
-					DXDraw::Line2D(xp, yp, xp, yp + ys / 2 - (ys / 4), GetColor(255, 0, 0), 2);
-					DXDraw::Line2D(xp, yp + ys / 2 + (ys / 4), xp, yp + ys, GetColor(255, 0, 0), 2);
-
-					DXDraw::Line2D(xp - 5, yp + ys / 2 + y_pos, xp + 5, yp + ys / 2 + y_pos, GetColor(255, 255, 0), 2);
-					DXDraw::Line2D(xp - 5, yp + ys / 2 - (ys / 4), xp + 5, yp + ys / 2 - (ys / 4), GetColor(0, 255, 0), 2);
-					DXDraw::Line2D(xp - 5, yp + ys / 2 + (ys / 4), xp + 5, yp + ys / 2 + (ys / 4), GetColor(0, 255, 0), 2);
-				}
-				*/
-				//速度計
-				{
-					if (!uses_vr) {
-						xs = x_r(200);
-						xp = disp_x / 3;
-						ys = disp_y / 4 / 3;
-						yp = disp_y / 2;
+				DXDraw::Line2D(xp + y_r(1), yp, xp + y_r(10), yp, GetColor(0, 255, 0), 1);
+				//
+				DXDraw::Line2D(xp - y_r(17), yp, xp - y_r(25), yp - font_hight / 2, GetColor(0, 255, 0), 1);
+				DXDraw::Line2D(xp - y_r(17), yp, xp - y_r(25), yp + font_hight / 2, GetColor(0, 255, 0), 1);
+				DXDraw::Line2D(xp - y_r(25), yp - font_hight / 2, xp - y_r(35), yp - font_hight / 2, GetColor(0, 255, 0), 1);
+				DXDraw::Line2D(xp - y_r(25), yp + font_hight / 2, xp - y_r(35), yp + font_hight / 2, GetColor(0, 255, 0), 1);
+				//
+				for (int i = -ys; i < ys; i += (y_r(10))) {
+					int p = i + int(chara.vehicle.speed * 3.6f + ys) % (y_r(10));
+					if (p <= ys) {
+						DXDraw::Line2D(xp - y_r(10), yp + p, xp, yp + p, GetColor(0, 255, 0), 1);
 					}
 					else {
-						xs = 0;
-						xp = disp_x / 2 - (disp_y / 3 - y_r(240)) / 2;
-						ys = (disp_y / 3 - y_r(240)) / 3;
-						yp = disp_y / 2;
-					}
-
-					DXDraw::Line2D(xp, yp - ys, xp, yp + ys, GetColor(0, 0, 0), 2);
-					DXDraw::Line2D(xp, yp - ys, xp, yp + ys, GetColor(0, 255, 0), 1);
-
-					for (int i = -ys; i < ys; i += (y_r(10))) {
-						int p = i + int(chara.vehicle.speed * 3.6f + ys) % (y_r(10));
-						if (p <= ys) {
-							DXDraw::Line2D(xp, yp + p, xp + 10, yp + p, GetColor(0, 255, 0), 1);
-						}
-						else {
-							break;
-						}
-					}
-
-					for (int i = -ys; i < ys; i += (y_r(100))) {
-						int p = i + int(chara.vehicle.speed * 3.6f + ys) % (y_r(100));
-						if (p <= ys) {
-							DXDraw::Line2D(xp, yp + p, xp + 15, yp + p, GetColor(0, 255, 0), 2);
-						}
-						else {
-							break;
-						}
+						break;
 					}
 				}
-				//高度計
-				{
-					if (!uses_vr) {
-						xs = x_r(200);
-						xp = disp_x * 2 / 3;
-						ys = (disp_y / 4) / 3;
-						yp = disp_y / 2;
+				//
+				for (int i = -ys; i < ys; i += (y_r(100))) {
+					int p = i + int(chara.vehicle.speed * 3.6f + ys) % (y_r(100));
+					if (p <= ys) {
+						DXDraw::Line2D(xp - y_r(15), yp + p, xp, yp + p, GetColor(0, 255, 0), 2);
 					}
 					else {
-						xs = 0;
-						xp = disp_x / 2 + (disp_y / 3 - y_r(240)) / 2;
-						ys = (disp_y / 3 - y_r(240)) / 3;
-						yp = disp_y / 2;
+						break;
 					}
+				}
 
-					DXDraw::Line2D(xp, yp - ys, xp, yp + ys, GetColor(0, 0, 0), 2);
-					DXDraw::Line2D(xp, yp - ys, xp, yp + ys, GetColor(0, 255, 0), 1);
+				if (!adss) {
+					xp = xp - y_r(35);
+					yp = yp - font_hight / 2;
+					font->DrawStringFormat_RIGHT(xp, yp, GetColor(0, 255, 0), "km/h %4.0f", veh.speed * 3.6f);
 
-					for (int i = -ys; i < ys; i += y_r(5)) {
-						int p = i + int(chara.vehicle.pos.y() + ys) % y_r(5);
-						if (p <= ys) {
-							DXDraw::Line2D(xp, yp + p, xp - 10, yp + p, GetColor(0, 255, 0), 1);
-						}
-						else {
-							break;
+					//power
+					if (veh.over_heat) {
+						font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accel);
+					}
+					else if (veh.accel >= 100.f) {
+						font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(255, 255, 0), "POWER %03.0f%%", veh.accel);
+					}
+					else {
+						font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(0, 255, 0), "POWER %03.0f%%", veh.accel);
+					}
+					//overheat
+					if (veh.over_heat) {
+						if ((GetNowHiPerformanceCount() / 100000) % 5 <= 2) {
+							font->DrawStringFormat_RIGHT(xp, yp + font_hight * 2, GetColor(255, 0, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
 						}
 					}
-
-					for (int i = -ys; i < ys; i += y_r(50)) {
-						int p = i + int(chara.vehicle.pos.y() + ys) % y_r(50);
-						if (p <= ys) {
-							DXDraw::Line2D(xp, yp + p, xp - 15, yp + p, GetColor(0, 255, 0), 2);
-						}
-						else {
-							break;
+					else if (veh.accel >= 100.f) {
+						if ((GetNowHiPerformanceCount() / 100000) % 10 <= 5) {
+							font->DrawStringFormat_RIGHT(xp, yp + font_hight * 2, GetColor(255, 255, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
 						}
 					}
 				}
 			}
-
+			//高度計
 			{
-				float d = 10000.f;
-				for (auto&c : charas) {
-					if (&c != &chara && c.vehicle.HP > 0 && c.id != chara.id && (chara.vehicle.mat.zvec()).dot((c.vehicle.pos - chara.vehicle.pos).Norm()) < -cos(15)) {
-						auto dt = (c.vehicle.pos - chara.vehicle.pos).size();
-						if (d > dt) {
-							id_near = &c - &charas[0];
-							d = dt;
-						}
+				if (!uses_vr) {
+					xs = 0;
+					xp = disp_x / 2 + disp_y / 7;
+					ys = disp_y / 14;
+					yp = disp_y / 2;
+				}
+				else {
+					xs = 0;
+					xp = disp_x / 2 + disp_y / 6 - y_r(120);
+					ys = disp_y / 6 - y_r(120);
+					yp = disp_y / 2;
+				}
+				//
+				DXDraw::Line2D(xp - y_r(10), yp, xp - y_r(1), yp, GetColor(0, 255, 0), 1);
+				//
+				DXDraw::Line2D(xp + y_r(17), yp, xp + y_r(25), yp - font_hight / 2, GetColor(0, 255, 0), 1);
+				DXDraw::Line2D(xp + y_r(17), yp, xp + y_r(25), yp + font_hight / 2, GetColor(0, 255, 0), 1);
+				DXDraw::Line2D(xp + y_r(25), yp - font_hight / 2, xp + y_r(35), yp - font_hight / 2, GetColor(0, 255, 0), 1);
+				DXDraw::Line2D(xp + y_r(25), yp + font_hight / 2, xp + y_r(35), yp + font_hight / 2, GetColor(0, 255, 0), 1);
+				//
+				for (int i = -ys; i < ys; i += y_r(10)) {
+					int p = i + int(chara.vehicle.pos.y() + ys) % y_r(10);
+					if (p <= ys) {
+						DXDraw::Line2D(xp, yp + p, xp + y_r(10), yp + p, GetColor(0, 255, 0), 1);
+					}
+					else {
+						break;
 					}
 				}
+				//
+				for (int i = -ys; i < ys; i += y_r(100)) {
+					int p = i + int(chara.vehicle.pos.y() + ys) % y_r(100);
+					if (p <= ys) {
+						DXDraw::Line2D(xp, yp + p, xp + y_r(15), yp + p, GetColor(0, 255, 0), 2);
+					}
+					else {
+						break;
+					}
+				}
+
+				if (!adss) {
+					font->DrawStringFormat(xp + y_r(35), yp - font_hight / 2, GetColor(0, 255, 0), "%05d m", int(veh.pos.y()));
+				}
 			}
+			//コンパス
+			{
+				VECTOR_ref tmp = chara.vehicle.mat.zvec();
+				tmp = VGet(tmp.x(), 0.f, tmp.z());
+				tmp = tmp.Norm();
+				float rad = -std::atan2f(tmp.x(), -tmp.z())*180.f / DX_PI_F;
+				rad = (rad < 0) ? (360.f + rad) : rad;
+				if (!uses_vr) {
+					xs = disp_y / 14;
+					xp = disp_x / 2;
+					ys = 0;
+					yp = disp_y / 2 + disp_y / 7;
+				}
+				else {
+					xs = disp_y / 6 - y_r(120);
+					xp = disp_x / 2;
+					ys = 0;
+					yp = disp_y / 2 + disp_y / 6 - y_r(120);
+				}
+				//
+				DXDraw::Line2D(xp, yp - y_r(10), xp, yp - y_r(1), GetColor(0, 255, 0), 1);
+				//
+				for (int i = -xs; i < xs; i += y_r(10)) {
+					int p = (i + int(rad + xs) % y_r(10));
+					if (p <= xs) {
+						DXDraw::Line2D(xp + p, yp, xp + p, yp + y_r(10), GetColor(0, 255, 0), 1);
+					}
+					else {
+						break;
+					}
+				}
+				//
+				for (int i = -xs; i < xs; i += y_r(60)) {
+					int p = (i + int(rad + xs) % y_r(60));
+					if (p <= xs) {
+						DXDraw::Line2D(xp + p, yp, xp + p, yp + y_r(15), GetColor(0, 255, 0), 2);
+					}
+					else {
+						break;
+					}
+				}
+				if (!adss) {
+					font->DrawStringFormat_MID(xp, yp + y_r(20), GetColor(0, 255, 0), "%03d °", int(rad));
+				}
+			}
+			//キル
 			if (chara.vehicle.KILL_ID != -1) {
 				font->DrawStringFormat(disp_x / 4, disp_y / 3, GetColor(255, 0, 0), "KILL : %d", chara.vehicle.KILL_COUNT);
 				font->DrawStringFormat(disp_x / 4, disp_y / 3 + y_r(18), GetColor(255, 0, 0), "KILL ID : %d", chara.vehicle.KILL_ID);
 			}
-
-			//キル
 			if (chara.vehicle.kill_f) {
 				if (uses_vr) {
 					xp = disp_x / 2;
-					yp = disp_y / 2 - disp_y / 6 + font_bighight * 3;
+					yp = disp_y / 2 - disp_y / 6 + font_hight * 3;
 				}
 				else {
 					xp = disp_x / 2;
-					yp = disp_y / 2 - disp_y / 6 + font_bighight * 3;
+					yp = disp_y / 2 - disp_y / 6 + font_hight * 3;
 				}
 				int per = std::clamp(int(255.f*((chara.vehicle.kill_time * 7) / 7.f)) - 255 * 6, 0, 255);
 
 				SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
-				DrawBox(
-					xp - int(pow(per, 2)) * disp_x / 2 / int(pow(255, 2)), yp,
-					xp + int(pow(per, 2)) * disp_x / 2 / int(pow(255, 2)), yp + font_bighight + 2,
-					GetColor(255, 255, 255), TRUE);
+				DrawBox(xp - int(pow(per, 2)) * disp_x / 2 / int(pow(255, 2)), yp, xp + int(pow(per, 2)) * disp_x / 2 / int(pow(255, 2)), yp + font_hight + 2, GetColor(255, 255, 255), TRUE);
 				SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(int(255.f*((chara.vehicle.kill_time * 2) / 7.f)), 0, 255));
 				font->DrawStringFormat_MID(xp, yp, GetColor(255, 0, 0), "プレイヤー%d をキルしました", chara.vehicle.KILL_ID);	//キル
 				SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
@@ -727,74 +731,109 @@ public:
 		}
 	}
 
-	void item_draw(std::vector<Mainclass::Chara>& charas, Mainclass::Chara& chara, const Mainclass::CAMS& cam_s, const bool& adss, bool uses_vr = true) {
-		int xs = 0, xp = 0, ys = 0, yp = 0;
-		FontHandle* font = (!uses_vr) ? &font18 : &font36;
-
-		SetCameraNearFar(0.01f, chara.vehicle.use_veh.canlook_dist*3.f);
-
-		VECTOR_ref aimp = (VECTOR_ref)(chara.vehicle.pos) + chara.vehicle.mat.zvec() * (-chara.vehicle.use_veh.canlook_dist*0.8f);
-		//mapparts->map_col_line_nearest(chara.vehicle.pos, &aimp);				//地形
-		aimpos = ConvWorldPosToScreenPos(aimp.get());
-		for (auto& c : charas) {
-			c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - c.vehicle.pos).size() / (600.f / GetFPS()))).get());
-			//pos = c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - pos).size() / (a.spec.speed_a));
-			c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
+	//
+	void box_p(Mainclass::Chara& c, Mainclass::Chara& chara, int col) {
+		if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
+			float siz_per = std::clamp((1.f - sqrtf(powf(c.winpos.x() - disp_x / 2, 2) + powf(c.winpos.y() - disp_y / 2, 2)) / float(disp_x / 2)), 0.f, 1.f);
+			int siz = y_r(32.f*siz_per);
+			DrawBox(int(c.winpos.x()) - siz, int(c.winpos.y()) - siz, int(c.winpos.x()) + siz, int(c.winpos.y()) + siz, col, FALSE);
+			siz = y_r(42.f*siz_per);
+			DrawBox(int(c.winpos.x()) - siz, int(c.winpos.y()) - siz, int(c.winpos.x()) + siz, int(c.winpos.y()) + siz, col, FALSE);
 		}
-		if (cam_s.Rot >= ADS) {
-			altpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.alt_100_f.first) - (chara.cocks.obj.frame(chara.cocks.alt_100_2_f.first) - chara.cocks.obj.frame(chara.cocks.alt_100_f.first)).Norm()*0.05f).get());
-			spdpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.speed_f.first) - (chara.cocks.obj.frame(chara.cocks.speed2_f.first) - chara.cocks.obj.frame(chara.cocks.speed_f.first)).Norm()*0.05f).get());
-			auto& veh = chara.vehicle;
-			aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
+	}
+	void tri_p(Mainclass::Chara& c, Mainclass::Chara& chara, int col) {
+		if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f && c.id != chara.id) {
+			auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
+			auto dis2 = std::clamp(sqrtf(powf(float(int(c.winpos.x()) - disp_x / 2), 2.f) + powf(float(int(c.winpos.y()) - disp_y / 2), 2.f)), 0.f, 200.f);
+			auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, dis2);
+			DrawLine(disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (dis2 - dis) / dis2))), disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (dis2 - dis) / dis2))), disp_x / 2 + int(dis2*sin(rad)), disp_y / 2 + int(dis2*cos(rad)), col, 2);
+			DrawLine(disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (dis2 - dis) / dis2))), disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (dis2 - dis) / dis2))), disp_x / 2 + int(dis2*sin(rad)), disp_y / 2 + int(dis2*cos(rad)), col, 2);
+			DrawLine(disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (dis2 - dis) / dis2))), disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (dis2 - dis) / dis2))), disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (dis2 - dis) / dis2))), disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (dis2 - dis) / dis2))), col, 2);
 		}
-		{
-			auto& veh = chara.vehicle;
-			aimpos_3 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(0.f, 0.58f, -1.f), veh.mat)).get());
-		}
-
-		if (!chara.death) {
-			auto& veh = chara.vehicle;
-			//照準
-			{
-				int siz = int(64.f);
-				if (aimpos.z() >= 0.f && aimpos.z() <= 1.f) {
-					circle.DrawExtendGraph(int(aimpos.x()) - y_r(siz), int(aimpos.y()) - y_r(siz), int(aimpos.x()) + y_r(siz), int(aimpos.y()) + y_r(siz), TRUE);
-				}
+	}
+	void life_ver(Mainclass::Chara& c, Mainclass::Chara& chara, int col, bool uses_vr = true) {
+		if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
+			FontHandle* font = (!uses_vr) ? &font18 : &font24;
+			int xs = 0, xp = 0, ys = 0, yp = 0;
+			int siz = y_r(42.f*std::clamp((1.f - sqrtf(powf(c.winpos.x() - disp_x / 2, 2) + powf(c.winpos.y() - disp_y / 2, 2)) / float(disp_x / 2)), 0.f, 1.f));
+			xp = int(c.winpos.x()) - siz;
+			yp = int(c.winpos.y()) + siz;
+			xs = siz * 2;
+			ys = y_r(8);
+			DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4)), xp + xs, yp + ys / 2 + ys * 2 / 3, GetColor(255, 0, 0), TRUE);
+			DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4)), xp + xs * int(c.vehicle.HP) / int(c.vehicle.use_veh.HP), yp + ys / 2 + ys * 2 / 3, GetColor(0, 255, 0), TRUE);
+			if (c.p_anime_geardown.second >= 0.5f) {
+				DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4)), xp + xs, yp + ys / 2 + ys * 2 / 3, GetColor(127, 127, 127), TRUE);
 			}
-			//
+			/*
+			for (auto& h : c.vehicle.HP_m) {
+				int p = &h - &c.vehicle.HP_m[0];
+
+				DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 + y_r(4 + p * 5)), xp + xs, yp + ys / 2 + (ys * 2 / 3 + y_r(8 + p * 5)), GetColor(255, 0, 0), TRUE);
+				DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 + y_r(4 + p * 5)), xp + xs * int(h) / int(c.vehicle.use_veh.HP), yp + ys / 2 + (ys * 2 / 3 + y_r(8 + p * 5)), GetColor(0, 255, 0), TRUE);
+			}
+			*/
+			font->DrawStringFormat(xp, yp + 18, col, "%d m", int((VECTOR_ref(c.vehicle.pos) - chara.vehicle.pos).size()));
+		}
+	}
+
+	void item_draw(std::vector<Mainclass::Chara>& charas, Mainclass::Chara& chara, const bool& adss, float danger_height, bool uses_vr = true) {
+		int xs = 0, xp = 0, ys = 0, yp = 0;
+		FontHandle* font = (!uses_vr) ? &font18 : &font24;
+		auto font_hight = (!uses_vr) ? y_r(18) : y_r(24);
+		auto& veh = chara.vehicle;
+		//取得
+		{
+			SetCameraNearFar(0.01f, chara.vehicle.use_veh.canlook_dist*3.f);
+			for (auto& c : charas) {
+				c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - c.vehicle.pos).size() / (600.f / GetFPS()))).get());
+				c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
+			}
+			aimpos_3 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(0.f, 0.58f, -1.f), veh.mat)).get());
+			aimpos = ConvWorldPosToScreenPos(((VECTOR_ref)(chara.vehicle.pos) + chara.vehicle.mat.zvec() * (-chara.vehicle.use_veh.canlook_dist*0.8f)).get());
+		}
+		//描画
+		if (!chara.death) {
+			//照準
+			if (aimpos.z() >= 0.f && aimpos.z() <= 1.f) {
+				int siz = y_r(96);
+				circle.DrawExtendGraph(int(aimpos.x()) - siz, int(aimpos.y()) - siz, int(aimpos.x()) + siz, int(aimpos.y()) + siz, true);
+			}
+			//主観
 			if (adss) {
+				//警告
+				VECTOR_ref aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
 				if (aimpos_2.z() >= 0.f && aimpos_2.z() <= 1.f) {
 					xp = (int)(aimpos_2.x());
 					yp = (int)(aimpos_2.y());
 					int ccc = 0;
 					if (veh.speed < veh.use_veh.min_speed_limit) {
 						if ((GetNowHiPerformanceCount() / 100000) % 4 <= 2) {
-							font->DrawString(xp, yp + y_r(36) * ccc, "STALL", GetColor(255, 0, 0));
+							font->DrawString(xp, yp + ccc, "STALL", GetColor(255, 0, 0));
 						}
-						ccc++;
+						ccc += font_hight;
 					}
-					if (veh.pos.y() <= 30.f) {
-						font->DrawString(xp, yp + y_r(36) * ccc, "GPWS", GetColor(255, 255, 0));
-						ccc++;
+					if (veh.pos.y() <= danger_height) {
+						font->DrawString(xp, yp + ccc, "GPWS", GetColor(255, 255, 0));
+						ccc += font_hight;
 					}
 					if (chara.p_anime_geardown.second > 0.5f) {
-						font->DrawString(xp, yp + y_r(36) * ccc, "GEAR DOWN", GetColor(255, 255, 0));
-						ccc++;
+						font->DrawString(xp, yp + ccc, "GEAR DOWN", GetColor(255, 255, 0));
+						ccc += font_hight;
 					}
 					if (chara.aim_cnt > 0) {
 						if ((GetNowHiPerformanceCount() / 80000) % 4 <= 2) {
-							font->DrawString(xp, yp + y_r(36) * ccc, "ENEMY ALERT", GetColor(255, 225, 0));
+							font->DrawString(xp, yp + ccc, "ENEMY ALERT", GetColor(255, 225, 0));
 						}
-						ccc++;
+						ccc += font_hight;
 					}
 					if (chara.missile_cnt > 0) {
-						font->DrawString(xp, yp + y_r(36) * ccc, "MISSILE ALERT", GetColor(255, 0, 0));
-						ccc++;
+						font->DrawString(xp, yp + ccc, "MISSILE ALERT", GetColor(255, 0, 0));
+						ccc += font_hight;
 					}
 				}
-			}
-			//
-			if (adss) {
+				//速度計
+				VECTOR_ref spdpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.speed_f.first) - (chara.cocks.obj.frame(chara.cocks.speed2_f.first) - chara.cocks.obj.frame(chara.cocks.speed_f.first)).Norm()*0.05f).get());
 				if (spdpos.z() >= 0.f && spdpos.z() <= 1.f) {
 					xp = (int)(spdpos.x());
 					yp = (int)(spdpos.y());
@@ -816,132 +855,102 @@ public:
 						}
 					}
 				}
-			}
-			//
-			if (adss) {
+				//高度計
+				VECTOR_ref altpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.alt_100_f.first) - (chara.cocks.obj.frame(chara.cocks.alt_100_2_f.first) - chara.cocks.obj.frame(chara.cocks.alt_100_f.first)).Norm()*0.05f).get());
 				if (altpos.z() >= 0.f && altpos.z() <= 1.f) {
 					xp = (int)(altpos.x());
 					yp = (int)(altpos.y());
 					font->DrawStringFormat(xp, yp, GetColor(0, 255, 0), " %4d m", int(veh.pos.y()));
 				}
+				//コンパス
+				VECTOR_ref cpspos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.subcompass_f.first) - (chara.cocks.obj.frame(chara.cocks.subcompass2_f.first) - chara.cocks.obj.frame(chara.cocks.subcompass_f.first)).Norm()*0.05f).get());
+				if (cpspos.z() >= 0.f && cpspos.z() <= 1.f) {
+					xp = (int)(cpspos.x());
+					yp = (int)(cpspos.y());
+
+					VECTOR_ref tmp = chara.vehicle.mat.zvec();
+					tmp = VGet(tmp.x(), 0.f, tmp.z());
+					tmp = tmp.Norm();
+					float rad = -std::atan2f(tmp.x(), -tmp.z())*180.f / DX_PI_F;
+					rad = (rad < 0) ? (360.f + rad) : rad;
+					font->DrawStringFormat(xp, yp, GetColor(0, 255, 0), "%03d °", int(rad));
+				}
 			}
+			//id_near決定
+			{
+				float d = 10000.f;
+				for (auto&c : charas) {
+					if (
+						&c != &chara &&
+						c.vehicle.HP > 0 &&
+						c.id != chara.id &&
+						(chara.vehicle.mat.zvec()).dot((c.vehicle.pos - chara.vehicle.pos).Norm()) < -cos(15)
+						) {
+						auto dt = (c.vehicle.pos - chara.vehicle.pos).size();
+						if (d > dt) {
+							id_near = &c - &charas[0];
+							d = dt;
+						}
+					}
+				}
+			}
+			//
 			for (auto&c : charas) {
 				if (&c != &chara) {
-					int siz = int(32.f);
-					float siz_per = 1.f;
-
-					unsigned int col = 0;
-
-					if (c.id == chara.id) {
-						col = GetColor(0, 255, 0);
-					}
-					else {
-						col = GetColor(255, 0, 0);
-					}
-
-					if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f && !c.death) {
-						siz_per = std::clamp((1.f - sqrtf(powf(c.winpos.x() - disp_x / 2, 2) + powf(c.winpos.y() - disp_y / 2, 2)) / float(disp_x / 2)), 0.f, 1.f);
-
-						siz = int(32.f*siz_per);
-						DrawBox(int(c.winpos.x()) - y_r(siz), int(c.winpos.y()) - y_r(siz), int(c.winpos.x()) + y_r(siz), int(c.winpos.y()) + y_r(siz), (&c - &charas[0] == int(id_near)) ? GetColor(255, 255, 0) : col, FALSE);
-						siz = int(42.f*siz_per);
-						DrawBox(int(c.winpos.x()) - y_r(siz), int(c.winpos.y()) - y_r(siz), int(c.winpos.x()) + y_r(siz), int(c.winpos.y()) + y_r(siz), (&c - &charas[0] == int(id_near)) ? GetColor(255, 255, 0) : col, FALSE);
-
-						xp = int(c.winpos.x()) - y_r(siz);
-						yp = int(c.winpos.y()) + y_r(siz);
-						xs = y_r(siz * 2);
-						ys = y_r(8);
-						DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4)), xp + xs, yp + ys / 2 + ys * 2 / 3, GetColor(255, 0, 0), TRUE);
-						DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4)), xp + xs * int(c.vehicle.HP) / int(c.vehicle.use_veh.HP), yp + ys / 2 + ys * 2 / 3, GetColor(0, 255, 0), TRUE);
-						if (c.p_anime_geardown.second >= 0.5f) {
-							DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 - y_r(4)), xp + xs, yp + ys / 2 + ys * 2 / 3, GetColor(127, 127, 127), TRUE);
+					unsigned int col = (c.id == chara.id) ? GetColor(0, 255, 0) : GetColor(255, 0, 0);
+					if (!c.death) {
+						//箱
+						box_p(c, chara, col);
+						//ライフ
+						life_ver(c, chara, (&c - &charas[0] == int(id_near)) ? GetColor(255, 255, 0) : col, uses_vr);
+						//方向
+						if (int(id_near) != &c - &charas[0]) {
+							tri_p(c, chara, GetColor(255, 0, 0));
 						}
-						/*
-						for (auto& h : c.vehicle.HP_m) {
-							int p = &h - &c.vehicle.HP_m[0];
-
-							DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 + y_r(4 + p * 5)), xp + xs, yp + ys / 2 + (ys * 2 / 3 + y_r(8 + p * 5)), GetColor(255, 0, 0), TRUE);
-							DrawBox(xp, yp + ys / 2 + (ys * 2 / 3 + y_r(4 + p * 5)), xp + xs * int(h) / int(c.vehicle.use_veh.HP), yp + ys / 2 + (ys * 2 / 3 + y_r(8 + p * 5)), GetColor(0, 255, 0), TRUE);
-						}
-						*/
-						font->DrawStringFormat(xp, yp + 18, col, "%d m", int((VECTOR_ref(c.vehicle.pos) - chara.vehicle.pos).size()));
-
-						if (c.id != chara.id) {
-							if ((int(c.winpos.x()) < 0 || int(c.winpos.x()) > disp_x || int(c.winpos.y()) < 0 || int(c.winpos.y()) > disp_y) || (&c - &charas[0] != int(id_near))) {
-								auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
-								auto dis2 = std::clamp(sqrtf(powf(float(int(c.winpos.x()) - disp_x / 2), 2.f) + powf(float(int(c.winpos.y()) - disp_y / 2), 2.f)), 0.f, 200.f);
-								auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, dis2);
-								DrawLine(disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))), disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))), disp_x / 2 + int(dis2*sin(rad)), disp_y / 2 + int(dis2*cos(rad)), col, 2);
-								DrawLine(disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))), disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))), disp_x / 2 + int(dis2*sin(rad)), disp_y / 2 + int(dis2*cos(rad)), col, 2);
-								DrawLine(disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))), disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))), disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))), disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))), col, 2);
-							}
-							if (aimpos.z() >= 0.f && aimpos.z() <= 1.f) {
-								if (c.winpos_if.z() >= 0.f && c.winpos_if.z() <= 1.f) {
-									siz_per = sqrtf(powf(c.winpos_if.x() - aimpos.x(), 2) + powf(c.winpos_if.y() - aimpos.y(), 2)) / float(disp_x / 2);
-									//DrawLine(int(c.winpos.x()), int(c.winpos.y()), int(c.winpos_if.x()), int(c.winpos_if.y()), col);
-									auto dist = std::clamp(sqrtf(powf((c.winpos.x() - c.winpos_if.x()), 2) + powf((c.winpos.y() - c.winpos_if.y()), 2)), 0.f, 42.f);
-									auto rad = atan2f((c.winpos.x() - c.winpos_if.x()), (c.winpos.y() - c.winpos_if.y()));
-									DrawLine(int(c.winpos_if.x()) + int(dist*sin(rad)), int(c.winpos_if.y()) + int(dist*cos(rad)), int(c.winpos_if.x()), int(c.winpos_if.y()), col);
-									if (siz_per <= 1.f / 3.f) {
-										aim_if.DrawRotaGraph(int(c.winpos_if.x()), int(c.winpos_if.y()), 1.f, 0.f, TRUE);
-									}
-								}
-							}
-						}
+						//
 					}
 				}
 			}
-
-			if (int(id_near) != &chara - &charas[0]) {
+			//ロック
+			{
 				auto&c = charas[id_near];
-				if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
-					auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
-					auto dis2 = std::clamp(sqrtf(powf(float(int(c.winpos.x()) - disp_x / 2), 2.f) + powf(float(int(c.winpos.y()) - disp_y / 2), 2.f)), 0.f, 200.f);
-					auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, dis2);
-					DrawLine(
-						disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))),
-						disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))),
-						disp_x / 2 + int(dis2*sin(rad)),
-						disp_y / 2 + int(dis2*cos(rad)),
-						GetColor(255, 255, 0), 2);
-					DrawLine(
-						disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))),
-						disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))),
-						disp_x / 2 + int(dis2*sin(rad)),
-						disp_y / 2 + int(dis2*cos(rad)),
-						GetColor(255, 255, 0), 2);
-					DrawLine(
-						disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (200 - dis) / 200))),
-						disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (200 - dis) / 200))),
-						disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (200 - dis) / 200))),
-						disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (200 - dis) / 200))),
-						GetColor(255, 255, 0), 2);
+				if (!c.death) {
+					//箱
+					box_p(c, chara, GetColor(255, 255, 0));
+					//方向
+					tri_p(c, chara, GetColor(255, 255, 0));
+					//予測
+					if (
+						c.winpos.z() >= 0.f && c.winpos.z() <= 1.f &&
+						c.id != chara.id &&
+						aimpos.z() >= 0.f && aimpos.z() <= 1.f &&
+						c.winpos_if.z() >= 0.f && c.winpos_if.z() <= 1.f
+						) {
+						auto dist = std::clamp(sqrtf(powf((c.winpos.x() - c.winpos_if.x()), 2) + powf((c.winpos.y() - c.winpos_if.y()), 2)), 0.f, 42.f);
+						auto rad = atan2f((c.winpos.x() - c.winpos_if.x()), (c.winpos.y() - c.winpos_if.y()));
+						DrawLine(int(c.winpos_if.x()) + int(dist*sin(rad)), int(c.winpos_if.y()) + int(dist*cos(rad)), int(c.winpos_if.x()), int(c.winpos_if.y()), GetColor(255, 0, 0));
+						if ((sqrtf(powf(c.winpos_if.x() - aimpos.x(), 2) + powf(c.winpos_if.y() - aimpos.y(), 2)) / float(disp_x / 2)) <= 1.f / 3.f) {
+							aim_if.DrawRotaGraph(int(c.winpos_if.x()), int(c.winpos_if.y()), 1.f, 0.f, TRUE);
+						}
+					}
 				}
+				//
 			}
+			//
 		}
 		else {
 			auto& c = charas[chara.vehicle.DEATH_ID];
-			int siz = int(32.f);
-			float siz_per = 1.f;
-
-			unsigned int col = 0;
-
-			if (c.id == chara.id) {
-				col = GetColor(0, 255, 0);
-			}
-			else {
-				col = GetColor(255, 0, 0);
-			}
-
-			if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f && !c.death) {
-				siz_per = std::clamp((1.f - sqrtf(powf(c.winpos.x() - disp_x / 2, 2) + powf(c.winpos.y() - disp_y / 2, 2)) / float(disp_x / 2)), 0.f, 1.f);
-				siz = int(32.f*siz_per);
-				DrawBox(int(c.winpos.x()) - y_r(siz), int(c.winpos.y()) - y_r(siz), int(c.winpos.x()) + y_r(siz), int(c.winpos.y()) + y_r(siz), col, FALSE);
-				siz = int(42.f*siz_per);
-				DrawBox(int(c.winpos.x()) - y_r(siz), int(c.winpos.y()) - y_r(siz), int(c.winpos.x()) + y_r(siz), int(c.winpos.y()) + y_r(siz), col, FALSE);
+			if (!c.death) {
+				box_p(c, chara, (c.id == chara.id) ? GetColor(0, 255, 0) : GetColor(255, 0, 0));
 			}
 		}
 
+		//視点中央
+		{
+			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
+			DrawRotaGraph(disp_x / 2, disp_y / 2, float(y_r(64)) / 200.f, 0.f, aim.get(), TRUE);//3
+			SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
+		}
 	}
 
 	void res_draw(Mainclass::Chara& chara, bool uses_vr = true) {
