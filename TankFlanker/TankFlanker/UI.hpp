@@ -777,6 +777,10 @@ public:
 		}
 	}
 
+	void reset_lock() {
+		id_near = 0;
+	}
+
 	void item_draw(std::vector<Mainclass::Chara>& charas, Mainclass::Chara& chara, const bool& adss, float danger_height, bool uses_vr = true) {
 		int xs = 0, xp = 0, ys = 0, yp = 0;
 		FontHandle* font = (!uses_vr) ? &font18 : &font24;
@@ -878,18 +882,19 @@ public:
 			}
 			//id_nearŒˆ’è
 			{
-				float d = 10000.f;
-				for (auto&c : charas) {
-					if (
-						&c != &chara &&
-						c.vehicle.HP > 0 &&
-						c.id != chara.id &&
-						(chara.vehicle.mat.zvec()).dot((c.vehicle.pos - chara.vehicle.pos).Norm()) < -cos(15)
-						) {
-						auto dt = (c.vehicle.pos - chara.vehicle.pos).size();
-						if (d > dt) {
-							id_near = &c - &charas[0];
-							d = dt;
+				if (id_near == 0 || charas[id_near].vehicle.HP == 0) {
+					float d = 10000.f;
+					for (auto&c : charas) {
+						if (
+							&c != &chara &&
+							c.vehicle.HP > 0 &&
+							c.id != chara.id
+							) {
+							auto dt = (c.vehicle.pos - chara.vehicle.pos).size();
+							if (d > dt) {
+								id_near = &c - &charas[0];
+								d = dt;
+							}
 						}
 					}
 				}
@@ -939,6 +944,7 @@ public:
 			//
 		}
 		else {
+			reset_lock();
 			auto& c = charas[chara.vehicle.DEATH_ID];
 			if (!c.death) {
 				box_p(c, chara, (c.id == chara.id) ? GetColor(0, 255, 0) : GetColor(255, 0, 0));
@@ -974,7 +980,12 @@ public:
 			yyy += ysize * 2;
 
 			font->DrawString(xp - disp_x / 6, yp + disp_y / 6 - ysize, "CLASS", GetColor(255, 255, 255));
-			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp + disp_y / 6 - ysize, GetColor(255, 255, 255), "%s",
+			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp + disp_y / 6 - ysize,
+				(chara.vehicle.KILL_COUNT < 3) ? GetColor(255, 255, 255) :
+					((chara.vehicle.KILL_COUNT < 5) ? GetColor(0, 255, 0) :
+						((chara.vehicle.KILL_COUNT < 7) ? GetColor(50, 50, 255) :
+						((chara.vehicle.KILL_COUNT < 10) ? GetColor(255, 50, 255) : GetColor(255, 255, 0))))
+				, "%s",
 				(chara.vehicle.KILL_COUNT < 3) ? "Airman" :
 				((chara.vehicle.KILL_COUNT < 5) ? "Senior Master" :
 				((chara.vehicle.KILL_COUNT < 7) ? "Captain" :

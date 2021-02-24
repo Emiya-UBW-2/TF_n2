@@ -118,6 +118,7 @@ public:
 		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_LSHIFT, "精密動作"));
 		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_O, "タイトル画面に戻る"));
 		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_ESCAPE, "強制終了"));
+		key_use_ID.emplace_back(std::pair<int, std::string>(KEY_INPUT_C, "ロックオンリセット"));
 		{
 			std::fstream file;
 			/*
@@ -209,6 +210,7 @@ public:
 								}
 								else {
 									if (veh.info_break[i].per > 0.1f) {
+										veh.obj_break.SetOpacityRate(veh.info_break[i].per);
 										veh.obj_break.SetMatrix(veh.info_break[i].mat * MATRIX_ref::Mtrans(veh.info_break[i].pos));
 										veh.obj_break.DrawMesh(int(veh.use_veh.module_mesh[int(i - 3)].second));
 									}
@@ -358,7 +360,9 @@ public:
 								}
 							}
 							if (veh.HP == 0) {
-								veh.HP_m[GetRand(int(veh.HP_m.size() - 1))] = 0;
+								if (GetRand(100) < 20) {
+									veh.HP_m[GetRand(int(veh.HP_m.size() - 1 - 1))] = 0;
+								}
 							}
 						}
 					}
@@ -605,6 +609,11 @@ public:
 
 								mine.key[16] = (CheckHitKey(key_use_ID[4].first) != 0) && (CheckHitKey(key_use_ID[9].first) != 0);
 								mine.key[17] = (CheckHitKey(key_use_ID[5].first) != 0) && (CheckHitKey(key_use_ID[9].first) != 0);
+
+								if (CheckHitKey(key_use_ID[12].first) != 0) {
+									UIparts->reset_lock();
+									mine.vehicle.HP = 0;
+								}
 							}
 							//VR専用
 							if (Drawparts->use_vr) {
@@ -1216,9 +1225,9 @@ public:
 									veh.info_break[i].per = 1.f;
 								}
 								else {
-									veh.info_break[i].add.yadd(M_GR / powf(GetFPS(), 2.f)/2.f);
+									veh.info_break[i].add.yadd(M_GR / powf(GetFPS(), 2.f) / 2.f);
 									veh.info_break[i].pos += veh.info_break[i].add + (veh.info_break[i].mat.zvec() * (-veh.info_break[i].speed / GetFPS()));
-									veh.info_break[i].per = std::max(veh.info_break[i].per - 1.f / GetFPS() / 10.f, 0.f);
+									veh.info_break[i].per = std::max(veh.info_break[i].per - (1.f / 2.f) / GetFPS(), 0.f);
 								}
 							}
 						}
