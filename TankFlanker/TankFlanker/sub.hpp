@@ -623,14 +623,7 @@ private:
 						if (a.count >= 4.f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
 							a.flug = false;
 						}
-						if (!a.flug) {
-							for (auto& b : c->effcs_gun) {
-								if (b.second == &a) {
-									b.first.handle.SetPos(b.second->pos);
-									break;
-								}
-							}
-						}
+						//
 					}
 				}
 				a.yadd += M_GR / powf(GetFPS(), 2.f);
@@ -861,6 +854,21 @@ public:
 			this->gun.Radius(300.f);
 			this->missile.Radius(300.f);
 			this->hit.Radius(900.f);
+		}
+
+		void setpos(const VECTOR_ref& pos) {
+			this->cockpit.SetPosition(pos);
+			this->engine.SetPosition(pos);
+			this->hit.SetPosition(pos);
+			this->gun.SetPosition(pos);
+			this->missile.SetPosition(pos);
+		}
+		void stop() {
+			this->engine.stop();
+			this->cockpit.stop(); //gun
+			this->gun.stop(); //gun
+			this->missile.stop();
+			this->hit.stop(); //gun
 		}
 	};
 	//コックピット
@@ -1102,9 +1110,7 @@ public:
 		//====================================================
 		std::array<EffectS, ef_size> effcs; //effect
 		std::array<ef_guns, 8> effcs_missile; //effect
-		std::array<ef_guns, 12> effcs_gun;    //effect
 		size_t missile_effcnt = 0;
-		size_t gun_effcnt = 0;
 		size_t id;
 		size_t aim_cnt = 0;//狙われている相手の数
 		size_t missile_cnt = 0;//狙われている相手の数
@@ -1133,19 +1139,16 @@ public:
 		void set_human(const std::vector<Vehcs>& vehcs, const std::vector<Ammos>& Ammo_) {
 			std::fill(this->key.begin(), this->key.end(), false); //操作
 			auto& veh = this->vehicle;
-			//共通
 			{
 				veh.use_id = std::min<size_t>(veh.use_id, vehcs.size() - 1);
 				veh.init(vehcs[veh.use_id], Ammo_);
-			}
-			//飛行機
-			{
 				//追加アニメーション
 				{
+					//脚
 					this->p_anime_geardown.first = MV1AttachAnim(veh.obj.get(), 1);
 					this->p_anime_geardown.second = 1.f;
-					this->changegear.first = true;
-					this->changegear.second = 2;
+					//脚スイッチ
+					this->changegear.get_in(true);
 					//舵
 					for (auto& r : this->p_animes_rudder) {
 						r.first = MV1AttachAnim(veh.obj.get(), 2 + (int)(&r - &this->p_animes_rudder[0]));

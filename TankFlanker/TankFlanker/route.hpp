@@ -612,7 +612,7 @@ public:
 
 								if (CheckHitKey(key_use_ID[12].first) != 0) {
 									UIparts->reset_lock();
-									mine.vehicle.HP = 0;
+									//mine.vehicle.HP = 0;
 								}
 							}
 							//VR専用
@@ -1144,25 +1144,7 @@ public:
 										}
 									}
 								}
-								//銃砲
-								for (auto& a : c.effcs_gun) {
-									if (a.second != nullptr) {
-										a.n_l = (a.second != nullptr);
-										a.flug = a.second->flug;
-
-										if (a.flug) {
-											a.first.pos = a.second->pos;
-											a.first.handle.SetPos(a.first.pos);
-										}
-										if (a.count >= 0.f) {
-											a.count += 1.f / GetFPS();
-											if (a.count >= 4.5f) {
-												a.first.handle.Stop();
-												a.count = -1.f;
-											}
-										}
-									}
-								}
+								//
 							}
 						}
 						//飛行機演算共通
@@ -1202,10 +1184,6 @@ public:
 								t.smkeffcs.handle.Stop();
 							}
 						}
-						//銃砲
-						for (auto& t : c.effcs_gun) {
-							t.first.put(Drawparts->get_effHandle(ef_smoke2));
-						}
 						//ミサイル
 						for (auto& t : c.effcs_missile) {
 							t.first.put(Drawparts->get_effHandle(ef_smoke1));
@@ -1237,12 +1215,7 @@ public:
 					//サウンド
 					{
 						for (auto& c : chara) {
-							auto& veh = c.vehicle;
-							c.se.cockpit.SetPosition(veh.pos);
-							c.se.engine.SetPosition(veh.pos);
-							c.se.hit.SetPosition(veh.pos);
-							c.se.gun.SetPosition(veh.pos);
-							c.se.missile.SetPosition(veh.pos);
+							c.se.setpos(c.vehicle.pos);
 						}
 						//アラート
 						{
@@ -1520,11 +1493,7 @@ public:
 				SetMouseDispFlag(TRUE);
 				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 				for (auto& c : chara) {
-					c.se.engine.stop();
-					c.se.cockpit.stop(); //gun
-					c.se.gun.stop(); //gun
-					c.se.missile.stop();
-					c.se.hit.stop(); //gun
+					c.se.stop();
 				}
 				se_alert.stop();
 				se_alert2.stop();
@@ -1534,9 +1503,6 @@ public:
 				for (auto& c : chara) {
 					auto& veh = c.vehicle;
 					//エフェクト
-					for (auto& t : c.effcs_gun) {
-						t.first.handle.Dispose();
-					}
 					for (auto& t : c.effcs_missile) {
 						t.first.handle.Dispose();
 					}

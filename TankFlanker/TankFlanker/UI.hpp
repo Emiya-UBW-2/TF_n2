@@ -732,7 +732,7 @@ public:
 	}
 
 	//
-	void box_p(Mainclass::Chara& c, Mainclass::Chara& chara, int col) {
+	void box_p(Mainclass::Chara& c, int col) {
 		if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
 			float siz_per = std::clamp((1.f - sqrtf(powf(c.winpos.x() - disp_x / 2, 2) + powf(c.winpos.y() - disp_y / 2, 2)) / float(disp_x / 2)), 0.f, 1.f);
 			int siz = y_r(32.f*siz_per);
@@ -782,7 +782,7 @@ public:
 	}
 
 	void item_draw(std::vector<Mainclass::Chara>& charas, Mainclass::Chara& chara, const bool& adss, float danger_height, bool uses_vr = true) {
-		int xs = 0, xp = 0, ys = 0, yp = 0;
+		int xp = 0, yp = 0;
 		FontHandle* font = (!uses_vr) ? &font18 : &font24;
 		auto font_hight = (!uses_vr) ? y_r(18) : y_r(24);
 		auto& veh = chara.vehicle;
@@ -805,11 +805,12 @@ public:
 			}
 			//主観
 			if (adss) {
+				VECTOR_ref tmp_get;
 				//警告
-				VECTOR_ref aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
-				if (aimpos_2.z() >= 0.f && aimpos_2.z() <= 1.f) {
-					xp = (int)(aimpos_2.x());
-					yp = (int)(aimpos_2.y());
+				tmp_get = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
+				if (tmp_get.z() >= 0.f && tmp_get.z() <= 1.f) {
+					xp = (int)(tmp_get.x());
+					yp = (int)(tmp_get.y());
 					int ccc = 0;
 					if (veh.speed < veh.use_veh.min_speed_limit) {
 						if ((GetNowHiPerformanceCount() / 100000) % 4 <= 2) {
@@ -837,10 +838,10 @@ public:
 					}
 				}
 				//速度計
-				VECTOR_ref spdpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.speed_f.first) - (chara.cocks.obj.frame(chara.cocks.speed2_f.first) - chara.cocks.obj.frame(chara.cocks.speed_f.first)).Norm()*0.05f).get());
-				if (spdpos.z() >= 0.f && spdpos.z() <= 1.f) {
-					xp = (int)(spdpos.x());
-					yp = (int)(spdpos.y());
+				tmp_get = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.speed_f.first) - (chara.cocks.obj.frame(chara.cocks.speed2_f.first) - chara.cocks.obj.frame(chara.cocks.speed_f.first)).Norm()*0.05f).get());
+				if (tmp_get.z() >= 0.f && tmp_get.z() <= 1.f) {
+					xp = (int)(tmp_get.x());
+					yp = (int)(tmp_get.y());
 					font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 0, GetColor(0, 255, 0), "%4.0f km/h", veh.speed * 3.6f);
 
 					if (veh.over_heat) {
@@ -860,17 +861,17 @@ public:
 					}
 				}
 				//高度計
-				VECTOR_ref altpos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.alt_100_f.first) - (chara.cocks.obj.frame(chara.cocks.alt_100_2_f.first) - chara.cocks.obj.frame(chara.cocks.alt_100_f.first)).Norm()*0.05f).get());
-				if (altpos.z() >= 0.f && altpos.z() <= 1.f) {
-					xp = (int)(altpos.x());
-					yp = (int)(altpos.y());
+				tmp_get = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.alt_100_f.first) - (chara.cocks.obj.frame(chara.cocks.alt_100_2_f.first) - chara.cocks.obj.frame(chara.cocks.alt_100_f.first)).Norm()*0.05f).get());
+				if (tmp_get.z() >= 0.f && tmp_get.z() <= 1.f) {
+					xp = (int)(tmp_get.x());
+					yp = (int)(tmp_get.y());
 					font->DrawStringFormat(xp, yp, GetColor(0, 255, 0), " %4d m", int(veh.pos.y()));
 				}
 				//コンパス
-				VECTOR_ref cpspos = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.subcompass_f.first) - (chara.cocks.obj.frame(chara.cocks.subcompass2_f.first) - chara.cocks.obj.frame(chara.cocks.subcompass_f.first)).Norm()*0.05f).get());
-				if (cpspos.z() >= 0.f && cpspos.z() <= 1.f) {
-					xp = (int)(cpspos.x());
-					yp = (int)(cpspos.y());
+				tmp_get = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.subcompass_f.first) - (chara.cocks.obj.frame(chara.cocks.subcompass2_f.first) - chara.cocks.obj.frame(chara.cocks.subcompass_f.first)).Norm()*0.05f).get());
+				if (tmp_get.z() >= 0.f && tmp_get.z() <= 1.f) {
+					xp = (int)(tmp_get.x());
+					yp = (int)(tmp_get.y());
 
 					VECTOR_ref tmp = chara.vehicle.mat.zvec();
 					tmp = VGet(tmp.x(), 0.f, tmp.z());
@@ -905,7 +906,7 @@ public:
 					unsigned int col = (c.id == chara.id) ? GetColor(0, 255, 0) : GetColor(255, 0, 0);
 					if (!c.death) {
 						//箱
-						box_p(c, chara, col);
+						box_p(c, col);
 						//ライフ
 						life_ver(c, chara, (&c - &charas[0] == int(id_near)) ? GetColor(255, 255, 0) : col, uses_vr);
 						//方向
@@ -921,7 +922,7 @@ public:
 				auto&c = charas[id_near];
 				if (!c.death) {
 					//箱
-					box_p(c, chara, GetColor(255, 255, 0));
+					box_p(c, GetColor(255, 255, 0));
 					//方向
 					tri_p(c, chara, GetColor(255, 255, 0));
 					//予測
@@ -947,10 +948,9 @@ public:
 			reset_lock();
 			auto& c = charas[chara.vehicle.DEATH_ID];
 			if (!c.death) {
-				box_p(c, chara, (c.id == chara.id) ? GetColor(0, 255, 0) : GetColor(255, 0, 0));
+				box_p(c, (c.id == chara.id) ? GetColor(0, 255, 0) : GetColor(255, 0, 0));
 			}
 		}
-
 		//視点中央
 		{
 			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
@@ -961,7 +961,7 @@ public:
 
 	void res_draw(Mainclass::Chara& chara, bool uses_vr = true) {
 		int yyy = 0;
-		int xs = 0, xp = 0, ys = 0, yp = 0;
+		int xp = 0, yp = 0;
 		FontHandle* font = (!uses_vr) ? &font24 : &font36;
 		auto ysize = (!uses_vr) ? y_r(24) : y_r(36);
 		yyy += ysize;
