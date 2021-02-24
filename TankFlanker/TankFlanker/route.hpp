@@ -1364,10 +1364,7 @@ public:
 								//UI
 								UI_Screen.SetDraw_Screen();
 								{
-									UIparts->draw(mine, cam_s.Rot >= ADS, *Drawparts->get_device_hand1(), danger_height,
-										Drawparts->use_vr
-										//true
-									);
+									UIparts->draw(mine, cam_s.Rot >= ADS, *Drawparts->get_device_hand1(), danger_height, Drawparts->use_vr);
 								}
 								//VR‚ÉˆÚ‚·
 								Drawparts->draw_VR(
