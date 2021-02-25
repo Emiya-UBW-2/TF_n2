@@ -181,8 +181,8 @@ public:
 	}
 
 	void sea_draw() {
-		SetFogStartEnd(0.0f, 11500.f);
-		SetFogColor(72, 164, 218);
+		SetFogStartEnd(12500.0f, 20000.f);
+		SetFogColor(126, 168, 193);
 		SetUseVertexShader(VertexShaderHandle);	// 使用する頂点シェーダーをセット
 		SetUsePixelShader(PixelShaderHandle);	// 使用するピクセルシェーダーをセット
 		{
@@ -219,5 +219,17 @@ public:
 		DrawPolygonIndexed3D_UseVertexBuffer(VerBuf, IndexBuf, cloud_pic.get(), TRUE);
 		SetUseLighting(TRUE);
 		SetDrawAlphaTest(-1, 0);
+	}
+
+	void draw() {
+		SetFogStartEnd(30000.0f, 60000.f);
+		SetFogColor(128, 128, 128);
+		{
+			map_get().DrawModel();
+		}
+		//海
+		sea_draw();
+		//雲
+		cloud_draw();//2
 	}
 };
