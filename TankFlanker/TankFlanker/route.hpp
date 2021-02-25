@@ -378,7 +378,7 @@ public:
 								mine.key[8] = k_.key_use_ID[6].get_key();
 								mine.key[9] = k_.key_use_ID[7].get_key();
 
-								mine.auto_thrust(400.f);
+								//mine.auto_thrust(400.f);
 								//‹r
 								mine.key[10] = false;
 								//ƒuƒŒ[ƒL
