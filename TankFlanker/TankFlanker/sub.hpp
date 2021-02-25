@@ -1768,16 +1768,51 @@ public:
 			}
 		}
 		//cpu
+		void auto_thrust(const float& spd) {
+			auto& veh = this->vehicle;
+
+			auto min = veh.use_veh.min_speed_limit*0.5f;
+			auto mid = veh.use_veh.mid_speed_limit;
+			auto max = veh.use_veh.max_speed_limit;
+			auto ac = veh.accel / 10.f;
+			auto aim_s = spd / 3.6f;
+
+			aim_s = aim_s - (veh.speed - aim_s)*0.5f;
+
+
+			if (ac <= 5.f) {
+				if (aim_s <= ((mid*ac + min * (5.f - ac)) / 5.f)) {
+					this->key[8] = false;
+					this->key[9] = true;
+				}
+				else {
+					this->key[8] = true;
+					this->key[9] = false;
+				}
+			}
+			else if (aim_s >= ((mid*4.f + min) / 5.f)) {
+				if (aim_s <= ((max*(ac - 5.f) + mid * ac) / 5.f)) {
+					this->key[8] = false;
+					this->key[9] = true;
+				}
+				else {
+					this->key[8] = true;
+					this->key[9] = false;
+				}
+			}
+			else {//離昇出力
+				this->key[8] = false;
+				this->key[9] = true;
+			}
+		}
 		void cpu_doing(std::vector<Chara>* chara) {
 			auto& veh = this->vehicle;
 
-
-			this->key[0] = false;//GetRand(100) <= 10;   //射撃
-			this->key[1] = false;//GetRand(100) <= 1; //マシンガン
+			std::fill(this->key.begin(), this->key.end(), false); //操作
 
 			bool ret = false;
 			bool up = false;
-			size_t id = chara->size();
+			size_t tmp_id = chara->size();
 			VECTOR_ref tgt_pos;
 
 			float dist = (std::numeric_limits<float>::max)();
@@ -1793,16 +1828,16 @@ public:
 				auto p = (t.vehicle.pos - veh.pos).size();
 				if (dist > p) {
 					dist = p;
-					id = &t - &(*chara)[0];
+					tmp_id = &t - &(*chara)[0];
 					tgt_pos = t.vehicle.pos;
 				}
 			}
 
-			if (id == chara->size()) {
+			if (tmp_id == chara->size()) {
 				tgt_pos = veh.pos - veh.mat.zvec();
 			}
 			else {
-				(*chara)[id].aim_cnt++;
+				(*chara)[tmp_id].aim_cnt++;
 			}
 			{
 				auto tmpv = veh.pos;
@@ -1824,7 +1859,7 @@ public:
 			VECTOR_ref my_zvec = veh.mat.zvec();
 			//ピッチ
 			{
-				if (id == chara->size() && !ret && !up) {
+				if (tmp_id == chara->size() && !ret && !up) {
 					tgt_zvec.y(0.f);
 					tgt_zvec = tgt_zvec.Norm();
 				}
@@ -1834,28 +1869,20 @@ public:
 				auto dot = cross_vec.dot(cross_yvec);
 				if (dot >= 0.1f) {
 					this->key[2] = GetRand(10) <= 5;
-					this->key[3] = false;
 					this->key[12] = GetRand(10) <= 5;
-					this->key[13] = false;
 				}
 				else if (dot <= -0.1f) {
-					this->key[2] = false;
 					this->key[3] = GetRand(10) <= 5;
-					this->key[12] = false;
 					this->key[13] = GetRand(10) <= 5;
 				}
 				else {
-					this->key[2] = false;
-					this->key[3] = false;
 					if (dot >= 0.f) {
 						this->key[12] = true;
-						this->key[13] = false;
 					}
 					else {
-						this->key[12] = false;
 						this->key[13] = true;
 					}
-					if (id != chara->size() && !ret && !up) {
+					if (tmp_id != chara->size() && !ret && !up) {
 						if ((this->vehicle.mat.zvec()).dot(tgt_pos - this->vehicle.pos) < 0) {
 							if ((tgt_pos - this->vehicle.pos).size() <= 300) {
 								this->key[0] = GetRand(100) <= 20;   //射撃
@@ -1869,7 +1896,7 @@ public:
 			}
 			//ロール
 			{
-				if (id == chara->size() && !ret && !up) {
+				if (tmp_id == chara->size() && !ret && !up) {
 					tgt_zvec = VGet(0, 1, 0);
 				}
 				auto tgt_xvec = tgt_zvec.cross(my_zvec).Norm();
@@ -1878,53 +1905,25 @@ public:
 				auto dot = cross_vec.dot(tgt_xvec.cross(tgt_yvec));
 				if (dot >= 0.1f) {
 					this->key[4] = GetRand(10) <= 5;
-					this->key[5] = false;
 					this->key[14] = GetRand(10) <= 5;
-					this->key[15] = false;
 				}
 				else if (dot <= -0.1f) {
-					this->key[4] = false;
 					this->key[5] = GetRand(10) <= 5;
-					this->key[14] = false;
 					this->key[15] = GetRand(10) <= 5;
 				}
 				else {
-					this->key[4] = false;
-					this->key[5] = false;
 					if (dot >= 0.f) {
 						this->key[14] = true;
-						this->key[15] = false;
 					}
 					else {
-						this->key[14] = false;
 						this->key[15] = true;
 					}
 				}
 
 			}
-
-			//ヨー
-			this->key[6] = false;
-			this->key[7] = false;
-			//スロットル
-			if (veh.speed <= veh.use_veh.min_speed_limit) {
-				this->key[8] = true;
-				this->key[9] = false;
-			}
-			else if (veh.speed >= veh.use_veh.max_speed_limit*0.8f) {
-				this->key[8] = false;
-				this->key[9] = true;
-			}
-			else {
-				this->key[8] = false;
-				this->key[9] = false;
-			}
-
-			this->key[10] = false;
-			this->key[11] = false;
-
-			this->key[16] = false;
-			this->key[17] = false;
+			//オートスラスト
+			auto_thrust(400.f);
+			//
 		}
 		//
 	};

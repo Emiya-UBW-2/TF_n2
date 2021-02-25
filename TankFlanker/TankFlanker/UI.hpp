@@ -774,6 +774,7 @@ public:
 			}
 			*/
 			font->DrawStringFormat(xp, yp + 18, col, "%d m", int((VECTOR_ref(c.vehicle.pos) - chara.vehicle.pos).size()));
+			font->DrawStringFormat(xp, yp + 36, col, "%d km/h", int(chara.vehicle.speed*3.6f));
 		}
 	}
 

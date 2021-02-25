@@ -309,11 +309,11 @@ public:
 						{
 							//cpu
 							for (auto& c : chara) {
-								auto& veh = c.vehicle;
 								if (&c - &chara[0] >= (Drawparts->use_vr ? 1 : 1)) {
 									c.cpu_doing(&chara);
 								}
 							}
+							//*
 							//VR専用
 							if (Drawparts->use_vr) {
 								std::for_each(mine.key.begin(), mine.key.end(), [](bool& g) {g = false; });
@@ -377,6 +377,8 @@ public:
 								//スロットル
 								mine.key[8] = k_.key_use_ID[6].get_key();
 								mine.key[9] = k_.key_use_ID[7].get_key();
+
+								mine.auto_thrust(400.f);
 								//脚
 								mine.key[10] = false;
 								//ブレーキ
@@ -394,6 +396,7 @@ public:
 									//mine.vehicle.HP = 0;//自爆
 								}
 							}
+							//*/
 							for (auto& c : chara) {
 								if (c.death) {
 									std::for_each(c.key.begin(), c.key.end(), [](bool& g) {g = false; });
