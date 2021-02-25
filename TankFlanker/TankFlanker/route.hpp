@@ -732,18 +732,20 @@ public:
 						}
 					}
 				}
+				//I—¹
+				{
+					ending_win = true;
+					bgm_main.stop();
+					bgm_win.stop();
 
-				ending_win = true;
-				bgm_main.stop();
-				bgm_win.stop();
-
-				SetMouseDispFlag(TRUE);
-				SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
-				for (auto& c : chara) {
-					c.se.stop();
+					SetMouseDispFlag(TRUE);
+					SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
+					for (auto& c : chara) {
+						c.se.stop();
+					}
+					se_alert.stop();
+					se_alert2.stop();
 				}
-				se_alert.stop();
-				se_alert2.stop();
 			}
 			//‰ð•ú
 			{
