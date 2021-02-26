@@ -4,7 +4,7 @@
 #define x_r(p1) (int(p1) * deskx / 1920)
 #define y_r(p1) (int(p1) * desky / 1080)
 
-class UI : Mainclass {
+class UI {
 private:
 	//
 	GraphHandle circle;
@@ -341,6 +341,7 @@ public:
 		FontHandle* font = (!uses_vr) ? &font18 : &font24;
 		auto font_hight = (!uses_vr) ? y_r(18) : y_r(24);
 		auto& veh = chara.vehicle;
+		auto time = GetNowHiPerformanceCount();
 		//サイズ変更
 		if (uses_vr) {
 			GetScreenState(&disp_x, &disp_y, nullptr);
@@ -379,19 +380,19 @@ public:
 				}
 
 				for (auto& g : veh.Gun_) {
-					if (g.loadcnt != 0.f) {
-						DrawBox(xp, yp + ys * 2 / 3, xp + x_r(200 - int(200.f * g.loadcnt / g.gun_info.load_time)), yp + ys, GetColor(255, 0, 0), TRUE);
+					if (g.get_loadcnt() != 0.f) {
+						DrawBox(xp, yp + ys * 2 / 3, xp + x_r(200 - int(200.f * g.get_loadcnt() / g.get_gun_info().load_time)), yp + ys, GetColor(255, 0, 0), TRUE);
 					}
 					else {
 						DrawBox(xp, yp + ys * 2 / 3, xp + xs, yp + ys, GetColor(0, 255, 0), TRUE);
 					}
 
-					if (g.rounds != 0.f) {
-						DrawBox(xp, yp + ys * 2 - y_r(2), xp + x_r(int(200.f * g.rounds / g.gun_info.rounds)), yp + ys * 2 + y_r(2), GetColor(255, 192, 0), TRUE);
+					if (g.get_rounds_() != 0.f) {
+						DrawBox(xp, yp + ys * 2 - y_r(2), xp + x_r(int(200.f * g.get_rounds_() / g.get_gun_info().rounds)), yp + ys * 2 + y_r(2), GetColor(255, 192, 0), TRUE);
 					}
 
-					font->DrawString(xp, yp, g.bullet[g.usebullet].spec.name_a, GetColor(255, 255, 255));
-					font->DrawStringFormat_RIGHT(xp + xs, yp + ys + y_r(2), GetColor(255, 255, 255), "%04d / %04d", g.rounds, g.gun_info.rounds);
+					font->DrawString(xp, yp, g.getbullet_use().spec.name_a, GetColor(255, 255, 255));
+					font->DrawStringFormat_RIGHT(xp + xs, yp + ys + y_r(2), GetColor(255, 255, 255), "%04d / %04d", g.get_rounds_(), g.get_gun_info().rounds);
 
 					xp += -x_r(30 / int(veh.Gun_.size()));
 					yp += ys * 2 + y_r(4);
@@ -592,25 +593,35 @@ public:
 					yp = yp - font_hight / 2;
 					font->DrawStringFormat_RIGHT(xp, yp, GetColor(0, 255, 0), "km/h %4.0f", veh.speed * 3.6f);
 
-					//power
-					if (veh.over_heat) {
-						font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accel);
-					}
-					else if (veh.accel >= 100.f) {
-						font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(255, 255, 0), "POWER %03.0f%%", veh.accel);
-					}
-					else {
+					if (chara.use_auto_thrust) {
+						//power
 						font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(0, 255, 0), "POWER %03.0f%%", veh.accel);
-					}
-					//overheat
-					if (veh.over_heat) {
-						if ((GetNowHiPerformanceCount() / 100000) % 5 <= 2) {
-							font->DrawStringFormat_RIGHT(xp, yp + font_hight * 2, GetColor(255, 0, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
+						//オートスラスト使用
+						if ((time / 100000) % 10 <= 5) {
+							font->DrawString_RIGHT(xp, yp + font_hight * 2, "AUTO THRUST", GetColor(0, 255, 0));
 						}
 					}
-					else if (veh.accel >= 100.f) {
-						if ((GetNowHiPerformanceCount() / 100000) % 10 <= 5) {
-							font->DrawStringFormat_RIGHT(xp, yp + font_hight * 2, GetColor(255, 255, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
+					else {
+						//power
+						if (veh.over_heat) {
+							font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accel);
+						}
+						else if (veh.accel >= 100.f) {
+							font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(255, 255, 0), "POWER %03.0f%%", veh.accel);
+						}
+						else {
+							font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(0, 255, 0), "POWER %03.0f%%", veh.accel);
+						}
+						//overheat
+						if (veh.over_heat) {
+							if ((time / 100000) % 5 <= 2) {
+								font->DrawStringFormat_RIGHT(xp, yp + font_hight * 2, GetColor(255, 0, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
+							}
+						}
+						else if (veh.accel >= 100.f) {
+							if ((time / 100000) % 10 <= 5) {
+								font->DrawStringFormat_RIGHT(xp, yp + font_hight * 2, GetColor(255, 255, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
+							}
 						}
 					}
 				}
@@ -742,7 +753,7 @@ public:
 		}
 	}
 	void tri_p(Mainclass::Chara& c, Mainclass::Chara& chara, int col) {
-		if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f && c.id != chara.id) {
+		if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f && c.type != chara.type) {
 			auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
 			auto dis2 = std::clamp(sqrtf(powf(float(int(c.winpos.x()) - disp_x / 2), 2.f) + powf(float(int(c.winpos.y()) - disp_y / 2), 2.f)), 0.f, 200.f);
 			auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, dis2);
@@ -786,16 +797,19 @@ public:
 		int xp = 0, yp = 0;
 		FontHandle* font = (!uses_vr) ? &font18 : &font24;
 		auto font_hight = (!uses_vr) ? y_r(18) : y_r(24);
+		auto time = GetNowHiPerformanceCount();
 		auto& veh = chara.vehicle;
 		//取得
 		{
-			SetCameraNearFar(0.01f, chara.vehicle.use_veh.canlook_dist*3.f);
+			SetCameraNearFar(0.01f, veh.use_veh.canlook_dist*3.f);
+			auto gunpos = (veh.obj.frame(veh.Gun_[0].get_gun_info().frame1.first) - veh.pos);
+			auto ammo_ = (veh.Gun_[0].getbullet_use().spec.speed_a + veh.speed) / GetFPS();
 			for (auto& c : charas) {
-				c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + (c.vehicle.mat.zvec() * (-c.vehicle.speed / GetFPS()))*((chara.vehicle.pos - c.vehicle.pos).size() / (600.f / GetFPS()))).get());
+				c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + gunpos + c.vehicle.mat.zvec() *(-c.vehicle.speed / GetFPS())*((c.vehicle.pos - veh.pos).size() / ammo_)).get());
 				c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
 			}
 			aimpos_3 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(0.f, 0.58f, -1.f), veh.mat)).get());
-			aimpos = ConvWorldPosToScreenPos(((VECTOR_ref)(chara.vehicle.pos) + chara.vehicle.mat.zvec() * (-chara.vehicle.use_veh.canlook_dist*0.8f)).get());
+			aimpos = ConvWorldPosToScreenPos((VECTOR_ref(veh.pos) + veh.mat.zvec() * (-veh.use_veh.canlook_dist*0.8f)).get());
 		}
 		//描画
 		if (!chara.death) {
@@ -814,7 +828,7 @@ public:
 					yp = (int)(tmp_get.y());
 					int ccc = 0;
 					if (veh.speed < veh.use_veh.min_speed_limit) {
-						if ((GetNowHiPerformanceCount() / 100000) % 4 <= 2) {
+						if ((time / 100000) % 4 <= 2) {
 							font->DrawString(xp, yp + ccc, "STALL", GetColor(255, 0, 0));
 						}
 						ccc += font_hight;
@@ -828,7 +842,7 @@ public:
 						ccc += font_hight;
 					}
 					if (chara.aim_cnt > 0) {
-						if ((GetNowHiPerformanceCount() / 80000) % 4 <= 2) {
+						if ((time / 80000) % 4 <= 2) {
 							font->DrawString(xp, yp + ccc, "ENEMY ALERT", GetColor(255, 225, 0));
 						}
 						ccc += font_hight;
@@ -843,21 +857,35 @@ public:
 				if (tmp_get.z() >= 0.f && tmp_get.z() <= 1.f) {
 					xp = (int)(tmp_get.x());
 					yp = (int)(tmp_get.y());
-					font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 0, GetColor(0, 255, 0), "%4.0f km/h", veh.speed * 3.6f);
-
+					font->DrawStringFormat_RIGHT(xp, yp, GetColor(0, 255, 0), "%4.0f km/h", veh.speed * 3.6f);
+					//power
 					if (veh.over_heat) {
-						font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accel);
-						if ((GetNowHiPerformanceCount() / 100000) % 5 <= 2) {
-							font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 2, GetColor(255, 0, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
+						font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(255, 0, 0), "POWER %03.0f%%", veh.accel);
+					}
+					else if (veh.accel >= 100.f) {
+						font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(255, 255, 0), "POWER %03.0f%%", veh.accel);
+					}
+					else {
+						font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(0, 255, 0), "POWER %03.0f%%", veh.accel);
+					}
+					//
+					if (chara.use_auto_thrust) {
+						//オートスラスト使用
+						if ((time / 100000) % 10 <= 5) {
+							font->DrawStringFormat_RIGHT(xp, yp + font_hight * 2, (veh.over_heat) ? GetColor(255, 0, 0) : GetColor(128, 255, 0), "AUTO THRUST %4.0f km/h", chara.speed_auto_thrust);
 						}
 					}
 					else {
-						if (veh.accel >= 100.f) {
-							font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 1, GetColor(255, 255, 0), "POWER %03.0f%%", veh.accel);
-							font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 2, GetColor(255, 255, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
+						//overheat
+						if (veh.over_heat) {
+							if ((time / 100000) % 5 <= 2) {
+								font->DrawStringFormat_RIGHT(xp, yp + font_hight * 2, GetColor(255, 0, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
+							}
 						}
-						else {
-							font->DrawStringFormat_RIGHT(xp, yp + y_r(36) * 1, GetColor(0, 255, 0), "POWER %03.0f%%", veh.accel);
+						else if (veh.accel >= 100.f) {
+							if ((time / 100000) % 10 <= 5) {
+								font->DrawStringFormat_RIGHT(xp, yp + font_hight * 2, GetColor(255, 255, 0), "OVER HEAT %05.2fs / %05.2fs", veh.WIP_timer_limit - veh.WIP_timer, veh.WIP_timer_limit);
+							}
 						}
 					}
 				}
@@ -874,7 +902,7 @@ public:
 					xp = (int)(tmp_get.x());
 					yp = (int)(tmp_get.y());
 
-					VECTOR_ref tmp = chara.vehicle.mat.zvec();
+					VECTOR_ref tmp = veh.mat.zvec();
 					tmp = VGet(tmp.x(), 0.f, tmp.z());
 					tmp = tmp.Norm();
 					float rad = -std::atan2f(tmp.x(), -tmp.z())*180.f / DX_PI_F;
@@ -890,9 +918,9 @@ public:
 						if (
 							&c != &chara &&
 							c.vehicle.HP > 0 &&
-							c.id != chara.id
+							c.type != chara.type
 							) {
-							auto dt = (c.vehicle.pos - chara.vehicle.pos).size();
+							auto dt = (c.vehicle.pos - veh.pos).size();
 							if (d > dt) {
 								id_near = &c - &charas[0];
 								d = dt;
@@ -904,7 +932,7 @@ public:
 			//
 			for (auto&c : charas) {
 				if (&c != &chara) {
-					unsigned int col = (c.id == chara.id) ? GetColor(0, 255, 0) : GetColor(255, 0, 0);
+					unsigned int col = (c.type == chara.type) ? GetColor(0, 255, 0) : GetColor(255, 0, 0);
 					if (!c.death) {
 						//箱
 						box_p(c, col);
@@ -929,7 +957,7 @@ public:
 					//予測
 					if (
 						c.winpos.z() >= 0.f && c.winpos.z() <= 1.f &&
-						c.id != chara.id &&
+						c.type != chara.type &&
 						aimpos.z() >= 0.f && aimpos.z() <= 1.f &&
 						c.winpos_if.z() >= 0.f && c.winpos_if.z() <= 1.f
 						) {
@@ -947,9 +975,9 @@ public:
 		}
 		else {
 			reset_lock();
-			auto& c = charas[chara.vehicle.DEATH_ID];
+			auto& c = charas[veh.DEATH_ID];
 			if (!c.death) {
-				box_p(c, (c.id == chara.id) ? GetColor(0, 255, 0) : GetColor(255, 0, 0));
+				box_p(c, (c.type == chara.type) ? GetColor(0, 255, 0) : GetColor(255, 0, 0));
 			}
 		}
 		//視点中央
@@ -983,9 +1011,9 @@ public:
 			font->DrawString(xp - disp_x / 6, yp + disp_y / 6 - ysize, "CLASS", GetColor(255, 255, 255));
 			font->DrawStringFormat_RIGHT(xp + disp_x / 6, yp + disp_y / 6 - ysize,
 				(chara.vehicle.KILL_COUNT < 3) ? GetColor(255, 255, 255) :
-					((chara.vehicle.KILL_COUNT < 5) ? GetColor(0, 255, 0) :
-						((chara.vehicle.KILL_COUNT < 7) ? GetColor(50, 50, 255) :
-						((chara.vehicle.KILL_COUNT < 10) ? GetColor(255, 50, 255) : GetColor(255, 255, 0))))
+				((chara.vehicle.KILL_COUNT < 5) ? GetColor(0, 255, 0) :
+				((chara.vehicle.KILL_COUNT < 7) ? GetColor(50, 50, 255) :
+					((chara.vehicle.KILL_COUNT < 10) ? GetColor(255, 50, 255) : GetColor(255, 255, 0))))
 				, "%s",
 				(chara.vehicle.KILL_COUNT < 3) ? "Airman" :
 				((chara.vehicle.KILL_COUNT < 5) ? "Senior Master" :

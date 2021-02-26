@@ -1,9 +1,9 @@
 isfloat=false
-maxspeed=850
-midspeed=475
+maxspeed=1931
+midspeed=1300
 minspeed=225
-rad=100
-HP=200
+rad=35
+HP=150
 canlook=2500
 gun_0_name=GAU-12
 gun_0_loadcnt=0.06

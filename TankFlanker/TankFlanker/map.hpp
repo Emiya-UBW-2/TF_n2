@@ -17,6 +17,8 @@ private:
 	int vnum, pnum;					/*grass*/
 	MV1_REF_POLYGONLIST RefMesh;	/*grass*/
 
+	GraphHandle sun_pic;		/*‰æ‘œƒnƒ“ƒhƒ‹*/
+	VECTOR_ref sun_pos;
 	//ŠC
 	int PixelShaderHandle;
 	int VertexShaderHandle;
@@ -40,6 +42,8 @@ public:
 		MV1::Load("data/model/sea/model.mv1", &sea, true);	 //ŠC
 
 		SetUseASyncLoadFlag(TRUE);
+		sun_pic = GraphHandle::Load("data/sun.png");		 /*sun*/
+
 		cloud_pic = GraphHandle::Load("data/model/cloud/cloud.png");		 /*grass*/
 		SetUseASyncLoadFlag(FALSE);
 		MV1::Load("data/model/cloud/model.mv1", &cloud, true);		/*grass*/
@@ -52,7 +56,9 @@ public:
 		OldTime = GetNowCount();
 	}
 
-	void set_map(const char* buf, const float x_max = 10.f, const float z_max = 10.f, const float x_min = -10.f, const float z_min = -10.f) {
+	void set_map(const char* buf, const VECTOR_ref& ray, const float x_max = 10.f, const float z_max = 10.f, const float x_min = -10.f, const float z_min = -10.f) {
+
+		sun_pos = ray.Norm() * -1500.f;
 		map.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
 		VECTOR_ref size;
 		for (int i = 0; i < map_col.mesh_num(); i++) {
@@ -204,9 +210,13 @@ public:
 	}
 	//‹ó•`‰æ
 	void sky_draw(void) {
+		SetCameraNearFar(1000.f, 5000.f);
 		SetFogEnable(FALSE);
 		SetUseLighting(FALSE);
+
 		sky.DrawModel();
+		DrawBillboard3D(sun_pos.get(), 0.5f, 0.5f, 100.f, 0.f, sun_pic.get(), TRUE);
+
 		SetUseLighting(TRUE);
 		SetFogEnable(TRUE);
 	}
