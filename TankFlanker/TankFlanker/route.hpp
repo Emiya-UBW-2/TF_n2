@@ -9,9 +9,11 @@ class main_c {
 	VECTOR_ref eyevec, eyevec2;																	//視点
 	FontHandle font18;
 	//描画スクリーン
-	GraphHandle outScreen2;
+	GraphHandle outScreen, outScreen2;
 	GraphHandle UI_Screen, UI_Screen2;
 	MV1 cockpit;	//コックピット
+	MV1 garage;
+	FontHandle font12;
 	//操作
 	Mainclass::CAMS cam_s;
 	float range = 0.f, range_p = 30.f;
@@ -96,6 +98,7 @@ public:
 		auto Hostpass2parts = std::make_unique<HostPassEffect>(dof_e, bloom_e, deskx, desky);							//ホストパスエフェクト
 		UI_Screen2 = GraphHandle::Make(deskx, desky, true);																//フルスクリーン向けUI
 		auto mapparts = std::make_unique<Mapclass>();																	//map
+		outScreen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);	//描画スクリーン
 		outScreen2 = GraphHandle::Make(deskx, desky, true);	//描画スクリーン
 		font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
 		//その他
@@ -183,18 +186,283 @@ public:
 		do {
 			//読み出し
 			chara.resize(24);
+			auto& mine = chara[0];
 			{
+				//キャラ選択
+				{
+					uint8_t rtct = 0, ltct = 0;
+					float fov = 45.f;
+					float speed = 0.f;
+					VECTOR_ref pos;
+					pos.y(1.8f);
+					VECTOR_ref pos_mine = VGet(15.f, 0, 0);
+					bool endp = false;
+					bool startp = false;
+					float rad = 0.f;
+					float xrad_m = 0.f;
+					float yrad_m = 0.f;
+					float yrad_im = 0.f, xrad_im = 0.f;
+					int m_x = 0, m_y = 0;
+					float ber_r = 0.f;
+					int anime = 0;
+					auto& veh = chara[0].vehicle;
+					{
+						bgm_title.play(DX_PLAYTYPE_LOOP, TRUE);
+						bgm_title.vol(int(float(255)*0.5f));
+						font12 = FontHandle::Create(y_r(12), DX_FONTTYPE_EDGE);
+						MV1::Load("data/model/garage/model.mv1", &garage, false);
+						oldv = false;
+						start_c = true;
+						veh.use_id %= Vehicles.size(); //飛行機
+						anime = MV1AttachAnim(Vehicles[veh.use_id].obj.get(), 1);
+						MV1SetAttachAnimBlendRate(Vehicles[veh.use_id].obj.get(), anime, 1.f);
+						GetMousePoint(&m_x, &m_y);
+
+						cam_s.cam.campos = VGet(0.f, 0.f, -15.f);
+						cam_s.cam.camvec = VGet(0.f, 3.f, 0.f);
+					}
+					while (ProcessMessage() == 0) {
+						const auto waits = GetNowHiPerformanceCount();
+						if (!startp) {
+							if (Drawparts->use_vr) {
+								auto& ptr_LEFTHAND = *Drawparts->get_device_hand1();
+								if (&ptr_LEFTHAND != nullptr) {
+									if (ptr_LEFTHAND.turn && ptr_LEFTHAND.now) {
+										//
+										{
+											ltct = std::clamp<uint8_t>(ltct + 1, 0, ((((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) && ptr_LEFTHAND.touch.x() < -0.5f) ? 2 : 0));
+											rtct = std::clamp<uint8_t>(rtct + 1, 0, ((((ptr_LEFTHAND.on[0] & BUTTON_TOUCHPAD) != 0) && ptr_LEFTHAND.touch.x() > 0.5f) ? 2 : 0));
+											if (ltct == 1) {
+												MV1DetachAnim(Vehicles[veh.use_id].obj.get(), anime);
+												++veh.use_id %= Vehicles.size();
+												anime = MV1AttachAnim(Vehicles[veh.use_id].obj.get(), 1);
+												MV1SetAttachAnimBlendRate(Vehicles[veh.use_id].obj.get(), anime, 1.f);
+											}
+											if (rtct == 1) {
+												MV1DetachAnim(Vehicles[veh.use_id].obj.get(), anime);
+												if (veh.use_id == 0) {
+													veh.use_id = Vehicles.size() - 1;
+												}
+												else {
+													--veh.use_id;
+												}
+												anime = MV1AttachAnim(Vehicles[veh.use_id].obj.get(), 1);
+												MV1SetAttachAnimBlendRate(Vehicles[veh.use_id].obj.get(), anime, 1.f);
+											}
+										}
+										//
+										if ((ptr_LEFTHAND.on[0] & BUTTON_TRIGGER) != 0) {
+											break;
+										}
+										//
+									}
+								}
+							}
+							else {
+								{
+									int x, y;
+									GetMousePoint(&x, &y);
+									yrad_im = std::clamp(yrad_im + float(m_x - x) / 5.f, -120.f, -30.f);
+									xrad_im = std::clamp(xrad_im + float(m_y - y), -0.f, 45.f);
+									m_x = x;
+									m_y = y;
+									easing_set(&yrad_m, deg2rad(yrad_im), 0.9f);
+									easing_set(&xrad_m, deg2rad(xrad_im), 0.9f);
+								}
+								//
+								{
+									ltct = std::clamp<uint8_t>(ltct + 1, 0, ((CheckHitKey(KEY_INPUT_A) != 0) ? 2 : 0));
+									rtct = std::clamp<uint8_t>(rtct + 1, 0, ((CheckHitKey(KEY_INPUT_D) != 0) ? 2 : 0));
+
+									if (ltct == 1) {
+										MV1DetachAnim(Vehicles[veh.use_id].obj.get(), anime);
+										++veh.use_id %= Vehicles.size();
+										anime = MV1AttachAnim(Vehicles[veh.use_id].obj.get(), 1);
+										MV1SetAttachAnimBlendRate(Vehicles[veh.use_id].obj.get(), anime, 1.f);
+									}
+									if (rtct == 1) {
+										MV1DetachAnim(Vehicles[veh.use_id].obj.get(), anime);
+										if (veh.use_id == 0) {
+											veh.use_id = Vehicles.size() - 1;
+										}
+										else {
+											--veh.use_id;
+										}
+										anime = MV1AttachAnim(Vehicles[veh.use_id].obj.get(), 1);
+										MV1SetAttachAnimBlendRate(Vehicles[veh.use_id].obj.get(), anime, 1.f);
+									}
+								}
+								//
+								if (CheckHitKey(KEY_INPUT_SPACE) != 0) {
+									startp = true;
+								}
+								//
+							}
+						}
+						else {
+							speed = std::clamp(speed + 1.5f / 3.6f / GetFPS(), 0.f, 20.f / 3.6f / GetFPS());
+							pos.zadd(-speed);
+
+							if (pos.z() <= -15.f) {
+								easing_set(&fov, 45.f / 1.75f, 0.95f);
+							}
+							if (pos.z() < -20.f) {
+								endp = true;
+							}
+						}
+						//視点取得
+						if (Drawparts->use_vr) {
+							auto& ptr_ = *Drawparts->get_device_hmd();
+							Drawparts->GetDevicePositionVR(Drawparts->get_hmd_num(), &HMDpos, &HMDmat);
+							if (start_c && (ptr_.turn && ptr_.now) != oldv) {
+								rec_HMD = VGet(HMDpos.x(), 0.f, HMDpos.z());
+								start_c = false;
+							}
+							if (!start_c && !(ptr_.turn && ptr_.now)) {
+								start_c = true;
+							}
+							oldv = ptr_.turn && ptr_.now;
+							HMDpos = HMDpos - rec_HMD;
+							HMDmat = MATRIX_ref::Axis1(HMDmat.xvec()*-1.f, HMDmat.yvec(), HMDmat.zvec()*-1.f);
+							cam_s.cam.campos = pos_mine + HMDpos;
+							cam_s.cam.camvec = cam_s.cam.campos - HMDmat.zvec();
+							cam_s.cam.camup = HMDmat.yvec();
+						}
+						else {
+							if (!startp) {
+								easing_set(&cam_s.cam.campos, (MATRIX_ref::RotX(xrad_m) * MATRIX_ref::RotY(yrad_m)).zvec() * (-15.f) + VGet(0.f, 3.f, 0.f), 0.95f);
+								cam_s.cam.camvec = pos + VGet(0.f, 3.f, 0.f);
+							}
+							else {
+								easing_set(&cam_s.cam.campos, VGet((1.f - (pos.z() / -120.f)), (1.f - (pos.z() / -120.f)) + 3.f, (1.f - (pos.z() / -120.f)) + 10.f), 0.95f);
+								easing_set(&cam_s.cam.camvec, pos + VGet((1.f - (pos.z() / -120.f)), (1.f - (pos.z() / -120.f)) + 1.f, (1.f - (pos.z() / -120.f))), 0.95f);
+							}
+							cam_s.cam.camup = VGet(0.f, 1.f, 0.f);
+						}
+						//UI_buf
+						{
+							outScreen.SetDraw_Screen();
+							{
+								{
+									int xp = Drawparts->disp_x / 2 + int((ber_r * 16.f / 9.f) * sin(rad + deg2rad(90)));
+									int yp = Drawparts->disp_y * 2 / 3 + int(ber_r * cos(rad + deg2rad(90)));
+									int xa = Drawparts->disp_x / 2 + int(((ber_r * 16.f / 9.f) - y_r(150)) * sin(rad + deg2rad(90)));
+									int ya = Drawparts->disp_y * 2 / 3 + int((ber_r - y_r(150)) * cos(rad + deg2rad(90)));
+									DXDraw::Line2D(xa, ya, xp, yp, GetColor(0, 255, 0), 2);
+									{
+										DrawBox(xp - y_r(120), yp - y_r(60), xp + y_r(120), yp + y_r(60), GetColor(0, 0, 0), TRUE);
+										font18.DrawStringFormat(xp - y_r(120 - 3), yp - y_r(60 - 3), GetColor(0, 255, 0), "Name     :%s", Vehicles[veh.use_id].name.c_str());
+										font18.DrawStringFormat(xp - y_r(120 - 3), yp - y_r(60 - 3 - 20), GetColor(0, 255, 0), "MaxSpeed :%03.0f km/h", Vehicles[veh.use_id].max_speed_limit*3.6f);
+										font18.DrawStringFormat(xp - y_r(120 - 3), yp - y_r(60 - 3 - 40), GetColor(0, 255, 0), "MidSpeed :%03.0f km/h", Vehicles[veh.use_id].mid_speed_limit*3.6f);
+										font18.DrawStringFormat(xp - y_r(120 - 3), yp - y_r(60 - 3 - 60), GetColor(0, 255, 0), "MinSpeed :%03.0f km/h", Vehicles[veh.use_id].min_speed_limit*3.6f);
+										font18.DrawStringFormat(xp - y_r(120 - 3), yp - y_r(60 - 3 - 80), GetColor(0, 255, 0), "Turn     :%03.0f °/s", Vehicles[veh.use_id].body_rad_limit);
+										DrawBox(xp - y_r(120), yp - y_r(60), xp + y_r(120), yp + y_r(60), GetColor(0, 255, 0), FALSE);
+										font12.DrawString(xp - y_r(120), yp - y_r(60 + 15), "Spec", GetColor(0, 255, 0));
+									}
+								}
+
+								{
+									int xp = Drawparts->disp_x / 2 + int((ber_r * 16.f / 9.f) * sin(rad + deg2rad(180)));
+									int yp = Drawparts->disp_y * 2 / 3 + int(ber_r * cos(rad + deg2rad(180)));
+									int xa = Drawparts->disp_x / 2 + int(((ber_r * 16.f / 9.f) - y_r(150)) * sin(rad + deg2rad(180)));
+									int ya = Drawparts->disp_y * 2 / 3 + int((ber_r - y_r(150)) * cos(rad + deg2rad(180)));
+									DXDraw::Line2D(xa, ya, xp, yp, GetColor(0, 255, 0), 2);
+									{
+										int ys = 20 * int(Vehicles[veh.use_id].gunframe.size()) / 2 + 1;
+										DrawBox(xp - y_r(120), yp - y_r(ys), xp + y_r(120), yp + y_r(ys), GetColor(0, 0, 0), TRUE);
+										if (Vehicles[veh.use_id].gunframe.size() == 0) {
+											font18.DrawString(xp - y_r(120 - 3), yp - y_r(ys - 3), "N/A", GetColor(0, 255, 0));
+										}
+										else {
+											for (int z = 0; z < Vehicles[veh.use_id].gunframe.size(); z++) {
+												font18.DrawStringFormat(xp - y_r(120 - 3), yp - y_r(ys - 3 - 20 * z), GetColor(0, 255, 0), "No.%d  :%s", z, Vehicles[veh.use_id].gunframe[z].name.c_str());
+											}
+										}
+										DrawBox(xp - y_r(120), yp - y_r(ys), xp + y_r(120), yp + y_r(ys), GetColor(0, 255, 0), FALSE);
+										font12.DrawString(xp - y_r(120), yp - y_r(ys + 15), "Weapon", GetColor(0, 255, 0));
+									}
+								}
+							}
+							easing_set(&ber_r, float(Drawparts->disp_y / 4), 0.95f);
+							easing_set(&rad, deg2rad(yrad_im), 0.9f);
+						}
+						Drawparts->Move_Player();
+						//自機描画
+						{
+							//cam_s.cam
+							{
+								//far取得
+								cam_s.cam.far_ = 300.f;
+								//near取得
+								cam_s.cam.near_ = 0.1f;
+								//fov
+								cam_s.cam.fov = deg2rad(Drawparts->use_vr ? 90 : fov);
+							}
+							//
+							//VRに移す
+							Drawparts->draw_VR(
+								[&] {
+								auto tmp = GetDrawScreen();
+								auto tmp_cams = cam_s;
+								//*
+								auto camtmp = VECTOR_ref(GetCameraPosition()) - cam_s.cam.campos;
+
+								auto tvec = (VECTOR_ref(cam_s.cam.camvec) - cam_s.cam.campos);
+
+								camtmp = MATRIX_ref::Vtrans(camtmp, MATRIX_ref::Axis1(
+									tvec.cross(cam_s.cam.camup),
+									cam_s.cam.camup,
+									tvec));
+
+								tmp_cams.cam.campos = camtmp + cam_s.cam.campos;
+								tmp_cams.cam.camvec = camtmp + cam_s.cam.camvec;
+								//*/
+								GraphHandle::SetDraw_Screen(tmp, tmp_cams.cam.campos, tmp_cams.cam.camvec, tmp_cams.cam.camup, tmp_cams.cam.fov, tmp_cams.cam.near_, tmp_cams.cam.far_);
+								{
+									garage.DrawModel();
+									Vehicles[veh.use_id].obj.SetMatrix(MATRIX_ref::Mtrans(pos));
+									Vehicles[veh.use_id].obj.DrawModel();
+									SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(255 - int(255.f * pos.z() / -10.f), 0, 255));
+									outScreen.DrawGraph(0, 0, true);
+									SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(int(255.f * (pos.z() + 60.f) / -60.f), 0, 255));
+									DrawBox(0, 0, Drawparts->disp_x, Drawparts->disp_y, GetColor(255, 255, 255), TRUE);
+									SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
+									//UIparts->item_draw(chara, mine, tmp_cams);
+								}
+							}, cam_s.cam);
+						}
+						//draw
+						GraphHandle::SetDraw_Screen(int(DX_SCREEN_BACK), false);
+						{
+							if (Drawparts->use_vr) {
+								Drawparts->outScreen[0].DrawRotaGraph(960, 540, 0.5f, 0, false);
+							}
+							else {
+								Drawparts->outScreen[0].DrawGraph(0, 0, false);
+							}
+						}
+						Drawparts->Screen_Flip(waits);
+						if (endp) {
+							WaitTimer(100);
+							break;
+						}
+						if (CheckHitKey(KEY_INPUT_ESCAPE) != 0) {
+							break;
+						}
+					}
+					if (CheckHitKey(KEY_INPUT_ESCAPE) != 0) {
+						break;
+					}
+					{
+						MV1DetachAnim(Vehicles[chara[0].vehicle.use_id].obj.get(), anime);
+						bgm_title.stop();
+					}
+				}
+				//開始
 				{
 					oldv = false;
 					start_c = true;
 					start_c2 = true;
-					//キャラ選択
-					bgm_title.play(DX_PLAYTYPE_LOOP, TRUE);
-					bgm_title.vol(int(float(255)*0.5f));
-					if (!UIparts->select_window(&chara[0], &Vehicles, Drawparts)) {
-						break;
-					}
-					bgm_title.stop();
 					//マップ読み込み
 					mapparts->set_map_pre();
 					UIparts->load_window("マップモデル");			   //ロード画面
@@ -225,10 +493,6 @@ public:
 					se_alert.vol(int(float(192)*se_vol));
 					se_alert2.vol(int(float(192)*se_vol));
 					eye_pos_ads = VGet(0, 0.58f, 0);
-				}
-				auto& mine = chara[0];
-				//開始
-				{
 					eyevec = mine.vehicle.mat.zvec() * -1.f;
 					cam_s.cam.campos = mine.vehicle.pos + VGet(0.f, 3.f, 0.f) + eyevec * range;
 					cam_s.Rot = ADS;
@@ -241,18 +505,16 @@ public:
 						c.se.cockpit.vol(int(float(128)*se_vol));
 						c.se.engine.play(DX_PLAYTYPE_LOOP, TRUE);
 					}
-
 					bgm_main.play(DX_PLAYTYPE_LOOP, TRUE);
 					bgm_main.vol(int(float(255)*0.5f));
 					bgm_win.vol(int(float(255)*0.5f));
 					voice_[0].set(0.f, voice_str);
-
 					SetMouseDispFlag(FALSE);
 					SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
-
 					timer = 60.f*5.f;
 					ready_timer = 5.f;
 				}
+				//
 				while (ProcessMessage() == 0) {
 					const auto waits = GetNowHiPerformanceCount();
 					Debugparts->put_way();
@@ -322,7 +584,6 @@ public:
 									c.cpu_doing(&chara);
 								}
 							}
-							//*
 							//VR専用
 							if (Drawparts->use_vr) {
 								std::for_each(mine.key.begin(), mine.key.end(), [](bool& g) {g = false; });
@@ -378,10 +639,8 @@ public:
 								//ロックオン外し
 								if (k_.key_use_ID[12].get_key(0)) {
 									UIparts->reset_lock();
-									//chara.vehicle.HP = 0;//自爆
 								}
 							}
-							//*/
 							for (auto& c : chara) {
 								if (c.death) {
 									std::for_each(c.key.begin(), c.key.end(), [](bool& g) {g = false; });
