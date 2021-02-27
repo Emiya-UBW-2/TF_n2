@@ -690,6 +690,7 @@ private:
 		MATRIX_ref mat_spawn;					//車体回転行列
 		VECTOR_ref add;							//車体加速度
 		std::vector<Guns> Gun_;						//
+		size_t sel_weapon = 0;
 		float accel = 0.f, accel_add = 0.f;
 		float WIP_timer_limit = 0.f;
 		float WIP_timer = 0.f;
@@ -741,6 +742,7 @@ private:
 			this->WIP_timer = 0.f;
 
 			this->over_heat = false;
+			this->sel_weapon = 0;
 
 			this->accel_add = 0.f;
 			this->accel = 0.f;
@@ -996,6 +998,9 @@ public:
 			this->key_use_ID.emplace_back(tmp_k);
 			tmp_k.first = KEY_INPUT_V;
 			tmp_k.second = "オートスラスト";
+			this->key_use_ID.emplace_back(tmp_k);
+			tmp_k.first = KEY_INPUT_SPACE;
+			tmp_k.second = "武装切替";
 			this->key_use_ID.emplace_back(tmp_k);
 			{
 				std::fstream file;
@@ -1352,9 +1357,7 @@ public:
 		//操作関連//==================================================
 		std::array<bool, 18> key{ false };    //キー
 		float view_xrad = 0.f, view_yrad = 0.f; //砲塔操作用ベクトル
-		bool ms_on = true;
 		bool ms_key = true;
-		float ms_cnt = 0.f;
 		bool use_auto_thrust = false;
 		float speed_auto_thrust = 400.f;
 		//飛行機//==================================================
@@ -1853,24 +1856,12 @@ public:
 			//射撃
 			{
 				for (auto& cg : veh.Gun_) {
-					auto i = (&cg - &veh.Gun_[0]);
+					size_t i = (&cg - &veh.Gun_[0]);
 					this->ms_key = this->key[(i == 0) ? 0 : 1];
-					if (this->ms_key && i != 0) {
-						if (!this->ms_on) {
-							this->ms_key = false;
-						}
-						if (cg.get_loadcnt() == 0) {
-							this->ms_on = false;
-						}
+					if (this->ms_key && i != (veh.sel_weapon + 1) && i != 0) {
+						this->ms_key = false;
 					}
 					cg.math(this->ms_key, this);
-				}
-				if (!this->ms_on) {
-					this->ms_cnt += 1.f / fps;
-					if (this->ms_cnt >= 8.f) {
-						this->ms_cnt = 0.f;
-						this->ms_on = true;
-					}
 				}
 			}
 			//弾関連
@@ -1998,6 +1989,19 @@ public:
 					veh.HP_m[GetRand(int(veh.HP_m.size() - 1 - 1))] = 0;
 				}
 			}
+			/*
+			if (veh.Gun_.size() > veh.sel_weapon + 1) {
+				if (veh.Gun_[veh.sel_weapon + 1].get_rounds_() == 0) {
+					for (auto&g : veh.Gun_) {
+						auto i = &g - &veh.Gun_[0];
+						if (g.get_rounds_() != 0 && i != 0) {
+							veh.sel_weapon = i - 1;
+							break;
+						}
+					}
+				}
+			}
+			//*/
 		}
 		//オートスラスト
 		void auto_thrust(const float& spd) {

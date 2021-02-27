@@ -380,6 +380,11 @@ public:
 									UIparts->reset_lock();
 									//chara.vehicle.HP = 0;//©”š
 								}
+								//•‘•Ø‚è‘Ö‚¦
+								if (k_.key_use_ID[14].get_key(2)) {
+									++mine.vehicle.sel_weapon;
+									mine.vehicle.sel_weapon %= (mine.vehicle.Gun_.size() - 1);
+								}
 							}
 							//*/
 							for (auto& c : chara) {
