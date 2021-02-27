@@ -123,22 +123,26 @@ public:
 				}
 
 				for (auto& g : veh.Gun_) {
-					if (g.get_loadcnt() != 0.f) {
-						DrawBox(xp, yp + ys * 2 / 3, xp + x_r(200 - int(200.f * g.get_loadcnt() / g.get_gun_info().load_time)), yp + ys, GetColor(255, 0, 0), TRUE);
-					}
-					else {
-						DrawBox(xp, yp + ys * 2 / 3, xp + xs, yp + ys, GetColor(0, 255, 0), TRUE);
-					}
+					size_t i = (&g - &veh.Gun_[0]);
+					if (i == 0 || i == (veh.sel_weapon + 1)) {
+						if (g.get_loadcnt() != 0.f) {
+							DrawBox(xp, yp + ys * 2 / 3, xp + (xs - int(float(xs) * g.get_loadcnt() / g.get_gun_info().load_time)), yp + ys, GetColor(255, 0, 0), TRUE);
+						}
+						else {
+							DrawBox(xp, yp + ys * 2 / 3, xp + xs, yp + ys, GetColor(0, 255, 0), TRUE);
+						}
 
-					if (g.get_rounds_() != 0.f) {
-						DrawBox(xp, yp + ys * 2 - y_r(2), xp + x_r(int(200.f * g.get_rounds_() / g.get_gun_info().rounds)), yp + ys * 2 + y_r(2), GetColor(255, 192, 0), TRUE);
+						if (g.get_rounds_() != 0.f) {
+							DrawBox(xp, yp + ys * 2 - y_r(2), xp + x_r(int(float(xs) * g.get_rounds_() / g.get_gun_info().rounds)), yp + ys * 2 + y_r(2), GetColor(255, 192, 0), TRUE);
+						}
+
+						font->DrawString(xp, yp - ys, g.get_gun_info().name, GetColor(255, 255, 255));
+						font->DrawString(xp, yp, g.getbullet_use().spec.name_a, GetColor(255, 255, 255));
+						font->DrawStringFormat_RIGHT(xp + xs, yp + ys + y_r(2), GetColor(255, 255, 255), "%04d / %04d", g.get_rounds_(), g.get_gun_info().rounds);
+
+						xp += -x_r(30 / int(veh.Gun_.size()));
+						yp += ys * 3 + y_r(4);
 					}
-
-					font->DrawString(xp, yp, g.getbullet_use().spec.name_a, GetColor(255, 255, 255));
-					font->DrawStringFormat_RIGHT(xp + xs, yp + ys + y_r(2), GetColor(255, 255, 255), "%04d / %04d", g.get_rounds_(), g.get_gun_info().rounds);
-
-					xp += -x_r(30 / int(veh.Gun_.size()));
-					yp += ys * 2 + y_r(4);
 				}
 			}
 			//アラート
@@ -341,7 +345,7 @@ public:
 						font->DrawStringFormat_RIGHT(xp, yp + font_hight * 1, GetColor(0, 255, 0), "POWER %03.0f%%", veh.accel);
 						//オートスラスト使用
 						if ((time / 100000) % 10 <= 5) {
-							font->DrawString_RIGHT(xp, yp + font_hight * 2, "AUTO THRUST", GetColor(0, 255, 0));
+							font->DrawStringFormat_RIGHT(xp, yp + font_hight * 2, (veh.over_heat) ? GetColor(255, 0, 0) : GetColor(128, 255, 0), "AUTO THRUST %4.0f km/h", chara.speed_auto_thrust);
 						}
 					}
 					else {
@@ -548,7 +552,7 @@ public:
 			auto gunpos = (veh.obj.frame(veh.Gun_[0].get_gun_info().frame1.first) - veh.pos);
 			auto ammo_ = (veh.Gun_[0].getbullet_use().spec.speed_a + veh.speed) / GetFPS();
 			for (auto& c : charas) {
-				c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + gunpos + c.vehicle.mat.zvec() *(-c.vehicle.speed / GetFPS())*((c.vehicle.pos - veh.pos).size() / ammo_)).get());
+				c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + gunpos + c.vehicle.mat.zvec() *(-2.f*c.vehicle.speed / GetFPS())*((c.vehicle.pos - veh.pos).size() / ammo_)).get());
 				c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
 			}
 			aimpos_3 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(0.f, 0.58f, -1.f), veh.mat)).get());

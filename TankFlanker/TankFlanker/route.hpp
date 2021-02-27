@@ -640,6 +640,11 @@ public:
 								if (k_.key_use_ID[12].get_key(0)) {
 									UIparts->reset_lock();
 								}
+								//武装切り替え
+								if (k_.key_use_ID[14].get_key(2)) {
+									++mine.vehicle.sel_weapon;
+									mine.vehicle.sel_weapon %= (mine.vehicle.Gun_.size() - 1);
+								}
 							}
 							for (auto& c : chara) {
 								if (c.death) {
@@ -828,11 +833,9 @@ public:
 
 										cam_easy.camup = veh.mat.yvec();
 									}
-
-
 								}
 								//far取得
-								cam_easy.far_ = (cam_s.Rot >= ADS) ? (1500.f) : (60.f*(range_p - 5.f));
+								cam_easy.far_ = (cam_s.Rot >= ADS) ? (1000.f) : (60.f*(range_p - 5.f));
 								//near取得
 								cam_easy.near_ = (cam_s.Rot >= ADS) ? (3.f) : (range_p - 5.f);
 								//fov
@@ -870,8 +873,7 @@ public:
 
 								GraphHandle::SetDraw_Screen(tmp, tmp_cams.cam.campos, tmp_cams.cam.camvec, tmp_cams.cam.camup, tmp_cams.cam.fov, tmp_cams.cam.near_, tmp_cams.cam.far_);
 								{
-									Hostpassparts->get_main().DrawGraph(0, 0, true);
-
+									Hostpassparts->get_main().DrawGraph(0, 0, false);
 
 									SetCameraNearFar(0.01f, 2.f);
 									//コックピット
