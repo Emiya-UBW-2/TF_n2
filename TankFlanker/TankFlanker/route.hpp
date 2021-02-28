@@ -20,7 +20,7 @@ class main_c {
 	float fovs = 1.f, fovs_p = 1.f;
 	VECTOR_ref eye_pos_ads = VGet(0, 0.58f, 0);
 	VECTOR_ref HMDpos, rec_HMD;
-	MATRIX_ref HMDmat;
+	MATRIX_ref HMDmat, rec_HMDmat;
 	//データ
 	std::vector<Mainclass::Chara> chara;	//キャラ
 	std::vector<Mainclass::Ammos> Ammo;		//弾薬
@@ -188,9 +188,7 @@ public:
 			chara.resize(24);
 			auto& mine = chara[0];
 			//キャラ選択
-			oldv = false;
-			start_c = true;
-			start_c2 = true;
+			Drawparts->reset_HMD();
 			{
 				//
 				float speed = 0.f;
@@ -309,18 +307,7 @@ public:
 					}
 					//視点取得
 					if (Drawparts->use_vr) {
-						auto& ptr_ = *Drawparts->get_device_hmd();
-						Drawparts->GetDevicePositionVR(Drawparts->get_hmd_num(), &HMDpos, &HMDmat);
-						if (start_c && (ptr_.turn && ptr_.now) != oldv) {
-							rec_HMD = VGet(HMDpos.x(), 0.f, HMDpos.z());
-							start_c = false;
-						}
-						if (!start_c && !(ptr_.turn && ptr_.now)) {
-							start_c = true;
-						}
-						oldv = ptr_.turn && ptr_.now;
-						HMDpos = HMDpos - rec_HMD;
-						HMDmat = MATRIX_ref::Axis1(HMDmat.xvec()*-1.f, HMDmat.yvec(), HMDmat.zvec()*-1.f);
+						Drawparts->GetHMDPositionVR(&HMDpos, &HMDmat);
 						cam_s.cam.campos = pos_mine + HMDpos;
 						cam_s.cam.camvec = cam_s.cam.campos - HMDmat.zvec();
 						cam_s.cam.camup = HMDmat.yvec();
@@ -456,8 +443,7 @@ public:
 				}
 			}
 			//開始
-			oldv = false;
-			start_c = true;
+			Drawparts->reset_HMD();
 			start_c2 = true;
 			{
 				{
@@ -701,18 +687,7 @@ public:
 						//マウスと視点角度をリンク
 						if (Drawparts->use_vr) {
 							//+視点取得
-							auto& ptr_ = *Drawparts->get_device_hmd();
-							Drawparts->GetDevicePositionVR(Drawparts->get_hmd_num(), &HMDpos, &HMDmat);
-							if (start_c && (ptr_.turn && ptr_.now) != oldv) {
-								rec_HMD = VGet(HMDpos.x(), 0.f, HMDpos.z());
-								start_c = false;
-							}
-							if (!start_c && !(ptr_.turn && ptr_.now)) {
-								start_c = true;
-							}
-							oldv = ptr_.turn && ptr_.now;
-							HMDpos = HMDpos - rec_HMD;
-							HMDmat = MATRIX_ref::Axis1(HMDmat.xvec()*-1.f, HMDmat.yvec(), HMDmat.zvec()*-1.f);
+							Drawparts->GetHMDPositionVR(&HMDpos, &HMDmat);
 							eye_pos_ads = HMDpos + VGet(0, -0.42f, 0);
 							eye_pos_ads = VGet(
 								std::clamp(eye_pos_ads.x(), -0.18f, 0.18f),
@@ -720,6 +695,7 @@ public:
 								std::clamp(eye_pos_ads.z(), -0.36f, 0.1f)
 							);
 							eyevec = HMDmat.zvec();
+							//
 						}
 						else {
 							mouse_aim(eyevec);
