@@ -686,16 +686,20 @@ private:
 		int DEATH_ID = -1;						//体力
 		VECTOR_ref pos;							//車体座標
 		MATRIX_ref mat;							//車体回転行列
+		float accel = 0.f;
+		float speed = 0.f;						//
 		VECTOR_ref pos_spawn;					//車体座標
 		MATRIX_ref mat_spawn;					//車体回転行列
+		float accel_spawn = 0.f;
+		float speed_spawn = 0.f;				//
 		VECTOR_ref add;							//車体加速度
 		std::vector<Guns> Gun_;						//
 		size_t sel_weapon = 0;
-		float accel = 0.f, accel_add = 0.f;
+		float accel_add = 0.f;
 		float WIP_timer_limit = 0.f;
 		float WIP_timer = 0.f;
 		bool over_heat = false;
-		float speed = 0.f, speed_add = 0.f;		//
+		float speed_add = 0.f;		//
 		float xradadd_left = 0.f, xradadd_right = 0.f; //
 		float yradadd_left = 0.f, yradadd_right = 0.f;	    //
 		float zradadd_left = 0.f, zradadd_right = 0.f; //
@@ -825,18 +829,21 @@ private:
 			this->reset();
 		}
 		void respawn() {
-			spawn(this->pos_spawn, this->mat_spawn);
+			spawn(this->pos_spawn, this->mat_spawn, this->accel_spawn, this->speed_spawn);
 		}
-		void spawn(const VECTOR_ref& pos_, const MATRIX_ref& mat_) {
+		void spawn(const VECTOR_ref& pos_, const MATRIX_ref& mat_,const float& acc_, const float& spd_) {
 			this->reset();
-
-			this->accel = 25.f;
-			this->speed = this->use_veh.min_speed_limit;
 
 			this->pos_spawn = pos_;
 			this->mat_spawn = mat_;
+			this->accel_spawn = acc_;// 25.f;
+			this->speed_spawn = spd_ / 3.6f;// this->use_veh.min_speed_limit;
+			
 			this->pos = this->pos_spawn;
 			this->mat = this->mat_spawn;
+			this->accel = this->accel_spawn;
+			this->speed = this->speed_spawn;
+
 			std::for_each(this->Gun_.begin(), this->Gun_.end(), [](Guns& g) {g.set(); });					//砲
 			this->HP = this->use_veh.HP;																	//ヒットポイント
 			std::for_each(this->HP_m.begin(), this->HP_m.end(), [&](int16_t& m) {m = this->use_veh.HP; });	//モジュール耐久
@@ -1088,6 +1095,12 @@ public:
 			chara.key[10] = false;
 			//ブレーキ
 			chara.key[11] = this->key_use_ID[8].get_key(0);
+			if (chara.chock) {
+				if (chara.key[11]) {
+					chara.chock = false;
+				}
+				chara.key[11] = true;
+			}
 			//精密操作
 			chara.key[12] = this->key_use_ID[0].get_key(0) && this->key_use_ID[9].get_key(0);
 			chara.key[13] = this->key_use_ID[1].get_key(0) && this->key_use_ID[9].get_key(0);
@@ -1355,14 +1368,14 @@ public:
 		float death_timer = 0.f;
 		bool death = false;
 		//操作関連//==================================================
-		std::array<bool, 18> key{ false };    //キー
 		float view_xrad = 0.f, view_yrad = 0.f; //砲塔操作用ベクトル
-		bool ms_key = true;
-		bool use_auto_thrust = false;
+		std::array<bool, 18> key{ false };    //キー
+		bool use_auto_thrust = true;
 		float speed_auto_thrust = 400.f;
+		switchs changegear; //ギアアップスイッチ
+		bool chock = false;	//チョーク
 		//飛行機//==================================================
 		p_animes p_anime_geardown;		    //車輪アニメーション
-		switchs changegear; //ギアアップスイッチ
 		std::array<p_animes, 6> p_animes_rudder;//ラダーアニメーション
 		std::vector<frames> p_burner;		    //バーナー
 		//共通項//==================================================
@@ -1375,9 +1388,19 @@ public:
 		cockpits cocks;
 		//セット
 		void set_human(const std::vector<Vehcs>& vehcs, const std::vector<Ammos>& Ammo_) {
-			std::fill(this->key.begin(), this->key.end(), false); //操作
-			auto& veh = this->vehicle;
+			//操作
 			{
+				std::fill(this->key.begin(), this->key.end(), false);
+				//オートスラスト
+				this->use_auto_thrust = true;
+				this->speed_auto_thrust = 400.f;
+				//脚スイッチ
+				this->changegear.get_in(true);
+				//チョーク
+				this->chock = true;
+			}
+			{
+				auto& veh = this->vehicle;
 				veh.use_id = std::min<size_t>(veh.use_id, vehcs.size() - 1);
 				veh.init(vehcs[veh.use_id], Ammo_);
 				//追加アニメーション
@@ -1385,8 +1408,6 @@ public:
 					//脚
 					this->p_anime_geardown.first = MV1AttachAnim(veh.obj.get(), 1);
 					this->p_anime_geardown.second = 1.f;
-					//脚スイッチ
-					this->changegear.get_in(true);
 					//舵
 					for (auto& r : this->p_animes_rudder) {
 						r.first = MV1AttachAnim(veh.obj.get(), 2 + (int)(&r - &this->p_animes_rudder[0]));
@@ -1397,6 +1418,9 @@ public:
 				for (auto& be : veh.use_veh.burner) {
 					this->p_burner.emplace_back(be);
 				}
+			}
+			{
+				this->death = false;
 			}
 		}
 		//弾き
@@ -1616,6 +1640,7 @@ public:
 		template<class Y, class D>
 		void update(std::unique_ptr<Y, D>& mapparts, std::unique_ptr<DXDraw, std::default_delete<DXDraw>>& Drawparts, std::vector<Chara>* chara, bool& start_c2) {
 			auto fps = GetFPS();
+			fps = (fps <= 60) ? 60.f : fps;
 			auto& veh = this->vehicle;
 
 			float rad_spec = 0.f;
@@ -1855,13 +1880,14 @@ public:
 			}
 			//射撃
 			{
+				bool ms_key = true;
 				for (auto& cg : veh.Gun_) {
 					size_t i = (&cg - &veh.Gun_[0]);
-					this->ms_key = this->key[(i == 0) ? 0 : 1];
-					if (this->ms_key && i != (veh.sel_weapon + 1) && i != 0) {
-						this->ms_key = false;
+					ms_key = this->key[(i == 0) ? 0 : 1];
+					if (ms_key && i != (veh.sel_weapon + 1) && i != 0) {
+						ms_key = false;
 					}
-					cg.math(this->ms_key, this);
+					cg.math(ms_key, this);
 				}
 			}
 			//弾関連

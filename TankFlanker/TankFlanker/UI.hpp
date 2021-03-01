@@ -756,9 +756,11 @@ public:
 		}
 		else {
 			reset_lock();
-			auto& c = charas[veh.DEATH_ID];
-			if (!c.death) {
-				box_p(c, (c.type == chara.type) ? GetColor(0, 255, 0) : GetColor(255, 0, 0));
+			if (veh.DEATH_ID >= 0 && veh.DEATH_ID < charas.size()) {
+				auto& c = charas[veh.DEATH_ID];
+				if (!c.death) {
+					box_p(c, (c.type == chara.type) ? GetColor(0, 255, 0) : GetColor(255, 0, 0));
+				}
 			}
 		}
 		//Ž‹“_’†‰›

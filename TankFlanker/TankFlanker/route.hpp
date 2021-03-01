@@ -70,8 +70,6 @@ class main_c {
 	float vc_vol = 1.f;
 	//キー
 	Mainclass::key_bind k_;
-
-	VECTOR_ref pos;
 public:
 	main_c() {
 		//設定読み込み
@@ -149,13 +147,11 @@ public:
 			}
 		};
 		auto ram_draw_menu = [&]() {
-			auto& veh = chara[0].vehicle;
 			Drawparts->Draw_by_Shadow(
 				[&]() {
-				garage.DrawModel();
-				Vehicles[veh.use_id].obj.SetMatrix(MATRIX_ref::Mtrans(pos));
-				Vehicles[veh.use_id].obj.DrawModel();
-			}
+					garage.DrawModel();
+					Vehicles[chara[0].vehicle.use_id].obj.DrawModel();
+				}
 			);
 		};
 		auto ram_draw = [&]() {
@@ -167,8 +163,13 @@ public:
 				SetFogStartEnd(0.0f, 3000.f);
 				SetFogColor(128, 128, 128);
 				for (auto& c : chara) {
-					c.vehicle.draw();
+						MV1SetSemiTransDrawMode(DX_SEMITRANSDRAWMODE_NOT_SEMITRANS_ONLY);
+						c.vehicle.draw();
+						MV1SetSemiTransDrawMode(DX_SEMITRANSDRAWMODE_SEMITRANS_ONLY);
+						c.vehicle.draw();
 				}
+				MV1SetSemiTransDrawMode(DX_SEMITRANSDRAWMODE_ALWAYS);
+
 				SetFogEnable(FALSE);
 				SetUseLighting(FALSE);
 				for (auto& c : chara) {
@@ -202,8 +203,8 @@ public:
 			{
 				//
 				float speed = 0.f;
+				VECTOR_ref pos;
 				pos = VGet(0, 1.8f, 0);
-				VECTOR_ref pos_mine = VGet(15.f, 0, 0);
 				bool endp = false;
 				float rad = 0.f;
 				float yrad_m = 0.f, xrad_m = 0.f;
@@ -218,10 +219,12 @@ public:
 				{
 					//光、影
 					Drawparts->Set_Light_Shadow(mapparts->map_get().mesh_maxpos(0), mapparts->map_get().mesh_minpos(0), VGet(0.0f, -0.5f, 0.5f), [&] {});
+					SetGlobalAmbientLight(GetColorF(0.25f, 0.225f, 0.25f, 1.f));
 					auto& veh = mine.vehicle;
 					veh.use_id %= Vehicles.size(); //飛行機
 					anime = MV1AttachAnim(Vehicles[veh.use_id].obj.get(), 1);
 					MV1SetAttachAnimBlendRate(Vehicles[veh.use_id].obj.get(), anime, 1.f);
+					Vehicles[veh.use_id].obj.SetMatrix(MATRIX_ref::Mtrans(pos));
 					GetMousePoint(&m_x, &m_y);
 					cam_s.cam.campos = VGet(0.f, 0.f, -15.f);
 					cam_s.cam.camvec = VGet(0.f, 3.f, 0.f);
@@ -229,6 +232,7 @@ public:
 					bgm_title.play(DX_PLAYTYPE_LOOP, TRUE);
 					bgm_title.vol(int(float(255)*bgm_vol));
 				}
+				//
 				while (ProcessMessage() == 0) {
 					const auto waits = GetNowHiPerformanceCount();
 
@@ -317,12 +321,15 @@ public:
 							endp = true;
 						}
 					}
+
+					Vehicles[veh.use_id].obj.SetMatrix(MATRIX_ref::Mtrans(pos));
+
 					//視点取得
 					if (Drawparts->use_vr) {
 						VECTOR_ref HMDpos;
 						MATRIX_ref HMDmat;
 						Drawparts->GetHMDPositionVR(&HMDpos, &HMDmat);
-						cam_s.cam.campos = pos_mine + HMDpos;
+						cam_s.cam.campos = VECTOR_ref(VGet(15.f, 0, 0)) + HMDpos;
 						cam_s.cam.camvec = cam_s.cam.campos - HMDmat.zvec();
 						cam_s.cam.camup = HMDmat.yvec();
 					}
@@ -404,6 +411,7 @@ public:
 				if (CheckHitKey(KEY_INPUT_ESCAPE) != 0) {
 					break;
 				}
+				//終了
 				{
 					auto& veh = mine.vehicle;
 					MV1DetachAnim(Vehicles[veh.use_id].obj.get(), anime);
@@ -426,7 +434,7 @@ public:
 						mapparts->map_get().DrawModel();
 						mapparts->cloud_draw();
 					});
-					SetGlobalAmbientLight(GetColorF(0.45f, 0.5f, 0.5f, 1.f));
+					SetGlobalAmbientLight(GetColorF(0.5f, 0.475f, 0.45f, 1.f));
 					//共通
 					for (auto& c : chara) {
 						//キャラ選択
@@ -437,9 +445,29 @@ public:
 						if (i != 0) {
 							c.vehicle.use_id = GetRand(int(Vehicles.size() - 1));
 						}
-						float rad = deg2rad(-130);
-						c.vehicle.spawn(VGet(float(-2000 + 4000 * int(i / (chara.size() / 2)))*sin(rad) + float(100 * (i % (chara.size() / 2)))*cos(rad), 1500.f, float(-2000 + 4000 * int(i / (chara.size() / 2)))*cos(rad) - float(100 * (i % (chara.size() / 2)))*sin(rad)), MATRIX_ref::RotY(deg2rad(((c.type == 0) ? 180 : 0) - 130)));
+
 						c.set_human(Vehicles, Ammo);	//set
+
+						/*
+						if (i == 0) {
+							float rad = deg2rad(-130);
+							c.vehicle.spawn(
+								VGet(float(-3200)*sin(rad) + float(0)*cos(rad), 10.f, float(-3200)*cos(rad) - float(0)*sin(rad)),
+								MATRIX_ref::RotY(deg2rad(((c.type == 0) ? 180 : 0) - 130)),
+								0.f,
+								0.f
+							);
+						}
+						else {
+							//*/
+							float rad = deg2rad(-130);
+							c.vehicle.spawn(
+								VGet(float(-2000 + 4000 * int(i / (chara.size() / 2)))*sin(rad) + float(100 * (i % (chara.size() / 2)))*cos(rad), 1500.f, float(-2000 + 4000 * int(i / (chara.size() / 2)))*cos(rad) - float(100 * (i % (chara.size() / 2)))*sin(rad)),
+								MATRIX_ref::RotY(deg2rad(((c.type == 0) ? 180 : 0) - 130)),
+								25.f,
+								c.vehicle.use_veh.min_speed_limit*3.6f
+							);
+						//}
 						c.cocks.set_(cockpit);			//コックピット
 						c.se.Duplicate(se);				//se
 					}
@@ -736,16 +764,13 @@ public:
 									}
 									else {
 										if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-											easing_set(&cam_easy.camvec, MATRIX_ref::Vtrans(eyezvec, veh.mat)*-1.f, 0.75f);
-											cam_easy.camvec += cam_easy.campos;
-
-											cam_easy.camup = veh.mat.yvec();
 										}
 										else {
 											eyezvec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
-											cam_easy.camvec = cam_easy.campos - MATRIX_ref::Vtrans(eyezvec, veh.mat);
-											cam_easy.camup = veh.mat.yvec();
 										}
+										easing_set(&cam_easy.camvec, MATRIX_ref::Vtrans(eyezvec, veh.mat)*-1.f, 0.75f);
+										cam_easy.camvec += cam_easy.campos;
+										cam_easy.camup = veh.mat.yvec();
 									}
 								}
 								else {
