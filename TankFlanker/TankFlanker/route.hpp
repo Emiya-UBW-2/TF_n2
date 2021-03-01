@@ -729,7 +729,7 @@ public:
 								if (cam_s.Rot >= ADS) {
 									cam_easy.camvec -= cam_easy.campos;
 									cam_easy.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
-									cam_easy.campos.y(std::max(cam_easy.campos.y(), 5.f));
+									cam_easy.campos.y(std::max(cam_easy.campos.y(), 0.f));
 									if (Drawparts->use_vr) {
 										cam_easy.camvec = cam_easy.campos - MATRIX_ref::Vtrans(eyezvec, veh.mat);
 										cam_easy.camup = MATRIX_ref::Vtrans(eyeyvec, veh.mat);//veh.mat.yvec();
@@ -752,7 +752,7 @@ public:
 									cam_easy.campos -= cam_easy.camvec;
 
 									cam_easy.camvec = veh.pos + veh.mat.yvec() * (6.f);
-									cam_easy.camvec.y(std::max(cam_easy.camvec.y(), 5.f));
+									cam_easy.camvec.y(std::max(cam_easy.camvec.y(), 0.f));
 
 									if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
 
