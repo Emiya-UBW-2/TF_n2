@@ -13,18 +13,11 @@ private:
 	GraphHandle dmg;
 	//
 	float ber = 0;
-	GraphHandle bufScreen;
 	//font
 	FontHandle font36;
 	FontHandle font24;
 	FontHandle font18;
 	FontHandle font12;
-	//
-	VECTOR_ref HMDpos;
-	MATRIX_ref HMDmat;
-	VECTOR_ref rec_HMD;
-	//ï`âÊ
-	MV1 garage;
 	//
 	int out_disp_x = deskx;
 	int out_disp_y = desky;
@@ -32,7 +25,8 @@ private:
 	int disp_y = desky;
 	//
 	VECTOR_ref aimpos;
-	VECTOR_ref aimpos_3;
+	VECTOR_ref aimpos_2;
+	//
 	size_t id_near = 0;
 public:
 	UI(int d_x, int d_y) {
@@ -46,13 +40,10 @@ public:
 		aim_if = GraphHandle::Load("data/UI/battle_if.bmp");
 		dmg = GraphHandle::Load("data/UI/damage.png");
 
-		bufScreen = GraphHandle::Make(disp_x, disp_y, true);
-
 		font36 = FontHandle::Create(y_r(36), DX_FONTTYPE_EDGE);
 		font24 = FontHandle::Create(y_r(24), DX_FONTTYPE_EDGE);
 		font18 = FontHandle::Create(y_r(18), DX_FONTTYPE_EDGE);
 		font12 = FontHandle::Create(y_r(12), DX_FONTTYPE_EDGE);
-		MV1::Load("data/model/garage/model.mv1", &garage, false);
 	}
 	~UI() {
 	}
@@ -78,7 +69,50 @@ public:
 			}
 		}
 	}
-
+	//
+	void draw_menu(float ber_r,float rad, Mainclass::Vehcs& vehs) {
+		//
+		{
+			int xp = disp_x / 2 + int((ber_r * 16.f / 9.f) * sin(rad + deg2rad(90)));
+			int yp = disp_y * 2 / 3 + int(ber_r * cos(rad + deg2rad(90)));
+			int xa = disp_x / 2 + int(((ber_r * 16.f / 9.f) - y_r(150)) * sin(rad + deg2rad(90)));
+			int ya = disp_y * 2 / 3 + int((ber_r - y_r(150)) * cos(rad + deg2rad(90)));
+			DXDraw::Line2D(xa, ya, xp, yp, GetColor(0, 255, 0), 2);
+			{
+				DrawBox(xp - y_r(120), yp - y_r(60), xp + y_r(120), yp + y_r(60), GetColor(0, 0, 0), TRUE);
+				font18.DrawStringFormat(xp - y_r(120 - 3), yp - y_r(60 - 3), GetColor(0, 255, 0), "Name     :%s", vehs.name.c_str());
+				font18.DrawStringFormat(xp - y_r(120 - 3), yp - y_r(60 - 3 - 20), GetColor(0, 255, 0), "MaxSpeed :%03.0f km/h", vehs.max_speed_limit*3.6f);
+				font18.DrawStringFormat(xp - y_r(120 - 3), yp - y_r(60 - 3 - 40), GetColor(0, 255, 0), "MidSpeed :%03.0f km/h", vehs.mid_speed_limit*3.6f);
+				font18.DrawStringFormat(xp - y_r(120 - 3), yp - y_r(60 - 3 - 60), GetColor(0, 255, 0), "MinSpeed :%03.0f km/h", vehs.min_speed_limit*3.6f);
+				font18.DrawStringFormat(xp - y_r(120 - 3), yp - y_r(60 - 3 - 80), GetColor(0, 255, 0), "Turn     :%03.0f Åã/s", vehs.body_rad_limit);
+				DrawBox(xp - y_r(120), yp - y_r(60), xp + y_r(120), yp + y_r(60), GetColor(0, 255, 0), FALSE);
+				font12.DrawString(xp - y_r(120), yp - y_r(60 + 15), "Spec", GetColor(0, 255, 0));
+			}
+		}
+		//
+		{
+			int xp = disp_x / 2 + int((ber_r * 16.f / 9.f) * sin(rad + deg2rad(180)));
+			int yp = disp_y * 2 / 3 + int(ber_r * cos(rad + deg2rad(180)));
+			int xa = disp_x / 2 + int(((ber_r * 16.f / 9.f) - y_r(150)) * sin(rad + deg2rad(180)));
+			int ya = disp_y * 2 / 3 + int((ber_r - y_r(150)) * cos(rad + deg2rad(180)));
+			DXDraw::Line2D(xa, ya, xp, yp, GetColor(0, 255, 0), 2);
+			{
+				int ys = 20 * int(vehs.gunframe.size()) / 2 + 1;
+				DrawBox(xp - y_r(120), yp - y_r(ys), xp + y_r(120), yp + y_r(ys), GetColor(0, 0, 0), TRUE);
+				if (vehs.gunframe.size() == 0) {
+					font18.DrawString(xp - y_r(120 - 3), yp - y_r(ys - 3), "N/A", GetColor(0, 255, 0));
+				}
+				else {
+					for (int z = 0; z < vehs.gunframe.size(); z++) {
+						font18.DrawStringFormat(xp - y_r(120 - 3), yp - y_r(ys - 3 - 20 * z), GetColor(0, 255, 0), "No.%d  :%s", z, vehs.gunframe[z].name.c_str());
+					}
+				}
+				DrawBox(xp - y_r(120), yp - y_r(ys), xp + y_r(120), yp + y_r(ys), GetColor(0, 255, 0), FALSE);
+				font12.DrawString(xp - y_r(120), yp - y_r(ys + 15), "Weapon", GetColor(0, 255, 0));
+			}
+		}
+	}
+	//
 	void draw(Mainclass::Chara& chara, const bool& adss, const DXDraw::system_VR& vr_sys, float danger_height, bool uses_vr = true) {
 		int xs = 0, xp = 0, ys = 0, yp = 0;
 		FontHandle* font = (!uses_vr) ? &font18 : &font24;
@@ -555,7 +589,7 @@ public:
 				c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + gunpos + c.vehicle.mat.zvec() *(-2.f*c.vehicle.speed / GetFPS())*((c.vehicle.pos - veh.pos).size() / ammo_)).get());
 				c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
 			}
-			aimpos_3 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(0.f, 0.58f, -1.f), veh.mat)).get());
+			aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(0.f, 0.58f, -1.f), veh.mat)).get());
 			aimpos = ConvWorldPosToScreenPos((VECTOR_ref(veh.pos) + veh.mat.zvec() * (-veh.use_veh.canlook_dist*0.8f)).get());
 		}
 		//ï`âÊ
@@ -741,9 +775,9 @@ public:
 		FontHandle* font = (!uses_vr) ? &font24 : &font36;
 		auto ysize = (!uses_vr) ? y_r(24) : y_r(36);
 		yyy += ysize;
-		if (aimpos_3.z() >= 0.f && aimpos_3.z() <= 1.f) {
-			xp = (int)(aimpos_3.x());
-			yp = (int)(aimpos_3.y());
+		if (aimpos_2.z() >= 0.f && aimpos_2.z() <= 1.f) {
+			xp = (int)(aimpos_2.x());
+			yp = (int)(aimpos_2.y());
 			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
 			DrawBox(xp - disp_x / 6, yp - disp_y / 6, xp + disp_x / 6, yp + disp_y / 6, GetColor(0, 0, 0), TRUE);
 			SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
