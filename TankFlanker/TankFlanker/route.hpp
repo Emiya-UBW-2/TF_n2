@@ -2,8 +2,8 @@
 class main_c {
 	//
 	cam_info cam_easy;
-	VECTOR_ref eyevec, eyevec2;	//視点
-	FontHandle font12,font18;
+	VECTOR_ref eyezvec, eyeyvec;	//視点
+	FontHandle font12, font18;
 	//描画スクリーン
 	GraphHandle UI_Screen;		//
 	MV1 cockpit;				//コックピット
@@ -12,9 +12,7 @@ class main_c {
 	Mainclass::CAMS cam_s;
 	float range = 0.f, range_p = 30.f;
 	float fovs = 1.f, fovs_p = 1.f;
-	VECTOR_ref eye_pos_ads = VGet(0, 0.58f, 0);
-	VECTOR_ref HMDpos;
-	MATRIX_ref HMDmat;
+	VECTOR_ref eye_pos_ads;
 	//データ
 	std::vector<Mainclass::Chara> chara;	//キャラ
 	std::vector<Mainclass::Ammos> Ammo;		//弾薬
@@ -39,7 +37,7 @@ class main_c {
 		float timer = 0.f;
 		int select = 0;
 
-		void set(float tm, std::vector<voice_strs>& voice_str,float vol) {
+		void set(float tm, std::vector<voice_strs>& voice_str, float vol) {
 			this->select = GetRand(int(this->handle.size() - 1));
 			if (CheckSoundMem(this->handle[this->select].get()) != TRUE && this->timer == 0.f) {
 				this->handle[this->select].play(DX_PLAYTYPE_BACK, TRUE);
@@ -321,6 +319,8 @@ public:
 					}
 					//視点取得
 					if (Drawparts->use_vr) {
+						VECTOR_ref HMDpos;
+						MATRIX_ref HMDmat;
 						Drawparts->GetHMDPositionVR(&HMDpos, &HMDmat);
 						cam_s.cam.campos = pos_mine + HMDpos;
 						cam_s.cam.camvec = cam_s.cam.campos - HMDmat.zvec();
@@ -445,10 +445,9 @@ public:
 					}
 					se_alert.vol(int(float(192)*se_vol));
 					se_alert2.vol(int(float(192)*se_vol));
-					eyevec = mine.vehicle.mat.zvec() * -1.f;
-					cam_s.cam.campos = mine.vehicle.pos + VGet(0.f, 3.f, 0.f) + eyevec * range;
+					eyezvec = mine.vehicle.mat.zvec() * -1.f;
+					cam_s.cam.campos = mine.vehicle.pos + VGet(0.f, 3.f, 0.f) + eyezvec * range;
 					cam_s.Rot = ADS;
-					eyevec2 = chara[0].vehicle.mat.zvec() * -1.f;
 					for (auto& c : chara) {
 						for (auto& t : c.vehicle.use_veh.wheelframe) {
 							t.init();
@@ -655,13 +654,16 @@ public:
 						//マウスと視点角度をリンク
 						if (Drawparts->use_vr) {
 							//+視点取得
+							VECTOR_ref HMDpos;
+							MATRIX_ref HMDmat;
 							Drawparts->GetHMDPositionVR(&HMDpos, &HMDmat);
-							eye_pos_ads = VGet(std::clamp(eye_pos_ads.x(), -0.18f, 0.18f), std::clamp(eye_pos_ads.y() - 0.42f, 0.f, 0.8f), std::clamp(eye_pos_ads.z(), -0.36f, 0.1f));
-							eyevec = HMDmat.zvec();
+							eye_pos_ads = VGet(std::clamp(HMDpos.x(), -0.18f, 0.18f), std::clamp(HMDpos.y() - 0.42f, 0.f, 0.8f), std::clamp(HMDpos.z(), -0.36f, 0.1f));
+							eyezvec = HMDmat.zvec();
+							eyeyvec = HMDmat.yvec();
 						}
 						else {
 							eye_pos_ads = VGet(0, 0.58f, 0);
-							mouse_aim(eyevec);
+							mouse_aim(eyezvec);
 						}
 					}
 					//反映
@@ -729,19 +731,19 @@ public:
 									cam_easy.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
 									cam_easy.campos.y(std::max(cam_easy.campos.y(), 5.f));
 									if (Drawparts->use_vr) {
-										cam_easy.camvec = cam_easy.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
-										cam_easy.camup = MATRIX_ref::Vtrans(HMDmat.yvec(), veh.mat);//veh.mat.yvec();
+										cam_easy.camvec = cam_easy.campos - MATRIX_ref::Vtrans(eyezvec, veh.mat);
+										cam_easy.camup = MATRIX_ref::Vtrans(eyeyvec, veh.mat);//veh.mat.yvec();
 									}
 									else {
 										if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-											easing_set(&cam_easy.camvec, MATRIX_ref::Vtrans(eyevec, veh.mat)*-1.f, 0.75f);
+											easing_set(&cam_easy.camvec, MATRIX_ref::Vtrans(eyezvec, veh.mat)*-1.f, 0.75f);
 											cam_easy.camvec += cam_easy.campos;
 
 											cam_easy.camup = veh.mat.yvec();
 										}
 										else {
-											eyevec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
-											cam_easy.camvec = cam_easy.campos - MATRIX_ref::Vtrans(eyevec, veh.mat);
+											eyezvec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
+											cam_easy.camvec = cam_easy.campos - MATRIX_ref::Vtrans(eyezvec, veh.mat);
 											cam_easy.camup = veh.mat.yvec();
 										}
 									}
@@ -754,7 +756,7 @@ public:
 
 									if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
 
-										easing_set(&cam_easy.campos, eyevec * range, 0.9f);
+										easing_set(&cam_easy.campos, eyezvec * range, 0.9f);
 										cam_easy.campos += cam_easy.camvec;
 										cam_easy.campos.y(std::max(cam_easy.campos.y(), 0.f));
 										mapparts->map_col_line_nearest(cam_easy.camvec, &cam_easy.campos);
@@ -765,8 +767,8 @@ public:
 										cam_easy.camvec = veh.pos + veh.mat.yvec() * (6.f);
 										cam_easy.camvec.y(std::max(cam_easy.camvec.y(), 5.f));
 
-										eyevec = (cam_easy.camvec - (mine.vehicle.pos + mine.vehicle.mat.zvec() * (-1000.f))).Norm();
-										cam_easy.campos = cam_easy.camvec + eyevec * range;
+										eyezvec = (cam_easy.camvec - (mine.vehicle.pos + mine.vehicle.mat.zvec() * (-1000.f))).Norm();
+										cam_easy.campos = cam_easy.camvec + eyezvec * range;
 
 										cam_easy.camup = veh.mat.yvec();
 									}
