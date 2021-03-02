@@ -2011,8 +2011,12 @@ public:
 				}
 			}
 			if (veh.HP == 0) {
-				if (GetRand(100) < 20) {
-					veh.HP_m[GetRand(int(veh.HP_m.size() - 1 - 1))] = 0;
+				if (GetRand(100) < 12) {
+					auto tmp = GetRand(int(veh.HP_m.size() - 1 - 1));
+					if (veh.HP_m[tmp] != 0) {
+						this->effcs[ef_bomb].set(veh.obj.frame(veh.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0), 0.5f);
+					}
+					veh.HP_m[tmp] = 0;
 				}
 			}
 			/*
