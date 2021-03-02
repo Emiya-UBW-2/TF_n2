@@ -829,7 +829,7 @@ private:
 			this->reset();
 		}
 		void respawn() {
-			spawn(this->pos_spawn, this->mat_spawn, this->accel_spawn, this->speed_spawn);
+			spawn(this->pos_spawn, this->mat_spawn, this->accel_spawn, this->speed_spawn*3.6f);
 		}
 		void spawn(const VECTOR_ref& pos_, const MATRIX_ref& mat_,const float& acc_, const float& spd_) {
 			this->reset();

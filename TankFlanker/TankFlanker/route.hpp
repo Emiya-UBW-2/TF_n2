@@ -1,7 +1,7 @@
 #pragma once
 class main_c {
 	//
-	cam_info cam_easy;
+	cam_info cam_mine, cam_view;
 	VECTOR_ref eyezvec, eyeyvec;	//視点
 	FontHandle font12, font18;
 	//描画スクリーン
@@ -753,59 +753,117 @@ public:
 							auto& veh = mine.vehicle;
 							//cam_s.cam
 							{
-								//campos,camvec,camup取得
-								if (cam_s.Rot >= ADS) {
-									cam_easy.camvec -= cam_easy.campos;
-									cam_easy.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
-									cam_easy.campos.y(std::max(cam_easy.campos.y(), 0.f));
-									if (Drawparts->use_vr) {
-										cam_easy.camvec = cam_easy.campos - MATRIX_ref::Vtrans(eyezvec, veh.mat);
-										cam_easy.camup = MATRIX_ref::Vtrans(eyeyvec, veh.mat);//veh.mat.yvec();
-									}
-									else {
-										if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+								//プレイヤー視点
+								{
+									//campos,camvec,camup取得
+									if (cam_s.Rot >= ADS) {
+										cam_mine.camvec -= cam_mine.campos;
+										cam_mine.campos = veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(eye_pos_ads, veh.mat);
+										cam_mine.campos.y(std::max(cam_mine.campos.y(), 0.f));
+										if (Drawparts->use_vr) {
+											cam_mine.camvec = cam_mine.campos - MATRIX_ref::Vtrans(eyezvec, veh.mat);
+											cam_mine.camup = MATRIX_ref::Vtrans(eyeyvec, veh.mat);//veh.mat.yvec();
 										}
 										else {
-											eyezvec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
+											if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+											}
+											else {
+												eyezvec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
+											}
+											easing_set(&cam_mine.camvec, MATRIX_ref::Vtrans(eyezvec, veh.mat)*-1.f, 0.75f);
+											cam_mine.camvec += cam_mine.campos;
+											cam_mine.camup = veh.mat.yvec();
 										}
-										easing_set(&cam_easy.camvec, MATRIX_ref::Vtrans(eyezvec, veh.mat)*-1.f, 0.75f);
-										cam_easy.camvec += cam_easy.campos;
-										cam_easy.camup = veh.mat.yvec();
-									}
-								}
-								else {
-									cam_easy.campos -= cam_easy.camvec;
-
-									cam_easy.camvec = veh.pos + veh.mat.yvec() * (6.f);
-									cam_easy.camvec.y(std::max(cam_easy.camvec.y(), 0.f));
-
-									if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-
-										easing_set(&cam_easy.campos, eyezvec * range, 0.9f);
-										cam_easy.campos += cam_easy.camvec;
-										cam_easy.campos.y(std::max(cam_easy.campos.y(), 0.f));
-										mapparts->map_col_line_nearest(cam_easy.camvec, &cam_easy.campos);
-
-										easing_set(&cam_easy.camup, VGet(0.f, 1.f, 0.f), 0.9f);
 									}
 									else {
-										cam_easy.camvec = veh.pos + veh.mat.yvec() * (6.f);
-										cam_easy.camvec.y(std::max(cam_easy.camvec.y(), 5.f));
+										cam_mine.campos -= cam_mine.camvec;
 
-										eyezvec = (cam_easy.camvec - (mine.vehicle.pos + mine.vehicle.mat.zvec() * (-1000.f))).Norm();
-										cam_easy.campos = cam_easy.camvec + eyezvec * range;
+										cam_mine.camvec = veh.pos + veh.mat.yvec() * (6.f);
+										cam_mine.camvec.y(std::max(cam_mine.camvec.y(), 0.f));
 
-										cam_easy.camup = veh.mat.yvec();
+										if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
+
+											easing_set(&cam_mine.campos, eyezvec * range, 0.9f);
+											cam_mine.campos += cam_mine.camvec;
+											cam_mine.campos.y(std::max(cam_mine.campos.y(), 0.f));
+											mapparts->map_col_line_nearest(cam_mine.camvec, &cam_mine.campos);
+
+											easing_set(&cam_mine.camup, VGet(0.f, 1.f, 0.f), 0.9f);
+										}
+										else {
+											cam_mine.camvec = veh.pos + veh.mat.yvec() * (6.f);
+											cam_mine.camvec.y(std::max(cam_mine.camvec.y(), 5.f));
+
+											eyezvec = (cam_mine.camvec - (mine.vehicle.pos + mine.vehicle.mat.zvec() * (-1000.f))).Norm();
+											cam_mine.campos = cam_mine.camvec + eyezvec * range;
+
+											easing_set(&cam_mine.camup, veh.mat.yvec(), 0.9f);
+											//cam_mine.camup = veh.mat.yvec();
+										}
+									}
+									//
+									cam_mine.set_cam_info(deg2rad(Drawparts->use_vr ? 90 : fov_pc / fovs), (cam_s.Rot >= ADS) ? (3.f) : (range_p - 5.f), (cam_s.Rot >= ADS) ? (1000.f): (60.f*(range_p - 5.f)));
+								}
+								//他視点
+								/*
+								{
+									VECTOR_ref pos=mine.vehicle.pos_spawn+mine.vehicle.mat_spawn.zvec()*-450.f;
+									if ((pos - mine.vehicle.pos).size() <= 500.f) {
+										cam_view.campos -= pos;
+										easing_set(&cam_view.campos, VGet(
+											float(GetRand(500 * 2) - 500) / 100.f,
+											float(GetRand(500 * 2) - 500) / 100.f,
+											float(GetRand(500 * 2) - 500) / 100.f
+										), 0.95f);
+										cam_view.campos += pos;
+
+										easing_set(&cam_view.camvec, mine.vehicle.pos +
+											VGet(
+												float(GetRand(500 * 2) - 500) / 100.f,
+												float(GetRand(500 * 2) - 500) / 100.f,
+												float(GetRand(500 * 2) - 500) / 100.f
+											)
+											, 0.925f);
+
+										cam_view.camup = VGet(0.f, 1.f, 0.f);
+										cam_view.set_cam_info(deg2rad(Drawparts->use_vr ? 90 : fov_pc / fovs), 3.f, 1000.f);
 									}
 								}
-								//far取得
-								cam_easy.far_ = (cam_s.Rot >= ADS) ? (1000.f) : (60.f*(range_p - 5.f));
-								//near取得
-								cam_easy.near_ = (cam_s.Rot >= ADS) ? (3.f) : (range_p - 5.f);
-								//fov
-								cam_easy.fov = deg2rad(Drawparts->use_vr ? 90 : fov_pc / fovs);
+								//*/
+								/*
+								{
+									VECTOR_ref pos = mine.vehicle.pos + mine.vehicle.mat.xvec()*-2.f + mine.vehicle.mat.yvec()*2.f + mine.vehicle.mat.zvec()*-0.f;
+									if ((pos - mine.vehicle.pos).size() <= 500.f) {
+										cam_view.campos = pos;
+										easing_set(&cam_view.camvec, mine.vehicle.pos + mine.vehicle.mat.zvec()*-100.f +
+											VGet(
+												float(GetRand(200 * 2) - 200) / 100.f,
+												float(GetRand(200 * 2) - 200) / 100.f,
+												float(GetRand(200 * 2) - 200) / 100.f
+											)
+											, 0.925f);
 
-								cam_s.cam = cam_easy;
+										easing_set(&cam_view.camup, mine.vehicle.mat.yvec(), 0.9f);
+										//cam_view.camup = mine.vehicle.mat.yvec();
+										cam_view.set_cam_info(deg2rad(Drawparts->use_vr ? 90 : fov_pc / fovs), 3.f, 1000.f);
+									}
+								}
+								//*/
+								//*
+								{
+									VECTOR_ref pos = mine.vehicle.pos + mine.vehicle.mat.xvec()*-0.f + mine.vehicle.mat.yvec()*2.f + mine.vehicle.mat.zvec()*-10.f;
+									if ((pos - mine.vehicle.pos).size() <= 500.f) {
+										cam_view.campos = pos;
+										easing_set(&cam_view.camvec, mine.vehicle.pos + mine.vehicle.mat.zvec()*100.f
+											, 0.925f);
+
+										easing_set(&cam_view.camup, mine.vehicle.mat.yvec(), 0.9f);
+										//cam_view.camup = mine.vehicle.mat.yvec();
+										cam_view.set_cam_info(deg2rad(Drawparts->use_vr ? 90 : fov_pc / fovs), 3.f, 1000.f);
+									}
+								}
+								//*/
+								cam_s.cam = cam_mine;
 							}
 							//
 							Set3DSoundListenerPosAndFrontPosAndUpVec(cam_s.cam.campos.get(), cam_s.cam.camvec.get(), cam_s.cam.camup.get());
