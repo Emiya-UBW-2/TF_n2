@@ -966,49 +966,52 @@ public:
 			key_pair tmp_k;
 			tmp_k.first = KEY_INPUT_W;
 			tmp_k.second = "下降";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//0
 			tmp_k.first = KEY_INPUT_S;
 			tmp_k.second = "上昇";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//1
 			tmp_k.first = KEY_INPUT_D;
 			tmp_k.second = "右ロール";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//2
 			tmp_k.first = KEY_INPUT_A;
 			tmp_k.second = "左ロール";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//3
 			tmp_k.first = KEY_INPUT_Q;
 			tmp_k.second = "左ヨー";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//4
 			tmp_k.first = KEY_INPUT_E;
 			tmp_k.second = "右ヨー";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//5
 			tmp_k.first = KEY_INPUT_R;
 			tmp_k.second = "スロットル開く";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//6
 			tmp_k.first = KEY_INPUT_F;
 			tmp_k.second = "スロットル絞る";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//7
 			tmp_k.first = KEY_INPUT_G;
 			tmp_k.second = "ランディングブレーキ";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//8
 			tmp_k.first = KEY_INPUT_LSHIFT;
 			tmp_k.second = "精密動作";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//9
 			tmp_k.first = KEY_INPUT_O;
 			tmp_k.second = "タイトル画面に戻る";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//10
 			tmp_k.first = KEY_INPUT_ESCAPE;
 			tmp_k.second = "強制終了";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//11
 			tmp_k.first = KEY_INPUT_C;
 			tmp_k.second = "ロックオンリセット";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//12
 			tmp_k.first = KEY_INPUT_V;
 			tmp_k.second = "オートスラスト";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//13
 			tmp_k.first = KEY_INPUT_SPACE;
 			tmp_k.second = "武装切替";
-			this->key_use_ID.emplace_back(tmp_k);
+			this->key_use_ID.emplace_back(tmp_k);//14
+			tmp_k.first = KEY_INPUT_LCONTROL;
+			tmp_k.second = "視点切替";
+			this->key_use_ID.emplace_back(tmp_k);//15
 			{
 				std::fstream file;
 				/*
@@ -1071,7 +1074,9 @@ public:
 			chara.key[7] = this->key_use_ID[5].get_key(0) && !this->key_use_ID[9].get_key(0);
 			//スロットル
 			{
-				chara.use_auto_thrust = this->key_use_ID[13].get_key(1);
+				if (this->key_use_ID[13].get_key(2)) {
+					chara.use_auto_thrust ^= 1;
+				}
 				if (chara.use_auto_thrust) {
 					chara.auto_thrust(chara.speed_auto_thrust);
 					if (this->key_use_ID[6].get_key(2)) {
