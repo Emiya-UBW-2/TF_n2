@@ -586,7 +586,7 @@ public:
 			auto gunpos = (veh.obj.frame(veh.Gun_[0].get_gun_info().frame1.first) - veh.pos);
 			auto ammo_ = (veh.Gun_[0].getbullet_use().spec.speed_a + veh.speed) / GetFPS();
 			for (auto& c : charas) {
-				c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + gunpos + c.vehicle.mat.zvec() *(-2.f*c.vehicle.speed / GetFPS())*((c.vehicle.pos - veh.pos).size() / ammo_)).get());
+				c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + gunpos + c.vehicle.mat.zvec() *(-1.f*c.vehicle.speed / GetFPS())*((c.vehicle.pos - veh.pos).size() / ammo_)).get());
 				c.winpos = ConvWorldPosToScreenPos(c.vehicle.pos.get());
 			}
 			aimpos_2 = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(0.f, 0.58f, -1.f), veh.mat)).get());

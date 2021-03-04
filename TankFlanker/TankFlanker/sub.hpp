@@ -2024,7 +2024,7 @@ public:
 					veh.HP_m[tmp] = 0;
 				}
 			}
-			/*
+			//*
 			if (veh.Gun_.size() > veh.sel_weapon + 1) {
 				if (veh.Gun_[veh.sel_weapon + 1].get_rounds_() == 0) {
 					for (auto&g : veh.Gun_) {
