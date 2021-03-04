@@ -113,6 +113,141 @@ public:
 		}
 	}
 	//
+	void draw_edge(Mainclass::Chara& chara, bool uses_vr = true) {
+		int xs = 0, xp = 0, ys = 0, yp = 0;
+		auto font_hight = (!uses_vr) ? y_r(18) : y_r(24);
+		auto& veh = chara.vehicle;
+		//死亡時に非表示
+		if (!chara.death) {
+			//速度計
+			{
+				if (!uses_vr) {
+					xs = 0;
+					xp = disp_x / 2 - disp_y / 7;
+					ys = disp_y / 14;
+					yp = disp_y / 2;
+				}
+				else {
+					xs = 0;
+					xp = disp_x / 2 - disp_y / 6 + y_r(120);
+					ys = disp_y / 6 - y_r(120);
+					yp = disp_y / 2;
+				}
+				//
+				DXDraw::Line2D(xp + y_r(1), yp, xp + y_r(10), yp, GetColor(100, 255, 100), 5);
+				//
+				DXDraw::Line2D(xp - y_r(17), yp, xp - y_r(25), yp - font_hight / 2, GetColor(100, 255, 100), 5);
+				DXDraw::Line2D(xp - y_r(17), yp, xp - y_r(25), yp + font_hight / 2, GetColor(100, 255, 100), 5);
+				DXDraw::Line2D(xp - y_r(25), yp - font_hight / 2, xp - y_r(35), yp - font_hight / 2, GetColor(100, 255, 100), 5);
+				DXDraw::Line2D(xp - y_r(25), yp + font_hight / 2, xp - y_r(35), yp + font_hight / 2, GetColor(100, 255, 100), 5);
+				//
+				for (int i = -ys; i < ys; i += (y_r(10))) {
+					int p = i + int(chara.vehicle.speed * 3.6f + ys) % (y_r(10));
+					if (p <= ys) {
+						DXDraw::Line2D(xp - y_r(10), yp + p, xp, yp + p, GetColor(100, 255, 100), 5);
+					}
+					else {
+						break;
+					}
+				}
+				//
+				for (int i = -ys; i < ys; i += (y_r(100))) {
+					int p = i + int(chara.vehicle.speed * 3.6f + ys) % (y_r(100));
+					if (p <= ys) {
+						DXDraw::Line2D(xp - y_r(15), yp + p, xp, yp + p, GetColor(100, 255, 100), 6);
+					}
+					else {
+						break;
+					}
+				}
+			}
+			//高度計
+			{
+				if (!uses_vr) {
+					xs = 0;
+					xp = disp_x / 2 + disp_y / 7;
+					ys = disp_y / 14;
+					yp = disp_y / 2;
+				}
+				else {
+					xs = 0;
+					xp = disp_x / 2 + disp_y / 6 - y_r(120);
+					ys = disp_y / 6 - y_r(120);
+					yp = disp_y / 2;
+				}
+				//
+				DXDraw::Line2D(xp - y_r(10), yp, xp - y_r(1), yp, GetColor(100, 255, 100), 5);
+				//
+				DXDraw::Line2D(xp + y_r(17), yp, xp + y_r(25), yp - font_hight / 2, GetColor(100, 255, 100), 5);
+				DXDraw::Line2D(xp + y_r(17), yp, xp + y_r(25), yp + font_hight / 2, GetColor(100, 255, 100), 5);
+				DXDraw::Line2D(xp + y_r(25), yp - font_hight / 2, xp + y_r(35), yp - font_hight / 2, GetColor(100, 255, 100), 5);
+				DXDraw::Line2D(xp + y_r(25), yp + font_hight / 2, xp + y_r(35), yp + font_hight / 2, GetColor(100, 255, 100), 5);
+				//
+				for (int i = -ys; i < ys; i += y_r(10)) {
+					int p = i + int(chara.vehicle.pos.y() + ys) % y_r(10);
+					if (p <= ys) {
+						DXDraw::Line2D(xp, yp + p, xp + y_r(10), yp + p, GetColor(100, 255, 100), 5);
+					}
+					else {
+						break;
+					}
+				}
+				//
+				for (int i = -ys; i < ys; i += y_r(100)) {
+					int p = i + int(chara.vehicle.pos.y() + ys) % y_r(100);
+					if (p <= ys) {
+						DXDraw::Line2D(xp, yp + p, xp + y_r(15), yp + p, GetColor(100, 255, 100), 6);
+					}
+					else {
+						break;
+					}
+				}
+			}
+			//コンパス
+			{
+				VECTOR_ref tmp = chara.vehicle.mat.zvec();
+				tmp = VGet(tmp.x(), 0.f, tmp.z());
+				tmp = tmp.Norm();
+				float rad = -std::atan2f(tmp.x(), -tmp.z())*180.f / DX_PI_F;
+				rad = (rad < 0) ? (360.f + rad) : rad;
+				if (!uses_vr) {
+					xs = disp_y / 14;
+					xp = disp_x / 2;
+					ys = 0;
+					yp = disp_y / 2 + disp_y / 7;
+				}
+				else {
+					xs = disp_y / 6 - y_r(120);
+					xp = disp_x / 2;
+					ys = 0;
+					yp = disp_y / 2 + disp_y / 6 - y_r(120);
+				}
+				//
+				DXDraw::Line2D(xp, yp - y_r(10), xp, yp - y_r(1), GetColor(100, 255, 100), 5);
+				//
+				for (int i = -xs; i < xs; i += y_r(10)) {
+					int p = (i + int(rad + xs) % y_r(10));
+					if (p <= xs) {
+						DXDraw::Line2D(xp + p, yp, xp + p, yp + y_r(10), GetColor(100, 255, 100), 5);
+					}
+					else {
+						break;
+					}
+				}
+				//
+				for (int i = -xs; i < xs; i += y_r(60)) {
+					int p = (i + int(rad + xs) % y_r(60));
+					if (p <= xs) {
+						DXDraw::Line2D(xp + p, yp, xp + p, yp + y_r(15), GetColor(100, 255, 100), 6);
+					}
+					else {
+						break;
+					}
+				}
+			}
+		}
+	}
+	//
 	void draw(Mainclass::Chara& chara, const bool& adss, const DXDraw::system_VR& vr_sys, float danger_height, bool uses_vr = true) {
 		int xs = 0, xp = 0, ys = 0, yp = 0;
 		FontHandle* font = (!uses_vr) ? &font18 : &font24;

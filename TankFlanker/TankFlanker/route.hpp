@@ -1,16 +1,20 @@
 #pragma once
 class main_c {
 	//
-	bool use_vew = false;
+	bool on_view = false;
+	float on_time_view = 0.f;
+	bool use_view = false;
 	float view_time = 0.f;
 	float view_black = 0.f;
 	float rad_view = 0.f, range_view = 0.f;
 	VECTOR_ref pos_viewcam, pos_viewcam2, eyezvec_view;
+
 	cam_info cam_mine, cam_view;
 	VECTOR_ref eyezvec, eyeyvec;	//視点
 	FontHandle font12, font18;
 	//描画スクリーン
 	GraphHandle UI_Screen;		//
+	GraphHandle UI_Screen2;		//
 	MV1 cockpit;				//コックピット
 	MV1 garage;
 	//操作
@@ -97,6 +101,7 @@ public:
 		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);	//ホストパスエフェクト
 		auto mapparts = std::make_unique<Mapclass>();																	//map
 		UI_Screen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);										//VR、フルスクリーン共用UI
+		UI_Screen2 = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);										//VR、フルスクリーン共用UI
 		//
 		font12 = FontHandle::Create(12, DX_FONTTYPE_EDGE);
 		font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
@@ -552,7 +557,9 @@ public:
 					SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 					timer = 60.f*5.f;
 					ready_timer = 5.f;
-					use_vew = false;
+					on_view = true;
+					on_time_view = 0.5f;
+					use_view = false;
 					rad_view = deg2rad(120);
 					range_view = 30.f;
 				}
@@ -820,7 +827,7 @@ public:
 						{
 							//プレイヤー視点
 							if (k_.key_use_ID[15].get_key(2)) {
-								use_vew ^= 1;
+								use_view ^= 1;
 							}
 							{
 								//campos,camvec,camup取得
@@ -833,9 +840,7 @@ public:
 										cam_mine.camup = MATRIX_ref::Vtrans(eyeyvec, veh.mat);//veh.mat.yvec();
 									}
 									else {
-										if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-										}
-										else {
+										if (!((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0)) {
 											eyezvec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
 										}
 										easing_set(&cam_mine.camvec, MATRIX_ref::Vtrans(eyezvec, veh.mat)*-1.f, 0.75f);
@@ -849,8 +854,7 @@ public:
 									cam_mine.camvec = veh.pos + veh.mat.yvec() * (6.f);
 									cam_mine.camvec.y(std::max(cam_mine.camvec.y(), 0.f));
 
-									if ((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0) {
-
+									if (((GetMouseInput() & MOUSE_INPUT_RIGHT) != 0)) {
 										easing_set(&cam_mine.campos, eyezvec * range, 0.9f);
 										cam_mine.campos += cam_mine.camvec;
 										cam_mine.campos.y(std::max(cam_mine.campos.y(), 0.f));
@@ -860,19 +864,18 @@ public:
 									}
 									else {
 										cam_mine.camvec = veh.pos + veh.mat.yvec() * (6.f);
-										cam_mine.camvec.y(std::max(cam_mine.camvec.y(), 5.f));
+										cam_mine.camvec.y(std::max(cam_mine.camvec.y(), 0.f));
 
 										eyezvec = (cam_mine.camvec - (mine.vehicle.pos + mine.vehicle.mat.zvec() * (-1000.f))).Norm();
 										cam_mine.campos = cam_mine.camvec + eyezvec * range;
 
 										easing_set(&cam_mine.camup, veh.mat.yvec(), 0.9f);
-										//cam_mine.camup = veh.mat.yvec();
 									}
 								}
 								//
 								cam_mine.set_cam_info(deg2rad(Drawparts->use_vr ? 90 : fov_pc / fovs), (cam_s.Rot >= ADS) ? (3.f) : (range_p - 5.f), (cam_s.Rot >= ADS) ? (1000.f) : (60.f*(range_p - 5.f)));
 							}
-							if (use_vew) {
+							if (use_view) {
 								if (ready_timer < 0.f) {
 									//他視点
 									if (view_time >= 0.f && view_time < 10.f) {
@@ -1004,12 +1007,15 @@ public:
 										easing_set(&view_black, 1.f, 0.925f);
 									}
 								}
+								on_view = true;
 							}
 							else {
 								view_time = 0.f;
 								easing_set(&view_black, 0.f, 0.8f);
+								on_view = (on_time_view <= (float(10 + GetRand(40)) / 100.f));
+								on_time_view = std::max(on_time_view - 1.f / GetFPS(), 0.f);
 							}
-							cam_s.cam = use_vew ? cam_view : cam_mine;
+							cam_s.cam = use_view ? cam_view : cam_mine;
 						}
 						//
 						Set3DSoundListenerPosAndFrontPosAndUpVec(cam_s.cam.campos.get(), cam_s.cam.camvec.get(), cam_s.cam.camup.get());
@@ -1018,9 +1024,19 @@ public:
 							mine.cocks.ready_(mine);
 						}
 						//UI
-						if (!use_vew) {
+						if (!use_view && on_view) {
+							UI_Screen2.SetDraw_Screen();
+							{
+								UIparts->draw_edge(mine, Drawparts->use_vr);
+							}
+							GraphFilter(UI_Screen2.get(), DX_GRAPH_FILTER_GAUSS, 16, 1000);
 							UI_Screen.SetDraw_Screen();
 							{
+								SetDrawBlendMode(DX_BLENDMODE_ADD, 255);
+								UI_Screen2.DrawGraph(0, 0, true);
+								UI_Screen2.DrawGraph(0, 0, true);
+								SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
+
 								UIparts->draw(mine, cam_s.Rot >= ADS, *Drawparts->get_device_hand1(), danger_height, Drawparts->use_vr);
 							}
 						}
@@ -1049,7 +1065,7 @@ public:
 								if (tmp_cams.Rot >= ADS) {
 									mine.cocks.obj.DrawModel();
 								}
-								if (!use_vew) {
+								if (!use_view && on_view) {
 									if (Drawparts->use_vr) {
 										//UI
 										SetUseZBuffer3D(FALSE);												//zbufuse
@@ -1137,9 +1153,9 @@ public:
 					else {
 						ready_timer -= 1.f / GetFPS();
 
-						use_vew = true;
+						use_view = true;
 						if (ready_timer <= 0.f) {
-							use_vew = false;
+							use_view = false;
 						}
 						if ((GetNowHiPerformanceCount() / 100000) % 10 == 0) {
 							if (CheckSoundMem(se_timer.get()) != TRUE) {
