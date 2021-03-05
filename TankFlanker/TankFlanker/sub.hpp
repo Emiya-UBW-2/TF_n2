@@ -75,6 +75,10 @@ public:
 	};
 	//
 	struct ammos {
+		float hit_count = 0.f;
+		float hit_r = 0.f;
+		int hit_x = 0, hit_y = 0;
+
 		bool hit{ false };
 		bool flug{ false };
 		float count = 0.f;
@@ -419,6 +423,9 @@ private:
 		const auto& get_loadcnt() {
 			return loadcnt;
 		}
+		auto& getbullet() {
+			return this->bullet;
+		}
 		const auto& getbullet_use() {
 			return this->bullet[this->usebullet];
 		}
@@ -443,6 +450,33 @@ private:
 				p.spec = this->Spec[0];
 			}
 		}
+		void update_bullet() {
+			SetCameraNearFar(0.01f, 6000.f);
+			for (auto& a : this->bullet) {
+				if (a.hit) {
+					a.hit_r = 2.f;
+					a.hit_count = 0.5f;
+					VECTOR_ref p = ConvWorldPosToScreenPos((a.pos).get());
+					if (p.z() >= 0.f&&p.z() <= 1.f) {
+						a.hit_x = int(p.x());
+						a.hit_y = int(p.y());
+					}
+					a.hit = false;
+				}
+				if (a.hit_count != 0.f) {
+					easing_set(&a.hit_r, 1.f, 0.7f);
+				}
+				else {
+					easing_set(&a.hit_r, 0.f, 0.8f);
+				}
+
+				a.hit_count = std::clamp(a.hit_count - 1.f / GetFPS(), 0.f, 1.f);
+			}
+		}
+
+
+
+
 		void set() {
 			this->rounds_ = this->gun_info.rounds;
 		}
@@ -469,7 +503,6 @@ private:
 					//
 					this->loadcnt = this->gun_info.load_time;
 					this->rounds_ = std::max<uint16_t>(this->rounds_ - 1, 0);
-					u.hit = false;
 					u.flug = true;
 					u.count = 0.f;
 					u.yadd = 0.f;
@@ -1531,6 +1564,7 @@ public:
 											t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
 										}
 										//弾処理
+										c.hit = true;
 										c.flug = false;
 									}
 									//非貫通
@@ -1542,10 +1576,12 @@ public:
 											break;
 										case 1: //HE
 											//爆発する
+											c.hit = true;
 											c.flug = false;
 											break;
 										case 2: //ミサイル
 											//爆発する
+											c.hit = true;
 											c.flug = false;
 											break;
 										default:
@@ -1580,10 +1616,12 @@ public:
 										break;
 									case 1: //HE
 										veh_t.HP_m[sort_] = std::max<int16_t>(veh_t.HP_m[sort_] - c.spec.damage_a, 0); //
+										c.hit = true;
 										c.flug = false;//爆発する
 										break;
 									case 2: //ミサイル
 										veh_t.HP_m[sort_] = std::max<int16_t>(veh_t.HP_m[sort_] - c.spec.damage_a, 0); //
+										c.hit = true;
 										c.flug = false;//爆発する
 										break;
 									default:
@@ -1610,10 +1648,12 @@ public:
 										break;
 									case 1: //HE
 										veh_t.HP_m[sort_] = std::max<int16_t>(veh_t.HP_m[sort_] - c.spec.damage_a, 0); //
+										c.hit = true;
 										c.flug = false;//爆発する
 										break;
 									case 2: //ミサイル
 										veh_t.HP_m[sort_] = std::max<int16_t>(veh_t.HP_m[sort_] - c.spec.damage_a, 0); //
+										c.hit = true;
 										c.flug = false;//爆発する
 										break;
 									default:

@@ -11,6 +11,7 @@ private:
 	GraphHandle aim;
 	GraphHandle aim_if;
 	GraphHandle dmg;
+	GraphHandle hit;
 	//
 	float ber = 0;
 	//font
@@ -39,6 +40,8 @@ public:
 		aim = GraphHandle::Load("data/UI/battle_aim.bmp");
 		aim_if = GraphHandle::Load("data/UI/battle_if.bmp");
 		dmg = GraphHandle::Load("data/UI/damage.png");
+		hit = GraphHandle::Load("data/UI/battle_hit.bmp");
+
 
 		font36 = FontHandle::Create(y_r(36), DX_FONTTYPE_EDGE);
 		font24 = FontHandle::Create(y_r(24), DX_FONTTYPE_EDGE);
@@ -116,7 +119,6 @@ public:
 	void draw_edge(Mainclass::Chara& chara, bool uses_vr = true) {
 		int xs = 0, xp = 0, ys = 0, yp = 0;
 		auto font_hight = (!uses_vr) ? y_r(18) : y_r(24);
-		auto& veh = chara.vehicle;
 		//死亡時に非表示
 		if (!chara.death) {
 			//速度計
@@ -898,6 +900,24 @@ public:
 				}
 			}
 		}
+		//
+				//ヒット
+		{
+			SetCameraNearFar(0.01f, 100.f);
+			for (auto& c : charas) {
+				for (auto& g : c.vehicle.Gun_) {
+					for (auto& a : g.getbullet()) {
+						if (a.hit_r > 0.05f) {
+							SetDrawBlendMode(DX_BLENDMODE_ALPHA, int(255.f*a.hit_r));
+							this->hit.DrawRotaGraph(a.hit_x, a.hit_y, a.hit_r*(&c == &chara ? 1.f : 0.5f), 0.f, true);
+						}
+					}
+				}
+			}
+			SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
+		}
+		//
+
 		//視点中央
 		{
 			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);

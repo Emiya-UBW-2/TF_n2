@@ -1077,6 +1077,13 @@ public:
 									else {
 										this->UI_Screen.DrawGraph(0, 0, TRUE);
 									}
+									//
+									for (auto& c : chara) {
+										for (auto& g : c.vehicle.Gun_) {
+											g.update_bullet();
+										}
+									}
+									//
 									UIparts->item_draw(chara, mine, tmp_cams.Rot >= ADS, danger_height, Drawparts->use_vr);
 									//
 									{
