@@ -162,9 +162,9 @@ public:
 		auto ram_draw_menu = [&]() {
 			Drawparts->Draw_by_Shadow(
 				[&]() {
-					garage.DrawModel();
-					Vehicles[chara[0].vehicle.use_id].obj.DrawModel();
-				}
+				garage.DrawModel();
+				Vehicles[chara[0].vehicle.use_id].obj.DrawModel();
+			}
 			);
 		};
 		auto ram_draw = [&]() {
@@ -176,10 +176,10 @@ public:
 				SetFogStartEnd(0.0f, 3000.f);
 				SetFogColor(128, 128, 128);
 				for (auto& c : chara) {
-						MV1SetSemiTransDrawMode(DX_SEMITRANSDRAWMODE_NOT_SEMITRANS_ONLY);
-						c.vehicle.draw();
-						MV1SetSemiTransDrawMode(DX_SEMITRANSDRAWMODE_SEMITRANS_ONLY);
-						c.vehicle.draw();
+					MV1SetSemiTransDrawMode(DX_SEMITRANSDRAWMODE_NOT_SEMITRANS_ONLY);
+					c.vehicle.draw();
+					MV1SetSemiTransDrawMode(DX_SEMITRANSDRAWMODE_SEMITRANS_ONLY);
+					c.vehicle.draw();
 				}
 				MV1SetSemiTransDrawMode(DX_SEMITRANSDRAWMODE_ALWAYS);
 
@@ -524,20 +524,20 @@ public:
 						}
 						else {
 							//*/
-							float rad = deg2rad(-130);
-							c.vehicle.spawn(
-								VGet(float(-2000 + 4000 * int(i / (chara.size() / 2)))*sin(rad) + float(100 * (i % (chara.size() / 2)))*cos(rad), 1500.f, float(-2000 + 4000 * int(i / (chara.size() / 2)))*cos(rad) - float(100 * (i % (chara.size() / 2)))*sin(rad)),
-								MATRIX_ref::RotY(deg2rad(((c.type == 0) ? 180 : 0) - 130)),
-								25.f,
-								c.vehicle.use_veh.min_speed_limit*3.6f
-							);
+						float rad = deg2rad(-130);
+						c.vehicle.spawn(
+							VGet(float(-2000 + 4000 * int(i / (chara.size() / 2)))*sin(rad) + float(100 * (i % (chara.size() / 2)))*cos(rad), 1500.f, float(-2000 + 4000 * int(i / (chara.size() / 2)))*cos(rad) - float(100 * (i % (chara.size() / 2)))*sin(rad)),
+							MATRIX_ref::RotY(deg2rad(((c.type == 0) ? 180 : 0) - 130)),
+							25.f,
+							c.vehicle.use_veh.min_speed_limit*3.6f
+						);
 						//}
 						c.cocks.set_(cockpit);			//コックピット
 						c.se.Duplicate(se);				//se
 					}
 					se_alert.vol(int(float(192)*se_vol));
 					se_alert2.vol(int(float(192)*se_vol));
-					se_change.vol(std::clamp(int(float(255)/0.35f*se_vol),0,255));
+					se_change.vol(std::clamp(int(float(255) / 0.35f*se_vol), 0, 255));
 					eyezvec = mine.vehicle.mat.zvec() * -1.f;
 					cam_s.cam.campos = mine.vehicle.pos + VGet(0.f, 3.f, 0.f) + eyezvec * range;
 					cam_s.Rot = ADS;
@@ -974,15 +974,15 @@ public:
 										*/
 										eyezvec_view = (veh.mat.xvec()*sin(rad_view) + veh.mat.zvec()*-cos(rad_view)).Norm();
 										cam_view.campos -= pos_viewcam2;
-										easing_set(&cam_view.campos, 
+										easing_set(&cam_view.campos,
 											eyezvec_view*range_view +
 											VGet(float(GetRand(50 * 2) - 50) / 100.f, float(GetRand(50 * 2) - 50) / 100.f, float(GetRand(50 * 2) - 50) / 100.f)
 											, 0.9f);
-										pos_viewcam2 = veh.pos + veh.mat.yvec() * (range_view/6.f+1.f);
+										pos_viewcam2 = veh.pos + veh.mat.yvec() * (range_view / 6.f + 1.f);
 										cam_view.campos += pos_viewcam2;
 
 										cam_view.camvec = pos_viewcam2;
-										easing_set(&cam_view.camup, VGet(0,1.f,0), 0.9f);
+										easing_set(&cam_view.camup, VGet(0, 1.f, 0), 0.9f);
 										cam_view.set_cam_info(deg2rad(Drawparts->use_vr ? 90 : fov_pc), 3.f, 1000.f);
 
 										rad_view += deg2rad(5 + GetRand(20)) / GetFPS();

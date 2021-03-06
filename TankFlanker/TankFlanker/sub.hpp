@@ -518,10 +518,10 @@ private:
 						c->se.gun.play(DX_PLAYTYPE_BACK, TRUE);
 					}
 					else {
-						c->effcs_missile[c->missile_effcnt].first.set(c->vehicle.obj.frame(this->gun_info.frame3.first), u.vec);
-						c->effcs_missile[c->missile_effcnt].second = &u;
-						c->effcs_missile[c->missile_effcnt].count = 0.f;
-						++c->missile_effcnt %= c->effcs_missile.size();
+						c->effcs_missile[c->effcs_missile_cnt].first.set(c->vehicle.obj.frame(this->gun_info.frame3.first), u.vec);
+						c->effcs_missile[c->effcs_missile_cnt].second = &u;
+						c->effcs_missile[c->effcs_missile_cnt].count = 0.f;
+						++c->effcs_missile_cnt %= c->effcs_missile.size();
 
 						c->se.missile.play(DX_PLAYTYPE_BACK, TRUE);
 					}
@@ -864,14 +864,14 @@ private:
 		void respawn() {
 			spawn(this->pos_spawn, this->mat_spawn, this->accel_spawn, this->speed_spawn*3.6f);
 		}
-		void spawn(const VECTOR_ref& pos_, const MATRIX_ref& mat_,const float& acc_, const float& spd_) {
+		void spawn(const VECTOR_ref& pos_, const MATRIX_ref& mat_, const float& acc_, const float& spd_) {
 			this->reset();
 
 			this->pos_spawn = pos_;
 			this->mat_spawn = mat_;
 			this->accel_spawn = acc_;// 25.f;
 			this->speed_spawn = spd_ / 3.6f;// this->use_veh.min_speed_limit;
-			
+
 			this->pos = this->pos_spawn;
 			this->mat = this->mat_spawn;
 			this->accel = this->accel_spawn;
@@ -1162,13 +1162,11 @@ public:
 				, salt_1000_f, salt_1000_2_f, salt_100_f, salt_100_2_f
 				, fuel_f, fuel_2_f
 				, accel_f;
-
 			float spd3_fp = 0.f, spd2_fp = 0.f, spd1_fp = 0.f
 				, alt4_fp = 0.f, alt3_fp = 0.f, alt2_fp = 0.f, alt1_fp = 0.f
 				, salt4_fp = 0.f, salt3_fp = 0.f, salt2_fp = 0.f, salt1_fp = 0.f;
-
 			MV1 obj;
-
+			//
 			void set_(const MV1& cocks) {
 				obj = cocks.Duplicate();
 				//
@@ -1276,6 +1274,7 @@ public:
 					}
 				}
 			}
+			//
 			void ready_(Chara& c) {
 				float px = (c.p_animes_rudder[1].second - c.p_animes_rudder[0].second)*deg2rad(30);
 				float pz = (c.p_animes_rudder[2].second - c.p_animes_rudder[3].second)*deg2rad(30);
@@ -1383,6 +1382,7 @@ public:
 				}
 				obj.SetMatrix(c.vehicle.mat*MATRIX_ref::Mtrans(c.vehicle.obj.frame(c.vehicle.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, c.vehicle.mat)));
 			}
+			//
 		};
 		//
 		struct ef_missiles {
@@ -1397,30 +1397,30 @@ public:
 		//
 	public:
 		//====================================================
-		std::array<EffectS, ef_size> effcs; //effect
-		std::array<ef_missiles, 8> effcs_missile; //effect
-		size_t missile_effcnt = 0;
-		size_t type;
-		size_t aim_cnt = 0;//狙われている相手の数
-		size_t missile_cnt = 0;//狙われている相手の数
-		float death_timer = 0.f;
-		bool death = false;
+		std::array<EffectS, ef_size> effcs;			//effect
+		std::array<ef_missiles, 4> effcs_missile;	//effect
+		size_t effcs_missile_cnt = 0;				//
+		size_t type;								//
+		size_t aim_cnt = 0;							//狙われている相手の数
+		size_t missile_cnt = 0;						//狙われている相手の数
+		float death_timer = 0.f;					//
+		bool death = false;							//
 		//操作関連//==================================================
-		float view_xrad = 0.f, view_yrad = 0.f; //砲塔操作用ベクトル
-		std::array<bool, 18> key{ false };    //キー
-		bool use_auto_thrust = true;
-		float speed_auto_thrust = 400.f;
-		switchs changegear; //ギアアップスイッチ
-		bool chock = false;	//チョーク
+		float view_xrad = 0.f, view_yrad = 0.f;		//砲塔操作用ベクトル
+		std::array<bool, 18> key{ false };			//キー
+		bool use_auto_thrust = true;				//
+		float speed_auto_thrust = 400.f;			//
+		switchs changegear;							//ギアアップスイッチ
+		bool chock = false;							//チョーク
 		//飛行機//==================================================
-		p_animes p_anime_geardown;		    //車輪アニメーション
-		std::array<p_animes, 6> p_animes_rudder;//ラダーアニメーション
-		std::vector<frames> p_burner;		    //バーナー
+		p_animes p_anime_geardown;					//車輪アニメーション
+		std::array<p_animes, 6> p_animes_rudder;	//ラダーアニメーション
+		std::vector<frames> p_burner;				//バーナー
 		//共通項//==================================================
 		vehicles vehicle;
 		VECTOR_ref winpos;
 		VECTOR_ref winpos_if;
-
+		//機体サウンド
 		sounds_3D se;
 		//コックピット
 		cockpits cocks;

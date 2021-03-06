@@ -73,7 +73,7 @@ public:
 		}
 	}
 	//
-	void draw_menu(float ber_r,float rad, Mainclass::Vehcs& vehs) {
+	void draw_menu(float ber_r, float rad, Mainclass::Vehcs& vehs) {
 		//
 		{
 			int xp = disp_x / 2 + int((ber_r * 16.f / 9.f) * sin(rad + deg2rad(90)));

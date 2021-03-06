@@ -149,7 +149,7 @@ public:
 		this->sun_pic.Dispose();
 		DeleteShader(this->VertexShaderHandle);	// 頂点シェーダーを読み込む
 		DeleteShader(this->PixelShaderHandle);	// ピクセルシェーダーを読み込む
-		
+
 	}
 	auto& map_get() { return this->map; }
 	auto& map_col_get() { return this->map_col; }
