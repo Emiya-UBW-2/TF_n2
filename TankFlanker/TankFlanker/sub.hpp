@@ -125,47 +125,40 @@ public:
 				}
 			}
 		};
-		struct wing_frame {
+		class break_frame {
+		public:
 			frames frame;
 			EffectS smkeffcs;
 		};
 	public:
 		//共通
-		std::string name;				  //
-		MV1 obj, col;					  //
-		std::vector<GraphHandle> graph_HP_m;		//ライフ
-		GraphHandle graph_HP_m_all;
-		VECTOR_ref minpos, maxpos;			  //
-		std::vector<gun_frame> gunframe;			  //
-		std::vector<foot_frame> wheelframe;			  //
-		std::vector<foot_frame> wheelframe_nospring;		  //誘導輪回転
-		std::vector< wing_frame> wingframe;
-		uint16_t HP = 0;					  //
-		float canlook_dist = 1000.f;
-		std::vector<std::pair<size_t, float>> armer_mesh; //装甲ID
-		std::vector<size_t> space_mesh;			  //装甲ID
-		std::vector<std::pair<size_t, size_t>> module_mesh;		  //装甲ID
-		bool isfloat = false;			  //浮くかどうか
-		float down_in_water = 0.f;			  //沈む判定箇所
-		float max_speed_limit = 0.f;			  //最高速度(km/h)
-		float mid_speed_limit = 0.f;			  //巡行速度(km/h)
-		float min_speed_limit = 0.f;			  //失速速度(km/h)
-		float flont_speed_limit = 0.f;			  //前進速度(km/h)
-		float back_speed_limit = 0.f;			  //後退速度(km/h)
-		float body_rad_limit = 0.f;			  //旋回速度(度/秒)
-		float turret_rad_limit = 0.f;			  //砲塔駆動速度(度/秒)
-		frames fps_view;//コックピット
-		GraphHandle ui_pic;//シルエット
-		int pic_x, pic_y;//サイズ
-		//専門
-		std::array<int, 4> square{ 0 };//車輛の四辺
-		std::array<std::vector<frames>, 2> b2upsideframe; //履帯上
-		std::array<std::vector<frames>, 2> b2downsideframe; //履帯上
-		std::vector<frames> burner;//アフターバーナー
-		frames hook;//着艦フック
-
-		std::vector<frames> wire;
-		std::vector<frames> catapult;
+		std::string name;									//
+		MV1 obj, col;										//
+		std::vector<GraphHandle> graph_HP_m;				//ライフ
+		GraphHandle graph_HP_m_all;							//ライフ
+		VECTOR_ref minpos, maxpos;							//
+		std::vector<gun_frame> gunframe;					//
+		std::vector<foot_frame> wheelframe;					//
+		std::vector<foot_frame> wheelframe2;				//誘導輪回転
+		break_frame breakframe;								//
+		uint16_t HP = 0;									//
+		float canlook_dist = 1000.f;						//
+		std::vector<std::pair<size_t, float>> armer_mesh;	//装甲ID
+		std::vector<size_t> space_mesh;						//装甲ID
+		std::vector<std::pair<size_t, size_t>> module_mesh;	//装甲ID
+		bool isfloat = false;								//浮くかどうか
+		float down_in_water = 0.f;							//沈む判定箇所
+		float max_speed_limit = 0.f;						//最高速度(km/h)
+		float mid_speed_limit = 0.f;						//巡行速度(km/h)
+		float min_speed_limit = 0.f;						//失速速度(km/h)
+		float flont_speed_limit = 0.f;						//前進速度(km/h)
+		float back_speed_limit = 0.f;						//後退速度(km/h)
+		float body_rad_limit = 0.f;							//旋回速度(度/秒)
+		float turret_rad_limit = 0.f;						//砲塔駆動速度(度/秒)
+		frames fps_view;									//コックピット
+		GraphHandle ui_pic;									//シルエット
+		int pic_x, pic_y;									//サイズ
+		std::vector<frames> burner;							//アフターバーナー
 		//
 		void into(const Vehcs& t) {
 			this->wheelframe.clear();
@@ -173,16 +166,12 @@ public:
 				this->wheelframe.resize(this->wheelframe.size() + 1);
 				this->wheelframe.back().frame = p.frame;
 			}
-			this->wheelframe_nospring.clear();
-			for (auto& p : t.wheelframe_nospring) {
-				this->wheelframe_nospring.resize(this->wheelframe_nospring.size() + 1);
-				this->wheelframe_nospring.back().frame = p.frame;
+			this->wheelframe2.clear();
+			for (auto& p : t.wheelframe2) {
+				this->wheelframe2.resize(this->wheelframe2.size() + 1);
+				this->wheelframe2.back().frame = p.frame;
 			}
-			this->wingframe.clear();
-			for (auto& p : t.wingframe) {
-				this->wingframe.resize(this->wingframe.size() + 1);
-				this->wingframe.back().frame = p.frame;
-			}
+			this->breakframe.frame = t.breakframe.frame;
 			this->name = t.name;
 			this->minpos = t.minpos;
 			this->maxpos = t.maxpos;
@@ -201,16 +190,8 @@ public:
 			this->back_speed_limit = t.back_speed_limit;
 			this->body_rad_limit = t.body_rad_limit;
 			this->turret_rad_limit = t.turret_rad_limit;
-			this->square = t.square;
-			this->b2upsideframe = t.b2upsideframe;
-			this->b2downsideframe = t.b2downsideframe;
 			this->burner = t.burner;
-			this->hook = t.hook;
 			this->fps_view = t.fps_view;
-
-			this->wire = t.wire;
-			this->catapult = t.catapult;
-
 			this->ui_pic = t.ui_pic.Duplicate();
 			this->pic_x = t.pic_x;
 			this->pic_y = t.pic_y;
@@ -298,9 +279,9 @@ public:
 							t.wheelframe.back().frame.first = i;
 							t.wheelframe.back().frame.second = t.obj.frame(t.wheelframe.back().frame.first);
 
-							t.wheelframe_nospring.resize(t.wheelframe_nospring.size() + 1);
-							t.wheelframe_nospring.back().frame.first = t.wheelframe.back().frame.first + 1;
-							t.wheelframe_nospring.back().frame.second = t.obj.frame(t.wheelframe_nospring.back().frame.first) - t.wheelframe.back().frame.second;
+							t.wheelframe2.resize(t.wheelframe2.size() + 1);
+							t.wheelframe2.back().frame.first = t.wheelframe.back().frame.first + 1;
+							t.wheelframe2.back().frame.second = t.obj.frame(t.wheelframe2.back().frame.first) - t.wheelframe.back().frame.second;
 						}
 					}
 					else if (p.find("旋回", 0) != std::string::npos) {
@@ -333,18 +314,13 @@ public:
 						t.burner.back().first = i;
 						t.burner.back().second = t.obj.GetFrameLocalMatrix(t.burner.back().first).pos();
 					}
-					else if (p.find("フック", 0) != std::string::npos) {
-						t.hook.first = i;
-						t.hook.second = t.obj.frame(t.hook.first);
-					}
 					else if (p.find("視点", 0) != std::string::npos) {
 						t.fps_view.first = i;
 						t.fps_view.second = t.obj.frame(t.fps_view.first);
 					}
 					else if (p.find("センター", 0) != std::string::npos) {
-						t.wingframe.resize(t.wingframe.size() + 1);
-						t.wingframe.back().frame.first = i;
-						t.wingframe.back().frame.second = t.obj.frame(t.wingframe.back().frame.first);
+						t.breakframe.frame.first = i;
+						t.breakframe.frame.second = t.obj.frame(t.breakframe.frame.first);
 					}
 				}
 				//メッシュ
@@ -1167,8 +1143,8 @@ public:
 				, salt4_fp = 0.f, salt3_fp = 0.f, salt2_fp = 0.f, salt1_fp = 0.f;
 			MV1 obj;
 			//
-			void set_(const MV1& cocks) {
-				obj = cocks.Duplicate();
+			void set_(const MV1& cock_obj) {
+				obj = cock_obj.Duplicate();
 				//
 				for (int i = 0; i < obj.frame_num(); i++) {
 					std::string p = obj.frame_name(i);
@@ -1858,7 +1834,7 @@ public:
 						}
 						veh.wheel_Left += veh.wheel_Leftadd;
 						veh.wheel_Right += veh.wheel_Rightadd;
-						for (auto& f : veh.use_veh.wheelframe_nospring) {
+						for (auto& f : veh.use_veh.wheelframe2) {
 							veh.obj.SetFrameLocalMatrix(f.frame.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(VGet(0.f, 0.f, 0.f), MV1GetFrameLocalMatrix(veh.obj.get(), f.frame.first + 1)), (f.frame.second.x() >= 0) ? veh.wheel_Left : veh.wheel_Right) *MATRIX_ref::Mtrans(f.frame.second));
 						}
 					}
@@ -1995,20 +1971,13 @@ public:
 			}
 			//撃破エフェクト
 			{
-				for (auto& t : veh.use_veh.wingframe) {
-					t.smkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), 10.f);
+				auto& t = veh.use_veh.breakframe;
+				t.smkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), 10.f);
+				if (!this->death) {
+					t.smkeffcs.handle.Stop();
 				}
-				if (this->death) {
-					if (this->death_timer == 3.f) {
-						for (auto& t : veh.use_veh.wingframe) {
-							t.smkeffcs.set_loop(Drawparts->get_effHandle(ef_smoke3));
-						}
-					}
-				}
-				else {
-					for (auto& t : veh.use_veh.wingframe) {
-						t.smkeffcs.handle.Stop();
-					}
+				else if (this->death_timer == 3.f) {
+					t.smkeffcs.set_loop(Drawparts->get_effHandle(ef_smoke3));
 				}
 			}
 			//ミサイル

@@ -1205,9 +1205,7 @@ public:
 						for (auto& t : veh.use_veh.wheelframe) {
 							t.gndsmkeffcs.handle.Dispose();
 						}
-						for (auto& t : veh.use_veh.wingframe) {
-							t.smkeffcs.handle.Dispose();
-						}
+						veh.use_veh.breakframe.smkeffcs.handle.Dispose();
 						veh.Dispose();
 					}
 					chara.clear();

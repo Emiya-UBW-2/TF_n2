@@ -663,7 +663,7 @@ public:
 	//
 	void box_p(Mainclass::Chara& c, int col) {
 		if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
-			float siz_per = std::clamp((1.f - sqrtf(powf(c.winpos.x() - disp_x / 2, 2) + powf(c.winpos.y() - disp_y / 2, 2)) / float(disp_x / 2)), 0.f, 1.f);
+			float siz_per = std::clamp((1.f - std::hypotf(c.winpos.x() - disp_x / 2, c.winpos.y() - disp_y / 2) / float(disp_x / 2)), 0.f, 1.f);
 			int siz = y_r(32.f*siz_per);
 			DrawBox(int(c.winpos.x()) - siz, int(c.winpos.y()) - siz, int(c.winpos.x()) + siz, int(c.winpos.y()) + siz, col, FALSE);
 			siz = y_r(42.f*siz_per);
@@ -673,7 +673,7 @@ public:
 	void tri_p(Mainclass::Chara& c, Mainclass::Chara& chara, int col) {
 		if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f && c.type != chara.type) {
 			auto rad = atan2f(float(int(c.winpos.x()) - disp_x / 2), float(int(c.winpos.y()) - disp_y / 2));
-			auto dis2 = std::clamp(sqrtf(powf(float(int(c.winpos.x()) - disp_x / 2), 2.f) + powf(float(int(c.winpos.y()) - disp_y / 2), 2.f)), 0.f, 200.f);
+			auto dis2 = std::clamp(std::hypotf(c.winpos.x() - disp_x / 2, c.winpos.y() - disp_y / 2), 0.f, 200.f);
 			auto dis = std::clamp((c.vehicle.pos - chara.vehicle.pos).size() / 10.f, 0.f, dis2);
 			DrawLine(disp_x / 2 + int(dis*sin(rad + deg2rad(10 * (dis2 - dis) / dis2))), disp_y / 2 + int(dis*cos(rad + deg2rad(10 * (dis2 - dis) / dis2))), disp_x / 2 + int(dis2*sin(rad)), disp_y / 2 + int(dis2*cos(rad)), col, 2);
 			DrawLine(disp_x / 2 + int(dis*sin(rad - deg2rad(10 * (dis2 - dis) / dis2))), disp_y / 2 + int(dis*cos(rad - deg2rad(10 * (dis2 - dis) / dis2))), disp_x / 2 + int(dis2*sin(rad)), disp_y / 2 + int(dis2*cos(rad)), col, 2);
@@ -684,7 +684,7 @@ public:
 		if (c.winpos.z() >= 0.f && c.winpos.z() <= 1.f) {
 			FontHandle* font = (!uses_vr) ? &font18 : &font24;
 			int xs = 0, xp = 0, ys = 0, yp = 0;
-			int siz = y_r(42.f*std::clamp((1.f - sqrtf(powf(c.winpos.x() - disp_x / 2, 2) + powf(c.winpos.y() - disp_y / 2, 2)) / float(disp_x / 2)), 0.f, 1.f));
+			int siz = y_r(42.f*std::clamp((1.f - std::hypotf(c.winpos.x() - disp_x / 2, c.winpos.y() - disp_y / 2) / float(disp_x / 2)), 0.f, 1.f));
 			xp = int(c.winpos.x()) - siz;
 			yp = int(c.winpos.y()) + siz;
 			xs = siz * 2;
@@ -771,7 +771,10 @@ public:
 					}
 				}
 				//速度計
-				tmp_get = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.speed_f.first) - (chara.cocks.obj.frame(chara.cocks.speed2_f.first) - chara.cocks.obj.frame(chara.cocks.speed_f.first)).Norm()*0.05f).get());
+				{
+					auto p1 = chara.cocks.obj.frame(chara.cocks.speed_f.first);
+					tmp_get = ConvWorldPosToScreenPos((p1 - (chara.cocks.obj.frame(chara.cocks.speed2_f.first) - p1).Norm()*0.05f).get());
+				}
 				if (tmp_get.z() >= 0.f && tmp_get.z() <= 1.f) {
 					xp = (int)(tmp_get.x());
 					yp = (int)(tmp_get.y());
@@ -808,14 +811,20 @@ public:
 					}
 				}
 				//高度計
-				tmp_get = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.alt_100_f.first) - (chara.cocks.obj.frame(chara.cocks.alt_100_2_f.first) - chara.cocks.obj.frame(chara.cocks.alt_100_f.first)).Norm()*0.05f).get());
+				{
+					auto p1 = chara.cocks.obj.frame(chara.cocks.alt_100_f.first);
+					tmp_get = ConvWorldPosToScreenPos((p1 - (chara.cocks.obj.frame(chara.cocks.alt_100_2_f.first) - p1).Norm()*0.05f).get());
+				}
 				if (tmp_get.z() >= 0.f && tmp_get.z() <= 1.f) {
 					xp = (int)(tmp_get.x());
 					yp = (int)(tmp_get.y());
 					font->DrawStringFormat(xp, yp, GetColor(0, 255, 0), " %4d m", int(veh.pos.y()));
 				}
 				//コンパス
-				tmp_get = ConvWorldPosToScreenPos((chara.cocks.obj.frame(chara.cocks.subcompass_f.first) - (chara.cocks.obj.frame(chara.cocks.subcompass2_f.first) - chara.cocks.obj.frame(chara.cocks.subcompass_f.first)).Norm()*0.05f).get());
+				{
+					auto p1 = chara.cocks.obj.frame(chara.cocks.subcompass_f.first);
+					tmp_get = ConvWorldPosToScreenPos((p1 - (chara.cocks.obj.frame(chara.cocks.subcompass2_f.first) - p1).Norm()*0.05f).get());
+				}
 				if (tmp_get.z() >= 0.f && tmp_get.z() <= 1.f) {
 					xp = (int)(tmp_get.x());
 					yp = (int)(tmp_get.y());
@@ -879,12 +888,13 @@ public:
 						aimpos.z() >= 0.f && aimpos.z() <= 1.f &&
 						c.winpos_if.z() >= 0.f && c.winpos_if.z() <= 1.f
 						) {
-						auto dist = std::clamp(sqrtf(powf((c.winpos.x() - c.winpos_if.x()), 2) + powf((c.winpos.y() - c.winpos_if.y()), 2)), 0.f, 42.f);
+						auto dist = std::clamp(std::hypotf(c.winpos.x() - c.winpos_if.x(), c.winpos.y() - c.winpos_if.y()), 0.f, 42.f);
 						auto rad = atan2f((c.winpos.x() - c.winpos_if.x()), (c.winpos.y() - c.winpos_if.y()));
 						DrawLine(int(c.winpos_if.x()) + int(dist*sin(rad)), int(c.winpos_if.y()) + int(dist*cos(rad)), int(c.winpos_if.x()), int(c.winpos_if.y()), GetColor(255, 0, 0));
-						if ((sqrtf(powf(c.winpos_if.x() - aimpos.x(), 2) + powf(c.winpos_if.y() - aimpos.y(), 2)) / float(disp_x / 2)) <= 1.f / 3.f) {
+						if ((std::hypotf(c.winpos_if.x() - aimpos.x(), c.winpos_if.y() - aimpos.y()) / float(disp_x / 2)) <= 1.f / 3.f) {
 							aim_if.DrawRotaGraph(int(c.winpos_if.x()), int(c.winpos_if.y()), 1.f, 0.f, TRUE);
 						}
+						
 					}
 				}
 				//
