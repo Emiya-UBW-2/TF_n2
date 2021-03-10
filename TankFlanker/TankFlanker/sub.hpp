@@ -803,6 +803,13 @@ private:
 			respawn();
 		}
 		void Dispose() {
+
+			for (auto& t : this->use_veh.wheelframe) {
+				t.gndsmkeffcs.handle.Dispose();
+			}
+			this->use_veh.breakframe.smkeffcs.handle.Dispose();
+
+
 			this->obj.Dispose();
 			this->obj_break.Dispose();
 			this->col.Dispose();
@@ -2207,6 +2214,212 @@ public:
 			//
 		}
 		//
+	};
+	//
+	class views_ {
+	public:
+		bool on = false;
+		float on_time = 0.f;
+		bool use = false;
+		float time = 0.f;
+		float black = 0.f;
+		float rad = 0.f, range = 0.f;
+		VECTOR_ref poscam, poscam2, eyezvec;
+
+		void init() {
+			this->on = true;
+			this->on_time = 0.5f;
+			this->use = false;
+			this->rad = deg2rad(120);
+			this->range = 30.f;
+		}
+
+		void update(cam_info &cam_mine, cam_info& cam_view, const float& fov_view, Mainclass::Chara& chara, const float& ready_timer) {
+			auto& veh = chara.vehicle;
+			if (this->use) {
+				if (ready_timer < 0.f) {
+					//‘¼Ž‹“_
+					if (this->time >= 0.f && this->time < 10.f) {
+						if (this->time == 0.f) {
+							this->poscam = chara.vehicle.pos + chara.vehicle.mat.zvec()*-550.f;
+						}
+						cam_view.campos -= this->poscam;
+						easing_set(&cam_view.campos, VGet(float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f), 0.95f);
+						cam_view.campos += this->poscam;
+
+						easing_set(&cam_view.camvec, chara.vehicle.pos + VGet(float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f), 0.925f);
+
+						cam_view.camup = VGet(0.f, 1.f, 0.f);
+						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
+					}
+					if (this->time >= 10.f && this->time < 15.f) {
+						if (this->time <= 10.f + 1.f / GetFPS()) {
+							cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f;
+						}
+						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*-2.f + chara.vehicle.mat.yvec()*2.f + chara.vehicle.mat.zvec()*-0.f;
+						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f + VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
+						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
+						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
+					}
+					if (this->time >= 15.f && this->time < 20.f) {
+						if (this->time <= 15.f + 1.f / GetFPS()) {
+							cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f;
+						}
+						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*-0.f + chara.vehicle.mat.yvec()*2.f + chara.vehicle.mat.zvec()*-10.f;
+						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f + VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
+						//cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f;
+						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
+						//cam_view.camup = chara.vehicle.mat.yvec();
+						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
+					}
+					if (this->time >= 20.f && this->time < 25.f) {
+						if (this->time <= 20.f + 1.f / GetFPS()) {
+							cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f;
+						}
+						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*0.f + chara.vehicle.mat.yvec()*-2.f + chara.vehicle.mat.zvec()*-0.f;
+						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f + VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
+						//cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f;
+						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
+						//cam_view.camup = chara.vehicle.mat.yvec();
+						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
+					}
+
+					this->time += 1.f / GetFPS();
+					if (this->time >= 25.f) {
+						this->time = 0.f;
+					}
+				}
+				else {
+					if (ready_timer >= 1.f) {
+						/*
+						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*-2.f + chara.vehicle.mat.yvec()*2.f + chara.vehicle.mat.zvec()*-0.f;
+						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f +
+							VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f)
+							, 0.925f);
+						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
+						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
+						*/
+						this->eyezvec = (veh.mat.xvec()*sin(this->rad) + veh.mat.zvec()*-cos(this->rad)).Norm();
+						cam_view.campos -= this->poscam2;
+						easing_set(&cam_view.campos, this->eyezvec*this->range + VGet(float(GetRand(50 * 2) - 50) / 100.f, float(GetRand(50 * 2) - 50) / 100.f, float(GetRand(50 * 2) - 50) / 100.f), 0.9f);
+						this->poscam2 = veh.pos + veh.mat.yvec() * (this->range / 6.f + 1.f);
+						cam_view.campos += this->poscam2;
+						cam_view.camvec = this->poscam2;
+						easing_set(&cam_view.camup, VGet(0, 1.f, 0), 0.9f);
+						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
+						this->rad += deg2rad(5 + GetRand(20)) / GetFPS();
+						this->range -= 5.f / GetFPS();
+						this->poscam = cam_mine.campos;
+					}
+					else {
+						cam_view.camvec -= cam_view.campos;
+						cam_view.campos -= this->poscam;
+						easing_set(&cam_view.campos, VGet(0, 0, 0), 0.9f);
+						this->poscam = cam_mine.campos;
+						cam_view.campos += this->poscam;
+						eyezvec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
+						easing_set(&cam_view.camvec, MATRIX_ref::Vtrans(eyezvec, veh.mat)*-1.f, 0.75f);
+						cam_view.camvec += cam_view.campos;
+						easing_set(&cam_view.camup, cam_mine.camup, 0.9f);
+						easing_set(&cam_view.fov, cam_mine.fov, 0.9f);
+						easing_set(&cam_view.near_, cam_mine.near_, 0.9f);
+						easing_set(&cam_view.far_, cam_mine.far_, 0.9f);
+						easing_set(&this->black, 1.f, 0.925f);
+					}
+				}
+				this->on = true;
+			}
+			else {
+				this->time = 0.f;
+				easing_set(&this->black, 0.f, 0.8f);
+				this->on = (this->on_time <= (float(10 + GetRand(40)) / 100.f));
+				this->on_time = std::max(this->on_time - 1.f / GetFPS(), 0.f);
+			}
+		}
+	};
+	//
+	class voices_ {
+		FontHandle font18;
+	public:
+		class voice_strs {
+		public:
+			std::string str;
+			SoundHandle *handle;
+		};
+		class voices {
+		public:
+			std::vector <std::string> str;
+			std::vector<SoundHandle> handle;
+			float timer = 0.f;
+			int select = 0;
+
+			void set(float tm, std::vector<voice_strs>& voice_str, float vol) {
+				this->select = GetRand(int(this->handle.size() - 1));
+				if (!this->handle[this->select].check() && this->timer == 0.f) {
+					this->handle[this->select].play(DX_PLAYTYPE_BACK, TRUE);
+					this->handle[this->select].vol(int(255.f*vol));
+					this->timer = tm;
+					voice_str.resize(voice_str.size() + 1);
+					voice_str.back().handle = &this->handle[this->select];
+					voice_str.back().str = this->str[this->select];
+				}
+			}
+		};
+		std::vector<voices> voice_;
+		std::vector<voice_strs> voice_str;
+
+		void load() {
+			WIN32_FIND_DATA win32fdt;
+			HANDLE hFind;
+			int pt = -1;
+			hFind = FindFirstFile("data/audio/voice/*", &win32fdt);
+			if (hFind != INVALID_HANDLE_VALUE) {
+				do {
+					if (win32fdt.cFileName[0] != '.') {
+						int ttm = win32fdt.cFileName[0] - '0';
+						if (pt != ttm) {
+							this->voice_.resize(this->voice_.size() + 1);
+						}
+						pt = ttm;
+						this->voice_.back().handle.resize(this->voice_.back().handle.size() + 1);
+						this->voice_.back().handle.back() = SoundHandle::Load(std::string("data/audio/voice/") + win32fdt.cFileName);
+						this->voice_.back().str.resize(this->voice_.back().str.size() + 1);
+						this->voice_.back().str.back() = win32fdt.cFileName;
+						this->voice_.back().str.back() = this->voice_.back().str.back().substr(2, this->voice_.back().str.back().find('.') - 2);
+					}
+				} while (FindNextFile(hFind, &win32fdt));
+			} //else{ return false; }
+			FindClose(hFind);
+
+			font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
+		}
+
+		void update() {
+			for (auto&v : this->voice_) {
+				v.timer = std::max(v.timer - 1.f / GetFPS(), 0.f);
+			}
+			for (auto& v : this->voice_str) {
+				if (!v.handle->check()) {
+					this->voice_str.erase(this->voice_str.begin() + (&v - &this->voice_str[0]));
+					break;
+				}
+			}
+		}
+
+		void draw(const int& disp_x, const int& disp_y) {
+			int yyy = 30;
+			for (auto& v : this->voice_str) {
+				if (v.handle->check()) {
+					auto wide = font18.GetDrawWidth(v.str);
+					SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
+					DrawBox(disp_x / 2 - wide / 2, yyy - 2, disp_x / 2 + wide / 2, yyy + 18 + 2, GetColor(0, 0, 0), TRUE);
+					SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
+
+					font18.DrawString_MID(disp_x / 2, yyy, v.str, GetColor(100, 150, 255));
+					yyy += 24;
+				}
+			}
+		}
 	};
 	//
 };
