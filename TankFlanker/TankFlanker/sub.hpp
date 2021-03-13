@@ -114,7 +114,7 @@ public:
 						this->gndsmkeffcs.scale = std::clamp(veh.speed * 3.6f / 50.f, 0.1f, 1.f);
 						if (!*hit_f) {
 							if (veh.speed >= 0.f && (c->key[11])) {
-								veh.speed += -1.f / 3.6f * 60.f / GetFPS();
+								veh.speed -= 1.5f / 3.6f * 60.f / GetFPS();
 							}
 							if (veh.speed <= 0.f) {
 								easing_set(&veh.speed, 0.f, 0.9f);
@@ -715,6 +715,9 @@ private:
 		std::vector<int16_t> HP_m;					//ライフ
 		std::vector<GraphHandle> graph_HP_m;		//ライフ
 		GraphHandle graph_HP_m_all;
+
+		bool ishover = false;
+
 		struct breaks {
 			VECTOR_ref pos;							//車体座標
 			MATRIX_ref mat;							//車体回転行列
@@ -863,6 +866,7 @@ private:
 			std::for_each(this->Gun_.begin(), this->Gun_.end(), [](Guns& g) {g.set(); });					//砲
 			this->HP = this->use_veh.HP;																	//ヒットポイント
 			std::for_each(this->HP_m.begin(), this->HP_m.end(), [&](int16_t& m) {m = this->use_veh.HP; });	//モジュール耐久
+			this->ishover = false;
 		}
 
 		void draw() {
@@ -1399,6 +1403,7 @@ public:
 		p_animes p_anime_geardown;					//車輪アニメーション
 		std::array<p_animes, 6> p_animes_rudder;	//ラダーアニメーション
 		std::vector<frames> p_burner;				//バーナー
+		p_animes p_anime_hover;						//ホバーアニメーション
 		//共通項//==================================================
 		vehicles vehicle;
 		VECTOR_ref winpos;
@@ -1433,6 +1438,11 @@ public:
 					for (auto& r : this->p_animes_rudder) {
 						r.first = MV1AttachAnim(veh.obj.get(), 2 + (int)(&r - &this->p_animes_rudder[0]));
 						r.second = 0.f;
+					}
+					//
+					if (veh.use_veh.isfloat) {
+						this->p_anime_hover.first = MV1AttachAnim(veh.obj.get(), 2 + this->p_animes_rudder.size());
+						this->p_anime_hover.second = 0.f;
 					}
 				}
 				//エフェクト
@@ -1819,10 +1829,27 @@ public:
 				{
 					//
 					if (veh.speed >= veh.use_veh.min_speed_limit) {
-						easing_set(&veh.add, VGet(0.f, 0.f, 0.f), 0.9f);
+						easing_set(&veh.add, VGet(0.f, 0.f, 0.f), 0.95f);
+						veh.ishover = false;
 					}
 					else {
+						if (veh.use_veh.isfloat) {
+							veh.ishover = true;
+						}
+						if (veh.ishover) {
+							veh.add = veh.add - veh.mat.yvec()*M_GR / powf(fps, 2.f);
+						}
 						veh.add.yadd(M_GR / powf(fps, 2.f));
+					}
+					//
+					if (veh.use_veh.isfloat) {
+						if (veh.ishover) {
+							easing_set(&this->p_anime_hover.second, 1.f, 0.95f);
+						}
+						else {
+							easing_set(&this->p_anime_hover.second, 0.f, 0.95f);
+						}
+						MV1SetAttachAnimBlendRate(veh.obj.get(), this->p_anime_hover.first, this->p_anime_hover.second);
 					}
 					//
 					if (this->p_anime_geardown.second >= 0.5f) {
