@@ -105,7 +105,7 @@ public:
 				{
 					auto hp = mapparts->map_col_line(tmp + (veh.mat.yvec() * (0.5f)), tmp, 0);
 					if (hp.HitFlag == TRUE) {
-						veh.add = (VECTOR_ref(hp.HitPosition) - tmp);
+						veh.add_ = (VECTOR_ref(hp.HitPosition) - tmp);
 						{
 							auto normal = veh.mat.yvec();
 							easing_set(&normal, hp.Normal, 0.95f);
@@ -701,7 +701,7 @@ private:
 		MATRIX_ref mat_spawn;					//車体回転行列
 		float accel_spawn = 0.f;
 		float speed_spawn = 0.f;				//
-		VECTOR_ref add;							//車体加速度
+		VECTOR_ref add_;							//車体加速度
 		std::vector<Guns> Gun_;						//
 		size_t sel_weapon = 0;
 		float accel_add = 0.f;
@@ -726,7 +726,7 @@ private:
 			float speed = 0.f;
 
 			void set(vehicles& veh) {
-				add = veh.add;
+				add = veh.add_;
 				speed = veh.speed;
 				pos = veh.pos;
 				mat = veh.mat;
@@ -765,7 +765,7 @@ private:
 			this->speed_add = 0.f;
 			this->speed = 0.f;
 
-			this->add.clear();
+			this->add_.clear();
 		}
 	public:
 		void init(const Vehcs& vehcs, const std::vector<Ammos>& Ammo_) {
@@ -1829,26 +1829,25 @@ public:
 				{
 					//
 					if (veh.speed >= veh.use_veh.min_speed_limit) {
-						easing_set(&veh.add, VGet(0.f, 0.f, 0.f), 0.95f);
+						easing_set(&veh.add_, VGet(0.f, 0.f, 0.f), 0.95f);
 						veh.ishover = false;
 					}
 					else {
 						if (veh.use_veh.isfloat) {
 							veh.ishover = true;
+							easing_set(&veh.add_, VGet(
+								(veh.mat.yvec().x()*(veh.speed / fps))*this->p_anime_hover.second,
+								(veh.mat.yvec().y()*(veh.speed / fps))*this->p_anime_hover.second*((veh.accel - 9.f) / 100.f),
+								(veh.mat.yvec().z()*(veh.speed / fps))*this->p_anime_hover.second
+							), 0.975f);
 						}
-						if (veh.ishover) {
-							veh.add = veh.add - veh.mat.yvec()*M_GR / powf(fps, 2.f);
+						else {
+							veh.add_.yadd(M_GR / powf(fps, 2.f));
 						}
-						veh.add.yadd(M_GR / powf(fps, 2.f));
 					}
 					//
 					if (veh.use_veh.isfloat) {
-						if (veh.ishover) {
-							easing_set(&this->p_anime_hover.second, 1.f, 0.95f);
-						}
-						else {
-							easing_set(&this->p_anime_hover.second, 0.f, 0.95f);
-						}
+						easing_set(&this->p_anime_hover.second, (veh.ishover ? 1.f : 0.f), 0.99f);
 						MV1SetAttachAnimBlendRate(veh.obj.get(), this->p_anime_hover.first, this->p_anime_hover.second);
 					}
 					//
@@ -1877,7 +1876,12 @@ public:
 							easing_set(&t.gndsmkeffcs.scale, 0.01f, 0.9f);
 						}
 					}
-					veh.pos += veh.add + (veh.mat.zvec() * (-veh.speed / fps));
+					if (veh.use_veh.isfloat) {
+						veh.pos += veh.add_ + (veh.mat.zvec() * (-veh.speed / fps))*(1.f - this->p_anime_hover.second);
+					}
+					else {
+						veh.pos += veh.add_ + (veh.mat.zvec() * (-veh.speed / fps));
+					}
 				}
 				//死亡関連
 				if (this->death) {
