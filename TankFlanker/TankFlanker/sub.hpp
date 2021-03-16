@@ -30,17 +30,43 @@ enum Effect {
 //要改善
 class Mainclass {
 private:
-	struct gun_frame {
+	//
+	class gun_frame {
+	public:
 		int type = 0;
-		frames frame1;
-		frames frame2;
-		frames frame3;
+		frames frame_turn;
+		frames frame_elevation;
+		frames frame_muzzle;
 		float xrad = 0.f, yrad = 0.f;
 		std::string name;
 		float load_time = 0.f;
 		std::vector<std::string> useammo;
 		uint16_t rounds = 0;
+
+		void set(const int& i,MV1& obj) {
+			auto p2 = obj.frame_parent(i);
+			if (p2 >= 0) {
+				this->frame_turn.set(i, obj.frame(i) - obj.frame(int(p2)));//親がいる時引いとく
+			}
+			else {
+				this->frame_turn.set(i, obj.frame(i));
+			}
+			if (obj.frame_child_num(this->frame_turn.first) >= 0) {
+				this->frame_elevation.set(this->frame_turn.first + 1, obj.frame(this->frame_turn.first + 1) - obj.frame(this->frame_turn.first));
+				//
+				if (obj.frame_child_num(this->frame_elevation.first) >= 0) {
+					this->frame_muzzle.set(this->frame_elevation.first + 1, obj.frame(this->frame_elevation.first + 1) - obj.frame(this->frame_elevation.first));
+				}
+				else {
+					this->frame_muzzle.first = -1;
+				}
+			}
+			else {
+				this->frame_elevation.first = -1;
+			}
+		}
 	};
+	//
 public:
 	class Chara;
 	//弾薬
@@ -103,7 +129,7 @@ public:
 				auto tmp = veh.obj.frame(int(this->frame.first + 1)) - VGet(0.f, 0.2f, 0.f);
 				//地面
 				{
-					auto hp = mapparts->map_col_line(tmp + (veh.mat.yvec() * (0.5f)), tmp, 0);
+					auto hp = mapparts->col_line(tmp + (veh.mat.yvec() * (0.5f)), tmp, 0);
 					if (hp.HitFlag == TRUE) {
 						veh.add_ = (VECTOR_ref(hp.HitPosition) - tmp);
 						{
@@ -147,7 +173,6 @@ public:
 		std::vector<size_t> space_mesh;						//装甲ID
 		std::vector<std::pair<size_t, size_t>> module_mesh;	//装甲ID
 		bool isfloat = false;								//浮くかどうか
-		float down_in_water = 0.f;							//沈む判定箇所
 		float max_speed_limit = 0.f;						//最高速度(km/h)
 		float mid_speed_limit = 0.f;						//巡行速度(km/h)
 		float min_speed_limit = 0.f;						//失速速度(km/h)
@@ -182,7 +207,6 @@ public:
 			this->space_mesh = t.space_mesh;
 			this->module_mesh = t.module_mesh;
 			this->isfloat = t.isfloat;
-			this->down_in_water = t.down_in_water;
 			this->max_speed_limit = t.max_speed_limit;
 			this->mid_speed_limit = t.mid_speed_limit;
 			this->min_speed_limit = t.min_speed_limit;
@@ -237,24 +261,8 @@ public:
 		//メイン読み込み
 		static void set_vehicles(std::vector<Vehcs>* vehcs) {
 			using namespace std::literals;
-			//共通
-			for (auto& t : *vehcs) {
-				//αテスト
-				t.obj.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
-				//
-				GetGraphSize(t.ui_pic.get(), &t.pic_x, &t.pic_y);
-			}
-			//固有
 			for (auto& t : (*vehcs)) {
-				//
-				t.down_in_water = 0.f;
-				for (int i = 0; i < t.obj.mesh_num(); i++) {
-					auto p = t.obj.mesh_minpos(i).y();
-					if (t.down_in_water > p) {
-						t.down_in_water = p;
-					}
-				}
-				//t.down_in_water /= 2.f;
+				GetGraphSize(t.ui_pic.get(), &t.pic_x, &t.pic_y);
 				//最大最小を取得
 				for (int i = 0; i < t.obj.mesh_num(); i++) {
 					if (t.maxpos.x() < t.obj.mesh_maxpos(i).x()) {
@@ -286,28 +294,7 @@ public:
 					}
 					else if (p.find("旋回", 0) != std::string::npos) {
 						t.gunframe.resize(t.gunframe.size() + 1);
-						t.gunframe.back().frame1.first = i;
-						t.gunframe.back().frame1.second = t.obj.frame(t.gunframe.back().frame1.first);
-						auto p2 = t.obj.frame_parent(t.gunframe.back().frame1.first);
-						if (p2 >= 0) {
-							t.gunframe.back().frame1.second -= t.obj.frame(int(p2)); //親がいる時引いとく
-						}
-						if (t.obj.frame_child_num(t.gunframe.back().frame1.first) >= 0) {
-							if (t.obj.frame_name(t.gunframe.back().frame1.first + 1).find("仰角", 0) != std::string::npos) {
-								t.gunframe.back().frame2.first = t.gunframe.back().frame1.first + 1;
-								t.gunframe.back().frame2.second = t.obj.frame(t.gunframe.back().frame2.first) - t.obj.frame(t.gunframe.back().frame1.first);
-								if (t.obj.frame_child_num(t.gunframe.back().frame1.first) >= 0) {
-									t.gunframe.back().frame3.first = t.gunframe.back().frame2.first + 1;
-									t.gunframe.back().frame3.second = t.obj.frame(t.gunframe.back().frame3.first) - t.obj.frame(t.gunframe.back().frame2.first);
-								}
-								else {
-									t.gunframe.back().frame3.first = -1;
-								}
-							}
-						}
-						else {
-							t.gunframe.back().frame2.first = -1;
-						}
+						t.gunframe.back().set(i, t.obj);
 					}
 					else if (p.find("バーナー", 0) != std::string::npos) {
 						t.burner.resize(t.burner.size() + 1);
@@ -380,523 +367,131 @@ public:
 			}
 		}
 	};
-private:
-	class vehicles;
-	class Guns {
-		std::vector<Ammos> Spec;		//
-		std::array<ammos, 64> bullet;	//確保する弾
-		size_t usebullet{};				//使用弾
-		int16_t rounds_{ 0 };			//弾数
-		gun_frame gun_info;				//
-		float loadcnt{ 0 };				//装てんカウンター
-	public:
-		const auto& get_rounds_() {
-			return rounds_;
-		}
-		const auto& get_gun_info() {
-			return gun_info;
-		}
-		const auto& get_loadcnt() {
-			return loadcnt;
-		}
-		auto& getbullet() {
-			return this->bullet;
-		}
-		const auto& getbullet_use() {
-			return this->bullet[this->usebullet];
-		}
-		void clear() {
-			this->Spec.clear();
-			this->usebullet = 0;
-			this->rounds_ = 0;
-			this->loadcnt = 0.f;
-		}
-		void init(const gun_frame& gunf, const std::vector<Ammos>& Ammo_) {
-			this->gun_info = gunf;
-			//使用砲弾
-			this->Spec.clear();
-			for (auto& pa : Ammo_) {
-				if (pa.name_a.find(this->gun_info.useammo[0]) != std::string::npos) {
-					this->Spec.emplace_back(pa);
-					break;
-				}
-			}
-			for (auto& p : this->bullet) {
-				p.color = GetColor(255, 255, 172);
-				p.spec = this->Spec[0];
-			}
-		}
-		void update_bullet() {
-			SetCameraNearFar(0.01f, 6000.f);
-			for (auto& a : this->bullet) {
-				if (a.hit) {
-					a.hit_r = 2.f;
-					a.hit_count = 0.5f;
-					VECTOR_ref p = ConvWorldPosToScreenPos((a.pos).get());
-					if (p.z() >= 0.f&&p.z() <= 1.f) {
-						a.hit_x = int(p.x());
-						a.hit_y = int(p.y());
-					}
-					a.hit = false;
-				}
-				if (a.hit_count != 0.f) {
-					easing_set(&a.hit_r, 1.f, 0.7f);
-				}
-				else {
-					easing_set(&a.hit_r, 0.f, 0.8f);
-				}
-
-				a.hit_count = std::clamp(a.hit_count - 1.f / GetFPS(), 0.f, 1.f);
-			}
-		}
-
-
-
-
-		void set() {
-			this->rounds_ = this->gun_info.rounds;
-		}
-		void draw() {
-			for (auto& a : this->bullet) {
-				if (a.flug) {
-					if (!CheckCameraViewClip(a.pos.get())) {
-						DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - GetCameraPosition()).size() / 24.f))*4.5f, a.color, GetColor(255, 255, 255));
-					}
-				}
-			}
-		}
-		void math(const bool& key, Chara* c) {
-			if (this->rounds_ > 0) {
-				if (key && this->loadcnt == 0) {
-					auto& u = this->bullet[this->usebullet];
-					++this->usebullet %= this->bullet.size();
-					//ココだけ変化
-					u.spec = this->Spec[0];
-					u.spec.speed_a += c->vehicle.speed;
-					u.spec.speed_a *= float(75 + GetRand(50)) / 100.f;
-					u.pos = c->vehicle.obj.frame(this->gun_info.frame2.first);
-					u.vec = (c->vehicle.obj.frame(this->gun_info.frame3.first) - c->vehicle.obj.frame(this->gun_info.frame2.first)).Norm();
-					//
-					this->loadcnt = this->gun_info.load_time;
-					this->rounds_ = std::max<uint16_t>(this->rounds_ - 1, 0);
-					u.flug = true;
-					u.count = 0.f;
-					u.yadd = 0.f;
-					u.repos = u.pos;
-					if (u.spec.type_a != 2) {
-						c->effcs[ef_fire].set(c->vehicle.obj.frame(this->gun_info.frame3.first), u.vec, u.spec.caliber_a / 0.1f);
-						if (u.spec.caliber_a >= 0.017f) {
-							//c->effcs_gun[c->gun_effcnt].first.set(c->vehicle.obj.frame(this->gun_info.frame3.first), u.vec);
-							//c->effcs_gun[c->gun_effcnt].second = &u;
-							//c->effcs_gun[c->gun_effcnt].count = 0.f;
-							//++c->gun_effcnt %= c->effcs_gun.size();
-						}
-						c->se.gun.play(DX_PLAYTYPE_BACK, TRUE);
-					}
-					else {
-						c->effcs_missile[c->effcs_missile_cnt].first.set(c->vehicle.obj.frame(this->gun_info.frame3.first), u.vec);
-						c->effcs_missile[c->effcs_missile_cnt].second = &u;
-						c->effcs_missile[c->effcs_missile_cnt].count = 0.f;
-						++c->effcs_missile_cnt %= c->effcs_missile.size();
-
-						c->se.missile.play(DX_PLAYTYPE_BACK, TRUE);
-					}
-				}
-				this->loadcnt = std::max(this->loadcnt - 1.f / GetFPS(), 0.f);
-			}
-		}
-		//要改善
-		template<class Y, class D>
-		void math_reco(std::unique_ptr<Y, D>& mapparts, Chara* c, std::vector<Chara>* chara) {
-			auto fps = GetFPS();
-			for (auto& a : this->bullet) {
-				float size = 2.f;
-				for (int z = 0; z < int(size); z++) {
-					if (a.flug) {
-						a.repos = a.pos;
-						a.pos += a.vec * (a.spec.speed_a / fps / size);
-						//判定
-						{
-							bool ground_hit = false;
-							VECTOR_ref normal;
-							//機体以外に当たる
-							for (int i = 0; i < mapparts->map_col_get().mesh_num(); i++) {
-								auto hps = mapparts->map_col_line(a.repos, a.pos, i);
-								if (hps.HitFlag) {
-									a.pos = hps.HitPosition;
-									normal = hps.Normal;
-									ground_hit = true;
-								}
-							}
-							//必要な時に当たり判定をリフレッシュする
-							for (auto& t : *chara) {
-								auto& veh_t = t.vehicle;
-								if (c == &t || veh_t.hit_check) {
-									continue;
-								}
-								if ((Segment_Point_MinLen(a.pos, a.repos, veh_t.pos) > 10.f)) {
-									continue;
-								}
-								veh_t.col.SetMatrix((MATRIX_ref)(veh_t.mat) * MATRIX_ref::Mtrans(veh_t.pos));
-								for (int i = 0; i < veh_t.col.mesh_num(); i++) {
-									if (veh_t.HP_m[i] > 0) {
-										veh_t.col.RefreshCollInfo(-1, i);
-									}
-								}
-								veh_t.hit_check = true;
-							}
-							//飛行機にあたる
-							auto hitplane = c->get_reco(*chara, a);
-							//その後処理
-							if (!hitplane) {
-								if (ground_hit) {
-									if (a.spec.caliber_a >= 0.020f) {
-										c->effcs[ef_gndhit].set(a.pos + normal * (0.1f), normal);
-									}
-									else {
-										c->effcs[ef_gndhit2].set(a.pos + normal * (0.1f), normal);
-									}
-									switch (a.spec.type_a) {
-									case 0: //AP
-										if ((a.vec.Norm().dot(normal)) <= cos(deg2rad(60))) {
-											a.flug = false;
-										}
-										else {
-											a.vec += normal * ((a.vec.dot(normal)) * -2.f);
-											a.vec = a.vec.Norm();
-											a.pos += a.vec * (0.01f);
-											a.spec.pene_a /= 2.f;
-										}
-										break;
-									case 1: //HE
-										a.flug = false;
-										break;
-									case 2: //ミサイル
-										a.flug = false;
-										break;
-									default:
-										break;
-									}
-								}
-							}
-							if (a.flug) {
-								switch (a.spec.type_a) {
-								case 0: //AP
-								{
-									a.spec.pene_a -= 1.0f / fps / size;
-									a.spec.speed_a -= 5.f / fps / size;
-									a.pos += VGet(0.f, a.yadd / size, 0.f);
-								}
-								break;
-								case 1: //HE
-								{
-									a.spec.speed_a -= 5.f / fps / size;
-									a.pos += VGet(0.f, a.yadd / size, 0.f);
-								}
-								break;
-								case 2: //ミサイル
-								{
-									size_t id = chara->size();
-									VECTOR_ref pos;
-									float dist = (std::numeric_limits<float>::max)();
-									for (auto& t : *chara) {
-										//弾関連
-										if (c == &t || c->type == t.type) {
-											continue;
-										}
-										auto p = (t.vehicle.pos - a.pos).size();
-										if (dist > p) {
-											dist = p;
-											id = &t - &(*chara)[0];
-											pos = t.vehicle.pos + (t.vehicle.mat.zvec() * (-t.vehicle.speed / fps))*((a.pos - pos).size() / (a.spec.speed_a));
-										}
-									}
-									if (id != chara->size()) {
-										(*chara)[id].missile_cnt++;
-										//反映
-										auto vec_a = (a.pos - pos).Norm();
-										auto vec_z = a.vec;
-										if (vec_a.dot(vec_z) < 0 && (a.pos - pos).size() <= 2000.f) {
-											float z_hyp = std::hypotf(vec_z.x(), vec_z.z());
-											float a_hyp = std::hypotf(vec_a.x(), vec_a.z());
-											float cost = (vec_a.z() * vec_z.x() - vec_a.x() * vec_z.z()) / (a_hyp * z_hyp);
-											float view_yrad = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cos取得2D
-											float view_xrad = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
-											{
-												float limit = deg2rad(22.5f) / fps;
-												float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad, -limit, limit);
-												float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad, -limit, limit);
-												a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
-											}
-										}
-									}
-								}
-								break;
-								default:
-									break;
-								}
-							}
-						}
-
-						//消す(2秒たった、スピードが100以下、貫通が0以下)
-						if (a.count >= 4.f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
-							a.flug = false;
-						}
-						//
-					}
-				}
-				a.yadd += M_GR / powf(fps, 2.f);
-				a.count += 1.f / fps;
-			}
-		}
-	};								//
-	class hit_data {							//
-		class pair_hit {							//
-			size_t first = 0;
-			float second = 0.f;
-		public:
-			const auto& get_first() {
-				return first;
-			}
-			const auto& get_second() {
-				return second;
-			}
-			void set(const size_t& one, const float& two) {
-				this->first = one;
-				this->second = two;
-			}
-			void clear() {
-				this->first = 0;
-				this->second = 0.f;
-			}
-		};
-	public:
-		MV1_COLL_RESULT_POLY res;
-		pair_hit sort;
-	};
-	class vehicles {
-	public:
-		Vehcs use_veh;						//固有値
-		MV1 obj, obj_break;					//
-		MV1 col;							//
-		bool hit_check = false;						//当たり判定を取るかチェック
-		size_t use_id = 0;						//使用する車両(機材)
-		uint16_t HP = 0;						//体力
-		float HP_r = 0.f;
-		bool dmgf = false;						//体力
-		bool deathf = false;
-		bool hitf = false;						//体力
-		bool killf = false;						//体力
-		bool kill_f = false;
-		float kill_time = 0.f;
-		uint16_t KILL_COUNT = 0;				//体力
-		int KILL_ID = -1;						//体力
-		uint16_t DEATH_COUNT = 0;				//体力
-		int DEATH_ID = -1;						//体力
-		VECTOR_ref pos;							//車体座標
-		MATRIX_ref mat;							//車体回転行列
-		float accel = 0.f;
-		float speed = 0.f;						//
-		VECTOR_ref pos_spawn;					//車体座標
-		MATRIX_ref mat_spawn;					//車体回転行列
-		float accel_spawn = 0.f;
-		float speed_spawn = 0.f;				//
-		VECTOR_ref add_;							//車体加速度
-		std::vector<Guns> Gun_;						//
-		size_t sel_weapon = 0;
-		float accel_add = 0.f;
-		float WIP_timer_limit = 0.f;
-		float WIP_timer = 0.f;
-		bool over_heat = false;
-		float speed_add = 0.f;		//
-		float xradadd_left = 0.f, xradadd_right = 0.f; //
-		float yradadd_left = 0.f, yradadd_right = 0.f;	    //
-		float zradadd_left = 0.f, zradadd_right = 0.f; //
-		std::vector<int16_t> HP_m;					//ライフ
-		std::vector<GraphHandle> graph_HP_m;		//ライフ
-		GraphHandle graph_HP_m_all;
-
-		bool ishover = false;
-
-		struct breaks {
-			VECTOR_ref pos;							//車体座標
-			MATRIX_ref mat;							//車体回転行列
-			VECTOR_ref add;							//車体加速度
-			float per = 1.f;
-			float speed = 0.f;
-
-			void set(vehicles& veh) {
-				add = veh.add_;
-				speed = veh.speed;
-				pos = veh.pos;
-				mat = veh.mat;
-				per = 1.f;
-			}
-
-			void set_break() {
-				add.yadd(M_GR / powf(GetFPS(), 2.f) / 2.f);
-				pos += add + (mat.zvec() * (-speed / GetFPS()));
-				per = std::max(per - (1.f / 2.f) / GetFPS(), 0.f);
-			}
-		};
-		std::vector<breaks> info_break;					//ライフ
-
-		float wheel_Left = 0.f, wheel_Right = 0.f;			//転輪回転
-		float wheel_Leftadd = 0.f, wheel_Rightadd = 0.f;		//転輪回転
-
-		std::vector<hit_data> hits;
-
-		void reset() {
-			this->xradadd_right = 0.f;
-			this->xradadd_left = 0.f;
-			this->yradadd_left = 0.f;
-			this->yradadd_right = 0.f;
-			this->zradadd_right = 0.f;
-			this->zradadd_left = 0.f;
-
-			this->WIP_timer_limit = 0.f;
-			this->WIP_timer = 0.f;
-
-			this->over_heat = false;
-			this->sel_weapon = 0;
-
-			this->accel_add = 0.f;
-			this->accel = 0.f;
-			this->speed_add = 0.f;
-			this->speed = 0.f;
-
-			this->add_.clear();
-		}
-	public:
-		void init(const Vehcs& vehcs, const std::vector<Ammos>& Ammo_) {
-			//
-			this->Dispose();
-			//
-			this->use_veh.into(vehcs);
-			//
-			this->obj = vehcs.obj.Duplicate();
-			this->obj_break = vehcs.obj.Duplicate();
-			this->col = vehcs.col.Duplicate();
-			//コリジョン
-			for (int j = 0; j < this->col.mesh_num(); j++) {
-				this->col.SetupCollInfo(1, 1, 1, -1, j);
-			}
-			this->hits.resize(this->col.mesh_num());
-			//弾痕
-			for (int j = 0; j < this->obj.material_num(); ++j) {
-				MV1SetMaterialSpcColor(this->obj.get(), j, GetColorF(0.85f, 0.82f, 0.78f, 0.1f));
-				MV1SetMaterialSpcPower(this->obj.get(), j, 50.0f);
-			}
-			for (int j = 0; j < this->obj_break.material_num(); ++j) {
-				MV1SetMaterialSpcColor(this->obj_break.get(), j, GetColorF(0.85f, 0.82f, 0.78f, 0.1f));
-				MV1SetMaterialSpcPower(this->obj_break.get(), j, 50.0f);
-			}
-			//モジュール耐久
-			this->HP_m.resize(this->col.mesh_num());
-
-			this->graph_HP_m.clear();
-			for (auto& p : vehcs.graph_HP_m) { this->graph_HP_m.emplace_back(p.Duplicate()); }
-			graph_HP_m_all = vehcs.graph_HP_m_all.Duplicate();
-			this->info_break.resize(this->col.mesh_num());
-			//砲
-			this->Gun_.resize(this->use_veh.gunframe.size());
-			for (auto& cg : this->Gun_) {
-				cg.init(this->use_veh.gunframe[&cg - &this->Gun_[0]], Ammo_);
-			}
-			respawn();
-		}
-		void Dispose() {
-
-			for (auto& t : this->use_veh.wheelframe) {
-				t.gndsmkeffcs.handle.Dispose();
-			}
-			this->use_veh.breakframe.smkeffcs.handle.Dispose();
-
-
-			this->obj.Dispose();
-			this->obj_break.Dispose();
-			this->col.Dispose();
-
-			this->hit_check = false;
-			this->HP = 0;
-			this->dmgf = false;
-			this->deathf = false;
-			this->hitf = false;
-			this->killf = false;
-			this->KILL_COUNT = 0;						//体力
-			this->KILL_ID = -1;						//体力
-			this->DEATH_COUNT = 0;						//体力
-			this->DEATH_ID = -1;						//体力
-
-			for (auto& hz : this->hits) {
-				hz.sort.clear();
-			}
-			this->hits.clear();
-			for (auto& p : this->graph_HP_m) {
-				p.Dispose();
-			}
-			this->graph_HP_m.clear();
-			this->graph_HP_m_all.Dispose();
-			this->HP_m.clear();
-			this->wheel_Left = 0.f;
-			this->wheel_Right = 0.f;
-			this->wheel_Leftadd = 0.f;
-			this->wheel_Rightadd = 0.f;
-			std::for_each(this->Gun_.begin(), this->Gun_.end(), [](Guns& g) {g.clear(); });					//砲
-			this->Gun_.clear();
-
-			this->reset();
-		}
-		void respawn() {
-			spawn(this->pos_spawn, this->mat_spawn, this->accel_spawn, this->speed_spawn*3.6f);
-		}
-		void spawn(const VECTOR_ref& pos_, const MATRIX_ref& mat_, const float& acc_, const float& spd_) {
-			this->reset();
-
-			this->pos_spawn = pos_;
-			this->mat_spawn = mat_;
-			this->accel_spawn = acc_;// 25.f;
-			this->speed_spawn = spd_ / 3.6f;// this->use_veh.min_speed_limit;
-
-			this->pos = this->pos_spawn;
-			this->mat = this->mat_spawn;
-			this->accel = this->accel_spawn;
-			this->speed = this->speed_spawn;
-
-			std::for_each(this->Gun_.begin(), this->Gun_.end(), [](Guns& g) {g.set(); });					//砲
-			this->HP = this->use_veh.HP;																	//ヒットポイント
-			std::for_each(this->HP_m.begin(), this->HP_m.end(), [&](int16_t& m) {m = this->use_veh.HP; });	//モジュール耐久
-			this->ishover = false;
-		}
-
-		void draw() {
-			if (!CheckCameraViewClip_Box((this->pos + VGet(-7.f, -7.f, -7.f)).get(), (this->pos + VGet(7.f, 7.f, 7.f)).get())) {
-				for (auto& h : this->HP_m) {
-					size_t i = &h - &this->HP_m[0];
-					if (i >= 3) {
-						if (h > 0) {
-							this->obj.DrawMesh(int(this->use_veh.module_mesh[int(i - 3)].second));
-						}
-						else {
-							if (this->info_break[i].per > 0.1f) {
-								this->obj_break.SetOpacityRate(this->info_break[i].per);
-								this->obj_break.SetMatrix(this->info_break[i].mat * MATRIX_ref::Mtrans(this->info_break[i].pos));
-								this->obj_break.DrawMesh(int(this->use_veh.module_mesh[int(i - 3)].second));
-							}
-						}
-					}
-				}
-				for (int i = 0; i < this->use_veh.module_mesh[0].second; i++) {
-					this->obj.DrawMesh(i);
-				}
-			}
-		}
-	};
-public:
 	//カメラ
 	struct CAMS {
 		cam_info cam;
 		int Rot = 0;//
+	};
+	class views_ {
+	public:
+		bool on = false;
+		float on_time = 0.f;
+		bool use = false;
+		float time = 0.f;
+		float black = 0.f;
+		float rad = 0.f, range = 0.f;
+		VECTOR_ref poscam, poscam2, eyezvec;
+
+		void init() {
+			this->on = true;
+			this->on_time = 0.5f;
+			this->use = false;
+			this->rad = deg2rad(120);
+			this->range = 30.f;
+		}
+
+		void update(cam_info &cam_mine, cam_info& cam_view, const float& fov_view, Mainclass::Chara& chara, const float& ready_timer) {
+			auto& veh = chara.vehicle;
+			if (this->use) {
+				if (ready_timer < 0.f) {
+					//他視点
+					if (this->time >= 0.f && this->time < 10.f) {
+						if (this->time == 0.f) {
+							this->poscam = chara.vehicle.pos + chara.vehicle.mat.zvec()*-550.f;
+						}
+						cam_view.campos -= this->poscam;
+						easing_set(&cam_view.campos, VGet(float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f), 0.95f);
+						cam_view.campos += this->poscam;
+
+						easing_set(&cam_view.camvec, chara.vehicle.pos + VGet(float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f), 0.925f);
+
+						cam_view.camup = VGet(0.f, 1.f, 0.f);
+						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
+					}
+					if (this->time >= 10.f && this->time < 15.f) {
+						if (this->time <= 10.f + 1.f / GetFPS()) {
+							cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f;
+						}
+						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*-2.f + chara.vehicle.mat.yvec()*2.f + chara.vehicle.mat.zvec()*-0.f;
+						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f + VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
+						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
+						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
+					}
+					if (this->time >= 15.f && this->time < 20.f) {
+						if (this->time <= 15.f + 1.f / GetFPS()) {
+							cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f;
+						}
+						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*-0.f + chara.vehicle.mat.yvec()*2.f + chara.vehicle.mat.zvec()*-10.f;
+						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f + VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
+						//cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f;
+						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
+						//cam_view.camup = chara.vehicle.mat.yvec();
+						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
+					}
+					if (this->time >= 20.f && this->time < 25.f) {
+						if (this->time <= 20.f + 1.f / GetFPS()) {
+							cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f;
+						}
+						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*0.f + chara.vehicle.mat.yvec()*-2.f + chara.vehicle.mat.zvec()*-0.f;
+						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f + VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
+						//cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f;
+						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
+						//cam_view.camup = chara.vehicle.mat.yvec();
+						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
+					}
+
+					this->time += 1.f / GetFPS();
+					if (this->time >= 25.f) {
+						this->time = 0.f;
+					}
+				}
+				else {
+					if (ready_timer >= 1.f) {
+						/*
+						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*-2.f + chara.vehicle.mat.yvec()*2.f + chara.vehicle.mat.zvec()*-0.f;
+						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f +
+							VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f)
+							, 0.925f);
+						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
+						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
+						*/
+						this->eyezvec = (veh.mat.xvec()*sin(this->rad) + veh.mat.zvec()*-cos(this->rad)).Norm();
+						cam_view.campos -= this->poscam2;
+						easing_set(&cam_view.campos, this->eyezvec*this->range + VGet(float(GetRand(50 * 2) - 50) / 100.f, float(GetRand(50 * 2) - 50) / 100.f, float(GetRand(50 * 2) - 50) / 100.f), 0.9f);
+						this->poscam2 = veh.pos + veh.mat.yvec() * (this->range / 6.f + 1.f);
+						cam_view.campos += this->poscam2;
+						cam_view.camvec = this->poscam2;
+						easing_set(&cam_view.camup, VGet(0, 1.f, 0), 0.9f);
+						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
+						this->rad += deg2rad(5 + GetRand(20)) / GetFPS();
+						this->range -= 5.f / GetFPS();
+						this->poscam = cam_mine.campos;
+					}
+					else {
+						cam_view.camvec -= cam_view.campos;
+						cam_view.campos -= this->poscam;
+						easing_set(&cam_view.campos, VGet(0, 0, 0), 0.9f);
+						this->poscam = cam_mine.campos;
+						cam_view.campos += this->poscam;
+						eyezvec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
+						easing_set(&cam_view.camvec, MATRIX_ref::Vtrans(eyezvec, veh.mat)*-1.f, 0.75f);
+						cam_view.camvec += cam_view.campos;
+						easing_set(&cam_view.camup, cam_mine.camup, 0.9f);
+						easing_set(&cam_view.fov, cam_mine.fov, 0.9f);
+						easing_set(&cam_view.near_, cam_mine.near_, 0.9f);
+						easing_set(&cam_view.far_, cam_mine.far_, 0.9f);
+						easing_set(&this->black, 1.f, 0.925f);
+					}
+				}
+				this->on = true;
+			}
+			else {
+				this->time = 0.f;
+				easing_set(&this->black, 0.f, 0.8f);
+				this->on = (this->on_time <= (float(10 + GetRand(40)) / 100.f));
+				this->on_time = std::max(this->on_time - 1.f / GetFPS(), 0.f);
+			}
+		}
 	};
 	//サウンド
 	class sounds_3D {
@@ -945,6 +540,115 @@ public:
 			this->hit.stop(); //gun
 		}
 	};
+	class bgms_ {
+	public:
+		std::vector<SoundHandle> bgm_main;
+
+		void Load() {
+			bgm_main.clear();
+			WIN32_FIND_DATA win32fdt;
+			HANDLE hFind;
+			hFind = FindFirstFile("data/audio/BGM/main/*", &win32fdt);
+			if (hFind != INVALID_HANDLE_VALUE) {
+				do {
+					if (win32fdt.cFileName[0] != '.') {
+						this->bgm_main.resize(this->bgm_main.size() + 1);
+						this->bgm_main.back() = SoundHandle::Load(std::string("data/audio/BGM/main/") + win32fdt.cFileName);
+					}
+				} while (FindNextFile(hFind, &win32fdt));
+			} //else{ return false; }
+			FindClose(hFind);
+		}
+
+		void play(const float& bgm_vol, int p = -1) {
+			if (p == -1) {
+				p = GetRand(int(bgm_main.size()) - 1);
+			}
+			bgm_main[p].play(DX_PLAYTYPE_LOOP, TRUE);
+			bgm_main[p].vol(int(float(255)*bgm_vol));
+		}
+
+		void stop() {
+			for (auto& b : bgm_main) {
+				if (b.check()) {
+					b.stop();
+				}
+			}
+		}
+	};
+	class voices_ {
+		class voice_strs {
+		public:
+			std::string str;
+			SoundHandle *handle;
+		};
+		class voices {
+		public:
+			std::vector <std::string> str;
+			std::vector<SoundHandle> handle;
+			float timer = 0.f;
+			int select = 0;
+
+			void set(float tm, std::vector<voice_strs>& voice_str, float vol) {
+				this->select = GetRand(int(this->handle.size() - 1));
+				if (!this->handle[this->select].check() && this->timer == 0.f) {
+					this->handle[this->select].play(DX_PLAYTYPE_BACK, TRUE);
+					this->handle[this->select].vol(int(255.f*vol));
+					this->timer = tm;
+					voice_str.resize(voice_str.size() + 1);
+					voice_str.back().handle = &this->handle[this->select];
+					voice_str.back().str = this->str[this->select];
+				}
+			}
+		};
+		std::vector<voices> voice_;
+		std::vector<voice_strs> voice_str;
+	public:
+		//
+		void load() {
+			WIN32_FIND_DATA win32fdt;
+			HANDLE hFind;
+			int pt = -1;
+			hFind = FindFirstFile("data/audio/voice/*", &win32fdt);
+			if (hFind != INVALID_HANDLE_VALUE) {
+				do {
+					if (win32fdt.cFileName[0] != '.') {
+						int ttm = win32fdt.cFileName[0] - '0';
+						if (pt != ttm) {
+							this->voice_.resize(this->voice_.size() + 1);
+						}
+						pt = ttm;
+						this->voice_.back().handle.resize(this->voice_.back().handle.size() + 1);
+						this->voice_.back().handle.back() = SoundHandle::Load(std::string("data/audio/voice/") + win32fdt.cFileName);
+						this->voice_.back().str.resize(this->voice_.back().str.size() + 1);
+						this->voice_.back().str.back() = win32fdt.cFileName;
+						this->voice_.back().str.back() = this->voice_.back().str.back().substr(2, this->voice_.back().str.back().find('.') - 2);
+					}
+				} while (FindNextFile(hFind, &win32fdt));
+			} //else{ return false; }
+			FindClose(hFind);
+		}
+		//
+		void update() {
+			for (auto&v : this->voice_) {
+				v.timer = std::max(v.timer - 1.f / GetFPS(), 0.f);
+			}
+			for (auto& v : this->voice_str) {
+				if (!v.handle->check()) {
+					this->voice_str.erase(this->voice_str.begin() + (&v - &this->voice_str[0]));
+					break;
+				}
+			}
+		}
+		//
+		auto& get_voice_str() {
+			return voice_str;
+		}
+		//
+		void play(int id,float tm, float vol) {
+			this->voice_[id].set(tm, this->voice_str, vol);
+		}
+	};
 	//キーバインド
 	class key_bind {
 		struct keys {
@@ -963,7 +667,7 @@ public:
 			int first;
 			std::string second;
 			switchs on_off;
-			bool get_key(int id) {
+			bool get_key(const int& id) {
 				switch (id) {
 				case 0:
 					return CheckHitKey(this->first) != 0;
@@ -1032,6 +736,9 @@ public:
 			tmp_k.first = KEY_INPUT_LCONTROL;
 			tmp_k.second = "視点切替";
 			this->key_use_ID.emplace_back(tmp_k);//15
+			tmp_k.first = KEY_INPUT_X;
+			tmp_k.second = "ホバーモード切り替え";
+			this->key_use_ID.emplace_back(tmp_k);//16
 			{
 				std::fstream file;
 				/*
@@ -1133,11 +840,531 @@ public:
 			chara.key[15] = this->key_use_ID[3].get_key(0) && this->key_use_ID[9].get_key(0);
 			chara.key[16] = this->key_use_ID[4].get_key(0) && this->key_use_ID[9].get_key(0);
 			chara.key[17] = this->key_use_ID[5].get_key(0) && this->key_use_ID[9].get_key(0);
+			//ホバー
+			if (this->key_use_ID[16].get_key(2)) {
+				chara.key[18] = chara.key[18] ^ 1;
+			}
 		}
 		//
 	};
+	//
 	//player
 	class Chara {
+	private:
+		//
+		class vehicles {
+		private:
+			//
+			class hit_data {							//
+				class pair_hit {							//
+					size_t first = 0;
+					float second = 0.f;
+				public:
+					const auto& get_first() {
+						return first;
+					}
+					const auto& get_second() {
+						return second;
+					}
+					void set(const size_t& one, const float& two) {
+						this->first = one;
+						this->second = two;
+					}
+					void clear() {
+						this->first = 0;
+						this->second = 0.f;
+					}
+				};
+			public:
+				MV1_COLL_RESULT_POLY res;
+				pair_hit sort;
+			};
+			//
+			class Guns {
+				std::vector<Ammos> Spec;		//
+				std::array<ammos, 64> bullet;	//確保する弾
+				size_t usebullet{};				//使用弾
+				int16_t rounds_{ 0 };			//弾数
+				gun_frame gun_info;				//
+				float loadcnt{ 0 };				//装てんカウンター
+			public:
+				const auto& get_rounds_() {
+					return rounds_;
+				}
+				const auto& get_gun_info() {
+					return gun_info;
+				}
+				const auto& get_loadcnt() {
+					return loadcnt;
+				}
+				auto& getbullet() {
+					return this->bullet;
+				}
+				const auto& getbullet_use() {
+					return this->bullet[this->usebullet];
+				}
+				void clear() {
+					this->Spec.clear();
+					this->usebullet = 0;
+					this->rounds_ = 0;
+					this->loadcnt = 0.f;
+				}
+				void init(const gun_frame& gunf, const std::vector<Ammos>& Ammo_) {
+					this->gun_info = gunf;
+					//使用砲弾
+					this->Spec.clear();
+					for (auto& pa : Ammo_) {
+						if (pa.name_a.find(this->gun_info.useammo[0]) != std::string::npos) {
+							this->Spec.emplace_back(pa);
+							break;
+						}
+					}
+					for (auto& p : this->bullet) {
+						p.color = GetColor(255, 255, 172);
+						p.spec = this->Spec[0];
+					}
+				}
+				void update_bullet() {
+					SetCameraNearFar(0.01f, 6000.f);
+					for (auto& a : this->bullet) {
+						if (a.hit) {
+							a.hit_r = 2.f;
+							a.hit_count = 0.5f;
+							VECTOR_ref p = ConvWorldPosToScreenPos((a.pos).get());
+							if (p.z() >= 0.f&&p.z() <= 1.f) {
+								a.hit_x = int(p.x());
+								a.hit_y = int(p.y());
+							}
+							a.hit = false;
+						}
+						if (a.hit_count != 0.f) {
+							easing_set(&a.hit_r, 1.f, 0.7f);
+						}
+						else {
+							easing_set(&a.hit_r, 0.f, 0.8f);
+						}
+
+						a.hit_count = std::clamp(a.hit_count - 1.f / GetFPS(), 0.f, 1.f);
+					}
+				}
+
+
+
+
+				void set() {
+					this->rounds_ = this->gun_info.rounds;
+				}
+				void draw() {
+					for (auto& a : this->bullet) {
+						if (a.flug) {
+							if (!CheckCameraViewClip(a.pos.get())) {
+								DXDraw::Capsule3D(a.pos, a.repos, (((a.spec.caliber_a - 0.00762f) * 0.1f + 0.00762f) * ((a.pos - GetCameraPosition()).size() / 24.f))*4.5f, a.color, GetColor(255, 255, 255));
+							}
+						}
+					}
+				}
+				void math(const bool& key, Chara* c) {
+					if (this->rounds_ > 0) {
+						if (key && this->loadcnt == 0) {
+							auto& u = this->bullet[this->usebullet];
+							++this->usebullet %= this->bullet.size();
+							//ココだけ変化
+							u.spec = this->Spec[0];
+							u.spec.speed_a += c->vehicle.speed;
+							u.spec.speed_a *= float(75 + GetRand(50)) / 100.f;
+							u.pos = c->vehicle.obj.frame(this->gun_info.frame_elevation.first);
+							auto pp = c->vehicle.obj.frame(this->gun_info.frame_muzzle.first);
+							u.vec = (pp - u.pos).Norm();
+							//
+							this->loadcnt = this->gun_info.load_time;
+							this->rounds_ = std::max<uint16_t>(this->rounds_ - 1, 0);
+							u.flug = true;
+							u.count = 0.f;
+							u.yadd = 0.f;
+							u.repos = u.pos;
+							if (u.spec.type_a != 2) {
+								c->effcs[ef_fire].set(pp, u.vec, u.spec.caliber_a / 0.1f);
+								c->se.gun.play(DX_PLAYTYPE_BACK, TRUE);
+							}
+							else {
+								c->effcs_missile[c->effcs_missile_cnt].first.set(pp, u.vec);
+								c->effcs_missile[c->effcs_missile_cnt].second = &u;
+								c->effcs_missile[c->effcs_missile_cnt].count = 0.f;
+								++c->effcs_missile_cnt %= c->effcs_missile.size();
+
+								c->se.missile.play(DX_PLAYTYPE_BACK, TRUE);
+							}
+						}
+						this->loadcnt = std::max(this->loadcnt - 1.f / GetFPS(), 0.f);
+					}
+				}
+				//要改善
+				template<class Y, class D>
+				void math_reco(std::unique_ptr<Y, D>& mapparts, Chara* c, std::vector<Chara>* chara) {
+					auto fps = GetFPS();
+					for (auto& a : this->bullet) {
+						float size = 2.f;
+						for (int z = 0; z < int(size); z++) {
+							if (a.flug) {
+								a.repos = a.pos;
+								a.pos += a.vec * (a.spec.speed_a / fps / size);
+								//判定
+								{
+									bool ground_hit = false;
+									VECTOR_ref normal;
+									//機体以外に当たる
+									for (int i = 0; i < mapparts->col_mesh_num(); i++) {
+										auto hps = mapparts->col_line(a.repos, a.pos, i);
+										if (hps.HitFlag) {
+											a.pos = hps.HitPosition;
+											normal = hps.Normal;
+											ground_hit = true;
+										}
+									}
+									//必要な時に当たり判定をリフレッシュする
+									for (auto& t : *chara) {
+										auto& veh_t = t.vehicle;
+										if (c == &t || veh_t.hit_check) {
+											continue;
+										}
+										if ((Segment_Point_MinLen(a.pos, a.repos, veh_t.pos) > 10.f)) {
+											continue;
+										}
+										veh_t.col.SetMatrix((MATRIX_ref)(veh_t.mat) * MATRIX_ref::Mtrans(veh_t.pos));
+										for (int i = 0; i < veh_t.col.mesh_num(); i++) {
+											if (veh_t.HP_m[i] > 0) {
+												veh_t.col.RefreshCollInfo(-1, i);
+											}
+										}
+										veh_t.hit_check = true;
+									}
+									//飛行機にあたる
+									auto hitplane = c->get_reco(*chara, a);
+									//その後処理
+									if (!hitplane) {
+										if (ground_hit) {
+											if (a.spec.caliber_a >= 0.020f) {
+												c->effcs[ef_gndhit].set(a.pos + normal * (0.1f), normal);
+											}
+											else {
+												c->effcs[ef_gndhit2].set(a.pos + normal * (0.1f), normal);
+											}
+											switch (a.spec.type_a) {
+											case 0: //AP
+												if ((a.vec.Norm().dot(normal)) <= cos(deg2rad(60))) {
+													a.flug = false;
+												}
+												else {
+													a.vec += normal * ((a.vec.dot(normal)) * -2.f);
+													a.vec = a.vec.Norm();
+													a.pos += a.vec * (0.01f);
+													a.spec.pene_a /= 2.f;
+												}
+												break;
+											case 1: //HE
+												a.flug = false;
+												break;
+											case 2: //ミサイル
+												a.flug = false;
+												break;
+											default:
+												break;
+											}
+										}
+									}
+									if (a.flug) {
+										switch (a.spec.type_a) {
+										case 0: //AP
+										{
+											a.spec.pene_a -= 1.0f / fps / size;
+											a.spec.speed_a -= 5.f / fps / size;
+											a.pos += VGet(0.f, a.yadd / size, 0.f);
+										}
+										break;
+										case 1: //HE
+										{
+											a.spec.speed_a -= 5.f / fps / size;
+											a.pos += VGet(0.f, a.yadd / size, 0.f);
+										}
+										break;
+										case 2: //ミサイル
+										{
+											size_t id = chara->size();
+											VECTOR_ref pos_t;
+											float dist = (std::numeric_limits<float>::max)();
+											for (auto& t : *chara) {
+												//弾関連
+												if (c == &t || c->type == t.type) {
+													continue;
+												}
+												auto p = (t.vehicle.pos - a.pos).size();
+												if (dist > p) {
+													dist = p;
+													id = &t - &(*chara)[0];
+													pos_t = t.vehicle.pos + (t.vehicle.mat.zvec() * (-t.vehicle.speed / fps))*((a.pos - pos_t).size() / (a.spec.speed_a));
+												}
+											}
+											if (id != chara->size()) {
+												(*chara)[id].missile_cnt++;
+												//反映
+												auto vec_a = (a.pos - pos_t).Norm();
+												auto vec_z = a.vec;
+												if (vec_a.dot(vec_z) < 0 && (a.pos - pos_t).size() <= 2000.f) {
+													float z_hyp = std::hypotf(vec_z.x(), vec_z.z());
+													float a_hyp = std::hypotf(vec_a.x(), vec_a.z());
+													float cost = (vec_a.z() * vec_z.x() - vec_a.x() * vec_z.z()) / (a_hyp * z_hyp);
+													float view_yrad_t = (atan2f(cost, sqrtf(std::abs(1.f - cost * cost)))) / 5.f; //cos取得2D
+													float view_xrad_t = (atan2f(-vec_z.y(), z_hyp) - atan2f(vec_a.y(), a_hyp)) / 5.f;
+													{
+														float limit = deg2rad(22.5f) / fps;
+														float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad_t, -limit, limit);
+														float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad_t, -limit, limit);
+														a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
+													}
+												}
+											}
+										}
+										break;
+										default:
+											break;
+										}
+									}
+								}
+
+								//消す(2秒たった、スピードが100以下、貫通が0以下)
+								if (a.count >= 4.f || a.spec.speed_a < 100.f || a.spec.pene_a <= 0.f) {
+									a.flug = false;
+								}
+								//
+							}
+						}
+						a.yadd += M_GR / powf(fps, 2.f);
+						a.count += 1.f / fps;
+					}
+				}
+			};								//
+			//
+		public:
+			Vehcs use_veh;						//固有値
+			MV1 obj, obj_break;					//
+			MV1 col;							//
+			bool hit_check = false;						//当たり判定を取るかチェック
+			size_t use_id = 0;						//使用する車両(機材)
+			uint16_t HP = 0;						//体力
+			float HP_r = 0.f;
+			bool dmgf = false;						//体力
+			bool deathf = false;
+			bool hitf = false;						//体力
+			bool killf = false;						//体力
+			bool kill_f = false;
+			float kill_time = 0.f;
+			uint16_t KILL_COUNT = 0;				//体力
+			int KILL_ID = -1;						//体力
+			uint16_t DEATH_COUNT = 0;				//体力
+			int DEATH_ID = -1;						//体力
+			VECTOR_ref pos;							//車体座標
+			MATRIX_ref mat;							//車体回転行列
+			float accel = 0.f;
+			float speed = 0.f;						//
+			VECTOR_ref pos_spawn;					//車体座標
+			MATRIX_ref mat_spawn;					//車体回転行列
+			float accel_spawn = 0.f;
+			float speed_spawn = 0.f;				//
+			VECTOR_ref add_;							//車体加速度
+			std::vector<Guns> Gun_;						//
+			size_t sel_weapon = 0;
+			float accel_add = 0.f;
+			float WIP_timer_limit = 0.f;
+			float WIP_timer = 0.f;
+			bool over_heat = false;
+			float speed_add = 0.f;		//
+			float xradadd_left = 0.f, xradadd_right = 0.f; //
+			float yradadd_left = 0.f, yradadd_right = 0.f;	    //
+			float zradadd_left = 0.f, zradadd_right = 0.f; //
+			std::vector<int16_t> HP_m;					//ライフ
+			std::vector<GraphHandle> graph_HP_m;		//ライフ
+			GraphHandle graph_HP_m_all;
+
+			bool ishover = false;
+
+			struct breaks {
+				VECTOR_ref pos;							//車体座標
+				MATRIX_ref mat;							//車体回転行列
+				VECTOR_ref add;							//車体加速度
+				float per = 1.f;
+				float speed = 0.f;
+
+				void set(vehicles& veh) {
+					add = veh.add_;
+					speed = veh.speed;
+					pos = veh.pos;
+					mat = veh.mat;
+					per = 1.f;
+				}
+
+				void set_break() {
+					add.yadd(M_GR / powf(GetFPS(), 2.f) / 2.f);
+					pos += add + (mat.zvec() * (-speed / GetFPS()));
+					per = std::max(per - (1.f / 2.f) / GetFPS(), 0.f);
+				}
+			};
+			std::vector<breaks> info_break;					//ライフ
+
+			float wheel_Left = 0.f, wheel_Right = 0.f;			//転輪回転
+			float wheel_Leftadd = 0.f, wheel_Rightadd = 0.f;		//転輪回転
+
+			std::vector<hit_data> hits;
+
+			void reset() {
+				this->xradadd_right = 0.f;
+				this->xradadd_left = 0.f;
+				this->yradadd_left = 0.f;
+				this->yradadd_right = 0.f;
+				this->zradadd_right = 0.f;
+				this->zradadd_left = 0.f;
+
+				this->WIP_timer_limit = 0.f;
+				this->WIP_timer = 0.f;
+
+				this->over_heat = false;
+				this->sel_weapon = 0;
+
+				this->accel_add = 0.f;
+				this->accel = 0.f;
+				this->speed_add = 0.f;
+				this->speed = 0.f;
+
+				this->add_.clear();
+			}
+		public:
+			void init(const Vehcs& vehcs, const std::vector<Ammos>& Ammo_) {
+				//
+				this->Dispose();
+				//
+				this->use_veh.into(vehcs);
+				//
+				this->obj = vehcs.obj.Duplicate();
+				this->obj_break = vehcs.obj.Duplicate();
+				this->col = vehcs.col.Duplicate();
+				//コリジョン
+				for (int j = 0; j < this->col.mesh_num(); j++) {
+					this->col.SetupCollInfo(1, 1, 1, -1, j);
+				}
+				this->hits.resize(this->col.mesh_num());
+				//弾痕
+				for (int j = 0; j < this->obj.material_num(); ++j) {
+					MV1SetMaterialSpcColor(this->obj.get(), j, GetColorF(0.85f, 0.82f, 0.78f, 0.1f));
+					MV1SetMaterialSpcPower(this->obj.get(), j, 50.0f);
+				}
+				for (int j = 0; j < this->obj_break.material_num(); ++j) {
+					MV1SetMaterialSpcColor(this->obj_break.get(), j, GetColorF(0.85f, 0.82f, 0.78f, 0.1f));
+					MV1SetMaterialSpcPower(this->obj_break.get(), j, 50.0f);
+				}
+				//モジュール耐久
+				this->HP_m.resize(this->col.mesh_num());
+
+				this->graph_HP_m.clear();
+				for (auto& p : vehcs.graph_HP_m) { this->graph_HP_m.emplace_back(p.Duplicate()); }
+				graph_HP_m_all = vehcs.graph_HP_m_all.Duplicate();
+				this->info_break.resize(this->col.mesh_num());
+				//砲
+				this->Gun_.resize(this->use_veh.gunframe.size());
+				for (auto& cg : this->Gun_) {
+					cg.init(this->use_veh.gunframe[&cg - &this->Gun_[0]], Ammo_);
+				}
+				respawn();
+			}
+			void Dispose() {
+
+				for (auto& t : this->use_veh.wheelframe) {
+					t.gndsmkeffcs.handle.Dispose();
+				}
+				this->use_veh.breakframe.smkeffcs.handle.Dispose();
+
+
+				this->obj.Dispose();
+				this->obj_break.Dispose();
+				this->col.Dispose();
+
+				this->hit_check = false;
+				this->HP = 0;
+				this->dmgf = false;
+				this->deathf = false;
+				this->hitf = false;
+				this->killf = false;
+				this->KILL_COUNT = 0;						//体力
+				this->KILL_ID = -1;						//体力
+				this->DEATH_COUNT = 0;						//体力
+				this->DEATH_ID = -1;						//体力
+
+				for (auto& hz : this->hits) {
+					hz.sort.clear();
+				}
+				this->hits.clear();
+				for (auto& p : this->graph_HP_m) {
+					p.Dispose();
+				}
+				this->graph_HP_m.clear();
+				this->graph_HP_m_all.Dispose();
+				this->HP_m.clear();
+				this->wheel_Left = 0.f;
+				this->wheel_Right = 0.f;
+				this->wheel_Leftadd = 0.f;
+				this->wheel_Rightadd = 0.f;
+				std::for_each(this->Gun_.begin(), this->Gun_.end(), [](Guns& g) {g.clear(); });					//砲
+				this->Gun_.clear();
+
+				this->reset();
+			}
+			void respawn() {
+				spawn(this->pos_spawn, this->mat_spawn, this->accel_spawn, this->speed_spawn*3.6f);
+			}
+			void spawn(const VECTOR_ref& pos_, const MATRIX_ref& mat_, const float& acc_, const float& spd_) {
+				this->reset();
+
+				this->pos_spawn = pos_;
+				this->mat_spawn = mat_;
+				this->accel_spawn = acc_;// 25.f;
+				this->speed_spawn = spd_ / 3.6f;// this->use_veh.min_speed_limit;
+
+				this->pos = this->pos_spawn;
+				this->mat = this->mat_spawn;
+				this->accel = this->accel_spawn;
+				this->speed = this->speed_spawn;
+
+				std::for_each(this->Gun_.begin(), this->Gun_.end(), [](Guns& g) {g.set(); });					//砲
+				this->HP = this->use_veh.HP;																	//ヒットポイント
+				std::for_each(this->HP_m.begin(), this->HP_m.end(), [&](int16_t& m) {m = this->use_veh.HP; });	//モジュール耐久
+				this->ishover = false;
+			}
+			void draw() {
+				if (!CheckCameraViewClip_Box((this->pos + VGet(-7.f, -7.f, -7.f)).get(), (this->pos + VGet(7.f, 7.f, 7.f)).get())) {
+					for (auto& h : this->HP_m) {
+						size_t i = &h - &this->HP_m[0];
+						if (i >= 3) {
+							if (h > 0) {
+								this->obj.DrawMesh(int(this->use_veh.module_mesh[int(i - 3)].second));
+							}
+							else {
+								if (this->info_break[i].per > 0.1f) {
+									this->obj_break.SetOpacityRate(this->info_break[i].per);
+									this->obj_break.SetMatrix(this->info_break[i].mat * MATRIX_ref::Mtrans(this->info_break[i].pos));
+									this->obj_break.DrawMesh(int(this->use_veh.module_mesh[int(i - 3)].second));
+								}
+							}
+						}
+					}
+					for (int i = 0; i < this->use_veh.module_mesh[0].second; i++) {
+						this->obj.DrawMesh(i);
+					}
+				}
+			}
+
+			void sort_hits() {
+				//当たり判定を近い順にソート
+				std::sort(this->hits.begin(), this->hits.end(), [](hit_data& x, hit_data& y) { return x.sort.get_second() < y.sort.get_second(); });
+			}
+		};
 		//コックピット
 		class cockpits {
 		public:
@@ -1394,7 +1621,7 @@ public:
 		bool death = false;							//
 		//操作関連//==================================================
 		float view_xrad = 0.f, view_yrad = 0.f;		//砲塔操作用ベクトル
-		std::array<bool, 18> key{ false };			//キー
+		std::array<bool, 19> key{ false };			//キー
 		bool use_auto_thrust = true;				//
 		float speed_auto_thrust = 400.f;			//
 		switchs changegear;							//ギアアップスイッチ
@@ -1441,13 +1668,17 @@ public:
 					}
 					//
 					if (veh.use_veh.isfloat) {
-						this->p_anime_hover.first = MV1AttachAnim(veh.obj.get(), 2 + this->p_animes_rudder.size());
+						this->p_anime_hover.first = MV1AttachAnim(veh.obj.get(), int(2 + this->p_animes_rudder.size()));
 						this->p_anime_hover.second = 0.f;
 					}
 				}
 				//エフェクト
 				for (auto& be : veh.use_veh.burner) {
 					this->p_burner.emplace_back(be);
+				}
+				//ホイール
+				for (auto& t : veh.use_veh.wheelframe) {
+					t.init();
 				}
 			}
 			{
@@ -1507,8 +1738,8 @@ public:
 						}
 						//
 						t.se.hit.play(DX_PLAYTYPE_BACK, TRUE);
-						//当たり判定を近い順にソート
-						std::sort(veh_t.hits.begin(), veh_t.hits.end(), [](hit_data& x, hit_data& y) { return x.sort.get_second() < y.sort.get_second(); });
+						//当たり判定をソート
+						veh_t.sort_hits();
 						//ダメージ面に届くまで判定
 						for (auto& tt : veh_t.hits) {
 							auto sort_ = tt.sort.get_first();
@@ -1526,7 +1757,6 @@ public:
 								{
 									VECTOR_ref normal = tt.res.Normal;
 									VECTOR_ref position = tt.res.HitPosition;
-
 									VECTOR_ref vec_t = c.vec;
 									//弾処理
 									c.vec += normal * ((c.vec.dot(normal)) * -2.0f);
@@ -1537,7 +1767,6 @@ public:
 										auto ttn = veh_t.HP;
 
 										if (t.p_anime_geardown.second <= 0.5f) {
-											//veh_t.HP_m[tt.sort.first] = std::max<int16_t>(veh_t.HP_m[tt.sort.first] - c.spec.damage_a, 0); //
 											veh_t.HP = std::max<int16_t>(veh_t.HP - c.spec.damage_a, 0); //
 										}
 										//撃破時エフェクト
@@ -1554,7 +1783,7 @@ public:
 
 											veh_t.DEATH_COUNT++;
 											veh_t.DEATH_ID = (int)(this - &tgts[0]);
-											t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
+											t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame_turn.first), VGet(0, 0, 0));
 										}
 										//弾処理
 										c.hit = true;
@@ -1602,18 +1831,20 @@ public:
 									else {
 										this->effcs[ef_reco2].set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
 									}
+									auto& hp_m = veh_t.HP_m[sort_];
+
 									switch (c.spec.type_a) {
 									case 0: //AP
-										veh_t.HP_m[sort_] = std::max<int16_t>(veh_t.HP_m[sort_] - c.spec.damage_a, 0); //
+										hp_m = std::max<int16_t>(hp_m - c.spec.damage_a, 0); //
 										c.spec.pene_a /= 2.0f;
 										break;
 									case 1: //HE
-										veh_t.HP_m[sort_] = std::max<int16_t>(veh_t.HP_m[sort_] - c.spec.damage_a, 0); //
+										hp_m = std::max<int16_t>(hp_m - c.spec.damage_a, 0); //
 										c.hit = true;
 										c.flug = false;//爆発する
 										break;
 									case 2: //ミサイル
-										veh_t.HP_m[sort_] = std::max<int16_t>(veh_t.HP_m[sort_] - c.spec.damage_a, 0); //
+										hp_m = std::max<int16_t>(hp_m - c.spec.damage_a, 0); //
 										c.hit = true;
 										c.flug = false;//爆発する
 										break;
@@ -1621,8 +1852,8 @@ public:
 										break;
 									}
 									//破壊時時エフェクト
-									if (veh_t.HP_m[sort_] == 0) {
-										t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
+									if (hp_m == 0) {
+										t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame_turn.first), VGet(0, 0, 0));
 									}
 								}
 							}
@@ -1634,18 +1865,20 @@ public:
 									else {
 										this->effcs[ef_reco2].set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
 									}
+									auto& hp_m = veh_t.HP_m[sort_];
+
 									switch (c.spec.type_a) {
 									case 0: //AP
-										veh_t.HP_m[sort_] = std::max<int16_t>(veh_t.HP_m[sort_] - c.spec.damage_a, 0); //
+										hp_m = std::max<int16_t>(hp_m - c.spec.damage_a, 0); //
 										c.spec.pene_a /= 2.0f;
 										break;
 									case 1: //HE
-										veh_t.HP_m[sort_] = std::max<int16_t>(veh_t.HP_m[sort_] - c.spec.damage_a, 0); //
+										hp_m = std::max<int16_t>(hp_m - c.spec.damage_a, 0); //
 										c.hit = true;
 										c.flug = false;//爆発する
 										break;
 									case 2: //ミサイル
-										veh_t.HP_m[sort_] = std::max<int16_t>(veh_t.HP_m[sort_] - c.spec.damage_a, 0); //
+										hp_m = std::max<int16_t>(hp_m - c.spec.damage_a, 0); //
 										c.hit = true;
 										c.flug = false;//爆発する
 										break;
@@ -1653,8 +1886,8 @@ public:
 										break;
 									}
 									//破壊時時エフェクト
-									if (veh_t.HP_m[sort_] == 0) {
-										t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0));
+									if (hp_m == 0) {
+										t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame_turn.first), VGet(0, 0, 0));
 									}
 								}
 							}
@@ -1834,14 +2067,16 @@ public:
 					}
 					else {
 						if (veh.use_veh.isfloat) {
-							veh.ishover = true;
+							veh.ishover = this->key[18];//true
+						}
+						if (veh.use_veh.isfloat && veh.ishover) {
 							easing_set(&veh.add_, VGet(
-								(veh.mat.yvec().x()*(veh.speed / fps))*this->p_anime_hover.second,
+								(veh.mat.yvec().x()*(veh.speed / fps)*0.5f)*this->p_anime_hover.second,
 								(veh.mat.yvec().y()*(veh.speed / fps))*this->p_anime_hover.second*((veh.accel - 9.f) / 100.f),
-								(veh.mat.yvec().z()*(veh.speed / fps))*this->p_anime_hover.second
+								(veh.mat.yvec().z()*(veh.speed / fps)*0.5f)*this->p_anime_hover.second
 							), 0.975f);
 						}
-						else {
+						if ((!veh.use_veh.isfloat) || (veh.use_veh.isfloat && !veh.ishover)) {
 							veh.add_.yadd(M_GR / powf(fps, 2.f));
 						}
 					}
@@ -1906,24 +2141,29 @@ public:
 							hitb = true;
 						}
 						if (!hitb) {
-							for (int i = 0; i < mapparts->map_col_get().mesh_num(); i++) {
-								if (mapparts->map_col_line(p_0, p_1, i).HitFlag == TRUE) {
+							VECTOR_ref p_t;
+							do {
+								p_t = p_1;
+								if (mapparts->col_line_nearest(p_0, &p_t)) {
 									hitb = true;
 									break;
 								}
-								if (mapparts->map_col_line(p_1, p_2, i).HitFlag == TRUE) {
+								p_t = p_2;
+								if (mapparts->col_line_nearest(p_1, &p_t)) {
 									hitb = true;
 									break;
 								}
-								if (mapparts->map_col_line(p_2, p_3, i).HitFlag == TRUE) {
+								p_t = p_3;
+								if (mapparts->col_line_nearest(p_2, &p_t)) {
 									hitb = true;
 									break;
 								}
-								if (mapparts->map_col_line(p_3, p_0, i).HitFlag == TRUE) {
+								p_t = p_0;
+								if (mapparts->col_line_nearest(p_3, &p_t)) {
 									hitb = true;
 									break;
 								}
-							}
+							} while (false);
 						}
 						if (veh.HP == 0) {
 							hitb = true;
@@ -2066,7 +2306,7 @@ public:
 				if (GetRand(100) < 12) {
 					auto tmp = GetRand(int(veh.HP_m.size() - 1 - 1));
 					if (veh.HP_m[tmp] != 0) {
-						this->effcs[ef_bomb].set(veh.obj.frame(veh.use_veh.gunframe[0].frame1.first), VGet(0, 0, 0), 0.5f);
+						this->effcs[ef_bomb].set(veh.obj.frame(veh.use_veh.gunframe[0].frame_turn.first), VGet(0, 0, 0), 0.5f);
 					}
 					veh.HP_m[tmp] = 0;
 				}
@@ -2245,212 +2485,6 @@ public:
 			//
 		}
 		//
-	};
-	//
-	class views_ {
-	public:
-		bool on = false;
-		float on_time = 0.f;
-		bool use = false;
-		float time = 0.f;
-		float black = 0.f;
-		float rad = 0.f, range = 0.f;
-		VECTOR_ref poscam, poscam2, eyezvec;
-
-		void init() {
-			this->on = true;
-			this->on_time = 0.5f;
-			this->use = false;
-			this->rad = deg2rad(120);
-			this->range = 30.f;
-		}
-
-		void update(cam_info &cam_mine, cam_info& cam_view, const float& fov_view, Mainclass::Chara& chara, const float& ready_timer) {
-			auto& veh = chara.vehicle;
-			if (this->use) {
-				if (ready_timer < 0.f) {
-					//他視点
-					if (this->time >= 0.f && this->time < 10.f) {
-						if (this->time == 0.f) {
-							this->poscam = chara.vehicle.pos + chara.vehicle.mat.zvec()*-550.f;
-						}
-						cam_view.campos -= this->poscam;
-						easing_set(&cam_view.campos, VGet(float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f), 0.95f);
-						cam_view.campos += this->poscam;
-
-						easing_set(&cam_view.camvec, chara.vehicle.pos + VGet(float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f), 0.925f);
-
-						cam_view.camup = VGet(0.f, 1.f, 0.f);
-						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
-					}
-					if (this->time >= 10.f && this->time < 15.f) {
-						if (this->time <= 10.f + 1.f / GetFPS()) {
-							cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f;
-						}
-						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*-2.f + chara.vehicle.mat.yvec()*2.f + chara.vehicle.mat.zvec()*-0.f;
-						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f + VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
-						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
-						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
-					}
-					if (this->time >= 15.f && this->time < 20.f) {
-						if (this->time <= 15.f + 1.f / GetFPS()) {
-							cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f;
-						}
-						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*-0.f + chara.vehicle.mat.yvec()*2.f + chara.vehicle.mat.zvec()*-10.f;
-						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f + VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
-						//cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f;
-						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
-						//cam_view.camup = chara.vehicle.mat.yvec();
-						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
-					}
-					if (this->time >= 20.f && this->time < 25.f) {
-						if (this->time <= 20.f + 1.f / GetFPS()) {
-							cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f;
-						}
-						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*0.f + chara.vehicle.mat.yvec()*-2.f + chara.vehicle.mat.zvec()*-0.f;
-						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f + VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
-						//cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f;
-						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
-						//cam_view.camup = chara.vehicle.mat.yvec();
-						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
-					}
-
-					this->time += 1.f / GetFPS();
-					if (this->time >= 25.f) {
-						this->time = 0.f;
-					}
-				}
-				else {
-					if (ready_timer >= 1.f) {
-						/*
-						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*-2.f + chara.vehicle.mat.yvec()*2.f + chara.vehicle.mat.zvec()*-0.f;
-						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f +
-							VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f)
-							, 0.925f);
-						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
-						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
-						*/
-						this->eyezvec = (veh.mat.xvec()*sin(this->rad) + veh.mat.zvec()*-cos(this->rad)).Norm();
-						cam_view.campos -= this->poscam2;
-						easing_set(&cam_view.campos, this->eyezvec*this->range + VGet(float(GetRand(50 * 2) - 50) / 100.f, float(GetRand(50 * 2) - 50) / 100.f, float(GetRand(50 * 2) - 50) / 100.f), 0.9f);
-						this->poscam2 = veh.pos + veh.mat.yvec() * (this->range / 6.f + 1.f);
-						cam_view.campos += this->poscam2;
-						cam_view.camvec = this->poscam2;
-						easing_set(&cam_view.camup, VGet(0, 1.f, 0), 0.9f);
-						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
-						this->rad += deg2rad(5 + GetRand(20)) / GetFPS();
-						this->range -= 5.f / GetFPS();
-						this->poscam = cam_mine.campos;
-					}
-					else {
-						cam_view.camvec -= cam_view.campos;
-						cam_view.campos -= this->poscam;
-						easing_set(&cam_view.campos, VGet(0, 0, 0), 0.9f);
-						this->poscam = cam_mine.campos;
-						cam_view.campos += this->poscam;
-						eyezvec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
-						easing_set(&cam_view.camvec, MATRIX_ref::Vtrans(eyezvec, veh.mat)*-1.f, 0.75f);
-						cam_view.camvec += cam_view.campos;
-						easing_set(&cam_view.camup, cam_mine.camup, 0.9f);
-						easing_set(&cam_view.fov, cam_mine.fov, 0.9f);
-						easing_set(&cam_view.near_, cam_mine.near_, 0.9f);
-						easing_set(&cam_view.far_, cam_mine.far_, 0.9f);
-						easing_set(&this->black, 1.f, 0.925f);
-					}
-				}
-				this->on = true;
-			}
-			else {
-				this->time = 0.f;
-				easing_set(&this->black, 0.f, 0.8f);
-				this->on = (this->on_time <= (float(10 + GetRand(40)) / 100.f));
-				this->on_time = std::max(this->on_time - 1.f / GetFPS(), 0.f);
-			}
-		}
-	};
-	//
-	class voices_ {
-		FontHandle font18;
-	public:
-		class voice_strs {
-		public:
-			std::string str;
-			SoundHandle *handle;
-		};
-		class voices {
-		public:
-			std::vector <std::string> str;
-			std::vector<SoundHandle> handle;
-			float timer = 0.f;
-			int select = 0;
-
-			void set(float tm, std::vector<voice_strs>& voice_str, float vol) {
-				this->select = GetRand(int(this->handle.size() - 1));
-				if (!this->handle[this->select].check() && this->timer == 0.f) {
-					this->handle[this->select].play(DX_PLAYTYPE_BACK, TRUE);
-					this->handle[this->select].vol(int(255.f*vol));
-					this->timer = tm;
-					voice_str.resize(voice_str.size() + 1);
-					voice_str.back().handle = &this->handle[this->select];
-					voice_str.back().str = this->str[this->select];
-				}
-			}
-		};
-		std::vector<voices> voice_;
-		std::vector<voice_strs> voice_str;
-
-		void load() {
-			WIN32_FIND_DATA win32fdt;
-			HANDLE hFind;
-			int pt = -1;
-			hFind = FindFirstFile("data/audio/voice/*", &win32fdt);
-			if (hFind != INVALID_HANDLE_VALUE) {
-				do {
-					if (win32fdt.cFileName[0] != '.') {
-						int ttm = win32fdt.cFileName[0] - '0';
-						if (pt != ttm) {
-							this->voice_.resize(this->voice_.size() + 1);
-						}
-						pt = ttm;
-						this->voice_.back().handle.resize(this->voice_.back().handle.size() + 1);
-						this->voice_.back().handle.back() = SoundHandle::Load(std::string("data/audio/voice/") + win32fdt.cFileName);
-						this->voice_.back().str.resize(this->voice_.back().str.size() + 1);
-						this->voice_.back().str.back() = win32fdt.cFileName;
-						this->voice_.back().str.back() = this->voice_.back().str.back().substr(2, this->voice_.back().str.back().find('.') - 2);
-					}
-				} while (FindNextFile(hFind, &win32fdt));
-			} //else{ return false; }
-			FindClose(hFind);
-
-			font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
-		}
-
-		void update() {
-			for (auto&v : this->voice_) {
-				v.timer = std::max(v.timer - 1.f / GetFPS(), 0.f);
-			}
-			for (auto& v : this->voice_str) {
-				if (!v.handle->check()) {
-					this->voice_str.erase(this->voice_str.begin() + (&v - &this->voice_str[0]));
-					break;
-				}
-			}
-		}
-
-		void draw(const int& disp_x, const int& disp_y) {
-			int yyy = 30;
-			for (auto& v : this->voice_str) {
-				if (v.handle->check()) {
-					auto wide = font18.GetDrawWidth(v.str);
-					SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
-					DrawBox(disp_x / 2 - wide / 2, yyy - 2, disp_x / 2 + wide / 2, yyy + 18 + 2, GetColor(0, 0, 0), TRUE);
-					SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
-
-					font18.DrawString_MID(disp_x / 2, yyy, v.str, GetColor(100, 150, 255));
-					yyy += 24;
-				}
-			}
-		}
 	};
 	//
 };

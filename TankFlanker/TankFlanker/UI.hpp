@@ -116,6 +116,78 @@ public:
 		}
 	}
 	//
+	void warning(Mainclass::Chara& chara, const int& xp, const int &yp, float danger_height, bool uses_vr = true, bool mid = true) {
+		FontHandle* font = (!uses_vr) ? &font18 : &font24;
+		auto font_hight = (!uses_vr) ? y_r(18) : y_r(24);
+		auto& veh = chara.vehicle;
+		auto time = GetNowHiPerformanceCount();
+		int ccc = 0;
+		if (!(veh.use_veh.isfloat && chara.key[18])) {
+			if (veh.speed < veh.use_veh.min_speed_limit) {
+				if ((time / 100000) % 4 <= 2) {
+					if (mid) {
+						font->DrawString_MID(xp, yp + ccc, "STALL", GetColor(255, 0, 0));
+					}
+					else {
+						font->DrawString(xp, yp + ccc, "STALL", GetColor(255, 0, 0));
+					}
+				}
+				ccc += font_hight;
+			}
+		}
+		if (veh.pos.y() <= danger_height) {
+			if (mid) {
+				font->DrawString_MID(xp, yp + ccc, "GPWS", GetColor(255, 255, 0));
+			}
+			else {
+				font->DrawString(xp, yp + ccc, "GPWS", GetColor(255, 255, 0));
+			}
+			ccc += font_hight;
+		}
+		if (chara.p_anime_geardown.second > 0.5f) {
+			if (mid) {
+				font->DrawString_MID(xp, yp + ccc, "GEAR DOWN", GetColor(255, 255, 0));
+			}
+			else {
+				font->DrawString(xp, yp + ccc, "GEAR DOWN", GetColor(255, 255, 0));
+			}
+			ccc += font_hight;
+		}
+		if (chara.aim_cnt > 0) {
+			if ((time / 80000) % 4 <= 2) {
+				if (mid) {
+					font->DrawString_MID(xp, yp + ccc, "ENEMY ALERT", GetColor(255, 225, 0));
+				}
+				else {
+					font->DrawString(xp, yp + ccc, "ENEMY ALERT", GetColor(255, 225, 0));
+				}
+			}
+			ccc += font_hight;
+		}
+		if (veh.use_veh.isfloat) {
+			if (chara.key[18]) {
+				if (mid) {
+					font->DrawString_MID(xp, yp + ccc, "HOVER MODE ENABLE", GetColor(255, 128, 0));
+				}
+				else {
+					font->DrawString(xp, yp + ccc, "HOVER MODE ENABLE", GetColor(255, 128, 0));
+				}
+			}
+			else {
+				if ((time / 80000) % 4 <= 2) {
+					if (mid) {
+						font->DrawString_MID(xp, yp + ccc, "HOVER MODE DISABLE", GetColor(255, 0, 0));
+					}
+					else {
+						font->DrawString(xp, yp + ccc, "HOVER MODE DISABLE", GetColor(255, 0, 0));
+					}
+				}
+			}
+			ccc += font_hight;
+		}
+		//
+	}
+	//
 	void draw(Mainclass::Chara& chara, const bool& adss, const DXDraw::system_VR& vr_sys, float danger_height, bool uses_vr = true) {
 		int xs = 0, xp = 0, ys = 0, yp = 0;
 		FontHandle* font = (!uses_vr) ? &font18 : &font24;
@@ -192,20 +264,7 @@ public:
 					xp = disp_x / 2;
 					yp = disp_y / 2 - disp_y / 6 + y_r(60);
 				}
-
-				int ccc = 0;
-				if (veh.speed < veh.use_veh.min_speed_limit) {
-					font->DrawString_MID(xp, yp + y_r(36) * ccc, "STALL", GetColor(255, 0, 0));
-					ccc++;
-				}
-				if (veh.pos.y() <= danger_height) {
-					font->DrawString_MID(xp, yp + y_r(36) * ccc, "GPWS", GetColor(255, 255, 0));
-					ccc++;
-				}
-				if (chara.p_anime_geardown.second > 0.5f) {
-					font->DrawString_MID(xp, yp + y_r(36) * ccc, "GEAR DOWN", GetColor(255, 255, 0));
-					ccc++;
-				}
+				warning(chara, xp, yp, danger_height, uses_vr, true);
 			}
 			//HP
 			{
@@ -586,7 +645,7 @@ public:
 		//éÊìæ
 		{
 			SetCameraNearFar(0.01f, veh.use_veh.canlook_dist*3.f);
-			auto gunpos = (veh.obj.frame(veh.Gun_[0].get_gun_info().frame1.first) - veh.pos);
+			auto gunpos = (veh.obj.frame(veh.Gun_[0].get_gun_info().frame_turn.first) - veh.pos);
 			auto ammo_ = (veh.Gun_[0].getbullet_use().spec.speed_a + veh.speed) / GetFPS();
 			for (auto& c : charas) {
 				c.winpos_if = ConvWorldPosToScreenPos((c.vehicle.pos + gunpos + c.vehicle.mat.zvec() *(-1.f*c.vehicle.speed / GetFPS())*((c.vehicle.pos - veh.pos).size() / ammo_)).get());
@@ -608,33 +667,7 @@ public:
 				//åxçê
 				tmp_get = ConvWorldPosToScreenPos((veh.obj.frame(veh.use_veh.fps_view.first) + MATRIX_ref::Vtrans(VGet(-0.15f, 0.58f, -1.f), veh.mat)).get());
 				if (tmp_get.z() >= 0.f && tmp_get.z() <= 1.f) {
-					xp = (int)(tmp_get.x());
-					yp = (int)(tmp_get.y());
-					int ccc = 0;
-					if (veh.speed < veh.use_veh.min_speed_limit) {
-						if ((time / 100000) % 4 <= 2) {
-							font->DrawString(xp, yp + ccc, "STALL", GetColor(255, 0, 0));
-						}
-						ccc += font_hight;
-					}
-					if (veh.pos.y() <= danger_height) {
-						font->DrawString(xp, yp + ccc, "GPWS", GetColor(255, 255, 0));
-						ccc += font_hight;
-					}
-					if (chara.p_anime_geardown.second > 0.5f) {
-						font->DrawString(xp, yp + ccc, "GEAR DOWN", GetColor(255, 255, 0));
-						ccc += font_hight;
-					}
-					if (chara.aim_cnt > 0) {
-						if ((time / 80000) % 4 <= 2) {
-							font->DrawString(xp, yp + ccc, "ENEMY ALERT", GetColor(255, 225, 0));
-						}
-						ccc += font_hight;
-					}
-					if (chara.missile_cnt > 0) {
-						font->DrawString(xp, yp + ccc, "MISSILE ALERT", GetColor(255, 0, 0));
-						ccc += font_hight;
-					}
+					warning(chara, int(tmp_get.x()), int(tmp_get.y()), danger_height, uses_vr, false);
 				}
 				//ë¨ìxåv
 				{
@@ -760,7 +793,7 @@ public:
 						if ((std::hypotf(c.winpos_if.x() - aimpos.x(), c.winpos_if.y() - aimpos.y()) / float(disp_x / 2)) <= 1.f / 3.f) {
 							aim_if.DrawRotaGraph(int(c.winpos_if.x()), int(c.winpos_if.y()), 1.f, 0.f, TRUE);
 						}
-						
+
 					}
 				}
 				//

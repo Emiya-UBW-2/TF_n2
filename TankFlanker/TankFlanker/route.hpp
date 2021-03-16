@@ -1,5 +1,6 @@
 #pragma once
 class main_c {
+protected:
 	cam_info cam_mine, cam_view;
 	VECTOR_ref eyezvec, eyeyvec;	//視点
 	//描画スクリーン
@@ -16,15 +17,17 @@ class main_c {
 	std::vector<Mainclass::Ammos> Ammo;		//弾薬
 	std::vector<Mainclass::Vehcs> Vehicles;	//車輛データ
 	//サウンド
+	Mainclass::voices_ voice;
 	Mainclass::sounds_3D se;
+	Mainclass::bgms_ bgm;
+	SoundHandle bgm_main;
+
 	SoundHandle se_alert;
 	SoundHandle se_alert2;
 	SoundHandle se_change;
 	SoundHandle se_timer;
 	SoundHandle bgm_title;
-	SoundHandle bgm_main;
 	SoundHandle bgm_win;
-	Mainclass::voices_ voice;
 	//timer
 	float timer = 0.f;
 	float ready_timer = 0.f;
@@ -34,21 +37,29 @@ class main_c {
 	bool ending = true;
 	float danger_height = 300.f;
 	//設定
-	bool dof_e = false;
-	bool bloom_e = false;
-	bool shadow_e = false;
-	bool useVR_e = true;
 	float fov_pc = 45.f;
+
 	float bgm_vol = 0.5f;
 	float se_vol = 0.35f;
 	float vc_vol = 1.f;
 	//キー
 	Mainclass::key_bind k_;
 	Mainclass::views_ view_;
+	//
+	std::unique_ptr<DXDraw, std::default_delete<DXDraw>> Drawparts;
+	std::unique_ptr<UI, std::default_delete<UI>> UIparts;
+	std::unique_ptr<DeBuG, std::default_delete<DeBuG>> Debugparts;
+	std::unique_ptr<HostPassEffect, std::default_delete<HostPassEffect>> Hostpassparts;
+	std::unique_ptr<Mapclass, std::default_delete<Mapclass>> mapparts;
 public:
 	main_c() {
 		//設定読み込み
 		{
+			bool dof_e = false;
+			bool bloom_e = false;
+			bool shadow_e = false;
+			bool useVR_e = true;
+
 			SetOutApplicationLogValidFlag(FALSE);	//log
 			int mdata = FileRead_open("data/setting.txt", FALSE);
 			dof_e = getparams::_bool(mdata);
@@ -58,60 +69,64 @@ public:
 			fov_pc = getparams::_float(mdata);
 			FileRead_close(mdata);
 			SetOutApplicationLogValidFlag(TRUE);	//log
+			Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);						//汎用クラス
+			UIparts = std::make_unique<UI>(Drawparts->disp_x, Drawparts->disp_y);										//UI
+			Debugparts = std::make_unique<DeBuG>(FRAME_RATE);															//デバッグ
+			Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);	//ホストパスエフェクト
+			mapparts = std::make_unique<Mapclass>();																	//map
+			UI_Screen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);										//VR、フルスクリーン共用UI
 		}
-		//
-		auto Drawparts = std::make_unique<DXDraw>("TankFlanker", FRAME_RATE, useVR_e, shadow_e);						//汎用クラス
-		auto UIparts = std::make_unique<UI>(Drawparts->disp_x, Drawparts->disp_y);										//UI
-		auto Debugparts = std::make_unique<DeBuG>(FRAME_RATE);															//デバッグ
-		auto Hostpassparts = std::make_unique<HostPassEffect>(dof_e, bloom_e, Drawparts->disp_x, Drawparts->disp_y);	//ホストパスエフェクト
-		auto mapparts = std::make_unique<Mapclass>();																	//map
-		UI_Screen = GraphHandle::Make(Drawparts->disp_x, Drawparts->disp_y, true);										//VR、フルスクリーン共用UI
-		//その他
+
+		FontHandle font18 = FontHandle::Create(18, DX_FONTTYPE_EDGE);
+
+		//サウンド読み込み
+		voice.load();
 		se.Load();
+		bgm.Load();
+
 		se_alert = SoundHandle::Load("data/audio/alert.wav");
 		se_alert2 = SoundHandle::Load("data/audio/alert2.wav");
 		se_change = SoundHandle::Load("data/audio/change.wav");
 		se_timer = SoundHandle::Load("data/audio/timer.wav");
 		bgm_title = SoundHandle::Load("data/audio/BGM/title.wav");
-		bgm_main = SoundHandle::Load(std::string("data/audio/BGM/bgm") + std::to_string(GetRand(3)) + ".wav");
 		bgm_win = SoundHandle::Load("data/audio/BGM/win.wav");
-		//
+		//キー読み込み
 		k_.load_keyg();
-		//
-		voice.load();
-		//
+		//機体モデル読み込み
 		Mainclass::Vehcs::set_vehicles_pre("data/plane/", &Vehicles, true);
 		MV1::Load("data/model/cockpit/model.mv1", &cockpit, true);
 		MV1::Load("data/model/garage/model.mv1", &garage, true);
-		//
 		UIparts->load_window("車両モデル");					//ロード画面
-		//
+		//機体データ読み込み
 		Mainclass::Ammos::set_ammos(&Ammo);							//弾薬
 		Mainclass::Vehcs::set_vehicles(&Vehicles);					//車輛
 		//ラムダ
 		auto shadow_draw_menu = [&]() {
-			auto& veh = chara[0].vehicle;
-			Vehicles[veh.use_id].obj.DrawModel();
+			Vehicles[chara[0].vehicle.use_id].obj.DrawModel();
 		};
+		auto ram_draw_menu =
+			[&]() {
+			garage.DrawModel();
+			Vehicles[chara[0].vehicle.use_id].obj.DrawModel();
+		};
+		//ラムダ2
 		auto shadow_draw = [&]() {
 			for (auto& c : chara) {
 				c.vehicle.draw();
 			}
 		};
-		auto ram_draw_menu = [&]() {
-			Drawparts->Draw_by_Shadow(
-				[&]() {
-				garage.DrawModel();
-				Vehicles[chara[0].vehicle.use_id].obj.DrawModel();
-			}
-			);
-		};
 		auto ram_draw = [&]() {
-			Drawparts->Draw_by_Shadow(
-				[&]() {
-				//マップ
-				mapparts->draw();
-				//機体
+			//マップ
+			{
+				//地形
+				mapparts->map_draw();
+				//海
+				mapparts->sea_draw();
+				//雲
+				mapparts->cloud_draw();
+			}
+			//機体
+			{
 				SetFogStartEnd(0.0f, 3000.f);
 				SetFogColor(128, 128, 128);
 				for (auto& c : chara) {
@@ -121,7 +136,7 @@ public:
 					c.vehicle.draw();
 				}
 				MV1SetSemiTransDrawMode(DX_SEMITRANSDRAWMODE_ALWAYS);
-
+				//弾
 				SetFogEnable(FALSE);
 				SetUseLighting(FALSE);
 				for (auto& c : chara) {
@@ -132,7 +147,6 @@ public:
 				SetUseLighting(TRUE);
 				SetFogEnable(TRUE);
 			}
-			);
 		};
 		//
 		auto mouse_aim = [&](VECTOR_ref& eyevec_tmp) {
@@ -168,24 +182,26 @@ public:
 				//
 				int m_x = 0, m_y = 0;
 				{
+					//マップ読み込み
+					SetGlobalAmbientLight(GetColorF(0.5f, 0.475f, 0.45f, 1.f));
 					//光、影
-					Drawparts->Set_Light_Shadow(mapparts->map_get().mesh_maxpos(0), mapparts->map_get().mesh_minpos(0), VGet(0.0f, -0.5f, 0.5f), [&] {});
-					SetGlobalAmbientLight(GetColorF(0.25f, 0.225f, 0.25f, 1.f));
-					auto& veh = mine.vehicle;
-					veh.use_id %= Vehicles.size(); //飛行機
-					anime = MV1AttachAnim(Vehicles[veh.use_id].obj.get(), 1);
-					MV1SetAttachAnimBlendRate(Vehicles[veh.use_id].obj.get(), anime, 1.f);
+					Drawparts->Set_Light_Shadow(VGet(10.f, 10.f, 10.f), VGet(-10.f, -10.f, -10.f), VGet(0.0f, -0.5f, 0.5f), [&] {});
+					//飛行機
+					mine.vehicle.use_id %= Vehicles.size();
+					auto&veh_t = Vehicles[mine.vehicle.use_id];
+					anime = MV1AttachAnim(veh_t.obj.get(), 1);
+					MV1SetAttachAnimBlendRate(veh_t.obj.get(), anime, 1.f);
 					{
-						Vehicles[veh.use_id].obj.SetMatrix(MGetIdent());
+						veh_t.obj.SetMatrix(MGetIdent());
 						pos.y(0.f);
-						for (auto& w : Vehicles[veh.use_id].wheelframe) {
-							auto p = -Vehicles[veh.use_id].obj.frame(w.frame.first + 1).y() + 0.2f;
+						for (auto& w : veh_t.wheelframe) {
+							auto p = -veh_t.obj.frame(w.frame.first + 1).y() + 0.2f;
 							if (p >= pos.y()) {
 								pos.y(p);
 							}
 						}
 					}
-					Vehicles[veh.use_id].obj.SetMatrix(MATRIX_ref::Mtrans(pos));
+					veh_t.obj.SetMatrix(MATRIX_ref::Mtrans(pos));
 					GetMousePoint(&m_x, &m_y);
 					cam_s.cam.campos = VGet(0.f, 0.f, -15.f);
 					cam_s.cam.camvec = VGet(0.f, 3.f, 0.f);
@@ -195,7 +211,6 @@ public:
 				}
 				//
 				while (ProcessMessage() == 0) {
-					const auto waits = GetNowHiPerformanceCount();
 					{
 						auto& veh = mine.vehicle;
 						if (!start_c2) {
@@ -375,7 +390,10 @@ public:
 								tmp_cams.cam.camvec = camtmp + cam_s.cam.camvec;
 							}
 							//被写体深度描画
-							Hostpassparts->BUF_draw([&]() {}, ram_draw_menu, tmp_cams.cam);
+							Hostpassparts->BUF_draw(
+								[&]() {},
+								[&]() { Drawparts->Draw_by_Shadow(ram_draw_menu); },
+								tmp_cams.cam);
 							//最終描画
 							Hostpassparts->MAIN_draw();
 
@@ -401,7 +419,7 @@ public:
 							Drawparts->outScreen[0].DrawGraph(0, 0, false);
 						}
 					}
-					Drawparts->Screen_Flip(waits);
+					Drawparts->Screen_Flip();
 					//
 					if (k_.key_use_ID[11].get_key(0)) {
 						break;
@@ -428,76 +446,74 @@ public:
 			{
 				{
 					//マップ読み込み
-					mapparts->set_map_pre();
+					mapparts->set_pre();
 					UIparts->load_window("マップモデル");			   //ロード画面
-					mapparts->set_map("data/grassput.bmp", VGet(0.0f, -0.5f, 0.5f), 35000.f, 35000.f, -35000.f, -35000.f);
+					mapparts->set("data/grassput.bmp", VGet(0.0f, -0.5f, 0.5f), GetColorF(0.5f, 0.475f, 0.45f, 1.f), 35000.f, 35000.f, -35000.f, -35000.f);
 					//光、影
-					Drawparts->Set_Light_Shadow(mapparts->map_get().mesh_maxpos(0), mapparts->map_get().mesh_minpos(0), VGet(0.0f, -0.5f, 0.5f),
+					Drawparts->Set_Light_Shadow(mapparts->mesh_maxpos(0), mapparts->mesh_minpos(0), VGet(0.0f, -0.5f, 0.5f),
 						[&] {
-						mapparts->map_get().DrawModel();
+						mapparts->map_draw();
 						mapparts->cloud_draw();
 					});
-					SetGlobalAmbientLight(GetColorF(0.5f, 0.475f, 0.45f, 1.f));
 					//共通
 					for (auto& c : chara) {
-						//キャラ選択
 						size_t i = &c - &chara[0];
-						if (i >= (chara.size() / 2)) {
-							c.type = 1;
-						}
-						if (i != 0) {
-							c.vehicle.use_id = GetRand(int(Vehicles.size() - 1));
-						}
-
-						c.set_human(Vehicles, Ammo);	//set
-
+						//敵味方
+						c.type = (i >= (chara.size() / 2)) ? 1 : 0;
+						//機体選択
+						c.vehicle.use_id = (i != 0) ? GetRand(int(Vehicles.size()) - 1) : c.vehicle.use_id;
+						//set
+						c.set_human(Vehicles, Ammo);
+						//コックピット
+						c.cocks.set_(cockpit);
+						//se
+						c.se.Duplicate(se);
+						//spawn
 						/*
-						if (i == 0) {
+						{
 							float rad = deg2rad(-130);
-							c.vehicle.spawn(
-								VGet(float(-3200)*sin(rad) + float(0)*cos(rad), 10.f, float(-3200)*cos(rad) - float(0)*sin(rad)),
-								MATRIX_ref::RotY(deg2rad(((c.type == 0) ? 180 : 0) - 130)),
-								0.f,
-								0.f
-							);
+							c.vehicle.spawn(VGet(float(-3200)*sin(rad) + float(0)*cos(rad), 10.f, float(-3200)*cos(rad) - float(0)*sin(rad)), MATRIX_ref::RotY(deg2rad(((c.type == 0) ? 180 : 0) - 130)), 0.f, 0.f);
 						}
-						else {
-							//*/
-						float rad = deg2rad(-130);
-						c.vehicle.spawn(
-							VGet(float(-2000 + 4000 * int(i / (chara.size() / 2)))*sin(rad) + float(100 * (i % (chara.size() / 2)))*cos(rad), 1500.f, float(-2000 + 4000 * int(i / (chara.size() / 2)))*cos(rad) - float(100 * (i % (chara.size() / 2)))*sin(rad)),
-							MATRIX_ref::RotY(deg2rad(((c.type == 0) ? 180 : 0) - 130)),
-							25.f,
-							c.vehicle.use_veh.min_speed_limit*3.6f
-						);
-						//}
-						c.cocks.set_(cockpit);			//コックピット
-						c.se.Duplicate(se);				//se
+						//*/
+						{
+							float rad = deg2rad(-130);
+							auto x_ = int(i / (chara.size() / 2));
+							auto y_ = int(i % (chara.size() / 2));
+							c.vehicle.spawn(VGet(float(4000 * x_ - 2000)*sin(rad) + float(100 * y_)*cos(rad), 1500.f, float(4000 * x_ - 2000)*cos(rad) - float(100 * y_)*sin(rad)), MATRIX_ref::RotY(deg2rad(((c.type == 0) ? 180 : 0) - 130)), 25.f, c.vehicle.use_veh.min_speed_limit*3.6f);
+						}
+						//
 					}
+					//音量調整
 					se_alert.vol(int(float(192)*se_vol));
 					se_alert2.vol(int(float(192)*se_vol));
-					se_change.vol(std::clamp(int(float(255) / 0.35f*se_vol), 0, 255));
-					eyezvec = mine.vehicle.mat.zvec() * -1.f;
-					cam_s.cam.campos = mine.vehicle.pos + VGet(0.f, 3.f, 0.f) + eyezvec * range;
-					cam_s.Rot = ADS;
+					se_change.vol(int(float(728)*se_vol));
 					for (auto& c : chara) {
-						for (auto& t : c.vehicle.use_veh.wheelframe) {
-							t.init();
-						}
 						c.se.cockpit.vol(int(float(128)*se_vol));
+					}
+					bgm_win.vol(int(float(255)*bgm_vol));
+					//se
+					for (auto& c : chara) {
 						c.se.cockpit.play(DX_PLAYTYPE_LOOP, TRUE);
 						c.se.engine.play(DX_PLAYTYPE_LOOP, TRUE);
 					}
-					bgm_main.play(DX_PLAYTYPE_LOOP, TRUE);
-					bgm_main.vol(int(float(255)*bgm_vol));
-					bgm_win.vol(int(float(255)*bgm_vol));
-					voice.voice_[0].set(0.f, voice.voice_str, vc_vol);
+					//bgm
+					bgm.play(bgm_vol, -1);
+					//voice
+					voice.play(0, 0.f, vc_vol);
+					//mouse
 					SetMouseDispFlag(FALSE);
 					SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
+					//timer
 					timer = 60.f*5.f;
 					ready_timer = 5.f;
+					//cam
+					eyezvec = mine.vehicle.mat.zvec() * -1.f;
+					cam_s.cam.campos = mine.vehicle.pos + VGet(0.f, 3.f, 0.f) + eyezvec * range;
+					cam_s.Rot = ADS;
 					view_.init();
+					//
 					ending_win = true;
+					//
 				}
 				//
 				while (ProcessMessage() == 0) {
@@ -645,32 +661,32 @@ public:
 								if (&c != &mine && (c.type == mine.type)) {
 									if (c.vehicle.HP > 0) {
 										if (c.key[0] && GetRand(100) < 10) {
-											voice.voice_[1].set(float(GetRand(170) + 30) / 10.f, voice.voice_str, vc_vol);
+											voice.play(1, float(GetRand(170) + 30) / 10.f, vc_vol);
 										}
 										if (c.key[1] && GetRand(100) < 10) {
-											voice.voice_[2].set(float(GetRand(170) + 30) / 10.f, voice.voice_str, vc_vol);
+											voice.play(2, float(GetRand(170) + 30) / 10.f, vc_vol);
 										}
 										if (c.vehicle.hitf) {
-											voice.voice_[3].set(float(GetRand(170) + 30) / 10.f, voice.voice_str, vc_vol);
+											voice.play(3, float(GetRand(170) + 30) / 10.f, vc_vol);
 											c.vehicle.hitf = false;
 										}
 										if (c.vehicle.killf) {
-											voice.voice_[4].set(0.f, voice.voice_str, vc_vol);
+											voice.play(4, 0.f, vc_vol);
 											c.vehicle.killf = false;
 										}
 										if (c.aim_cnt > 0 && GetRand(100) < 10) {
-											voice.voice_[5].set(float(GetRand(170) + 30) / 10.f, voice.voice_str, vc_vol);
+											voice.play(5, float(GetRand(170) + 30) / 10.f, vc_vol);
 										}
 										if (c.missile_cnt > 0 && GetRand(100) < 10) {
-											voice.voice_[6].set(float(GetRand(170) + 30) / 10.f, voice.voice_str, vc_vol);
+											voice.play(6, float(GetRand(170) + 30) / 10.f, vc_vol);
 										}
 										if (c.vehicle.dmgf) {
-											voice.voice_[7].set(float(GetRand(170) + 30) / 10.f, voice.voice_str, vc_vol);
+											voice.play(7, float(GetRand(170) + 30) / 10.f, vc_vol);
 											c.vehicle.dmgf = false;
 										}
 									}
 									if (c.vehicle.deathf) {
-										voice.voice_[8].set(0.f, voice.voice_str, vc_vol);
+										voice.play(8, 0.f, vc_vol);
 										c.vehicle.deathf = false;
 									}
 								}
@@ -788,7 +804,7 @@ public:
 										easing_set(&cam_mine.campos, eyezvec * range, 0.9f);
 										cam_mine.campos += cam_mine.camvec;
 										cam_mine.campos.y(std::max(cam_mine.campos.y(), 0.f));
-										mapparts->map_col_line_nearest(cam_mine.camvec, &cam_mine.campos);
+										mapparts->col_line_nearest(cam_mine.camvec, &cam_mine.campos);
 
 										easing_set(&cam_mine.camup, VGet(0.f, 1.f, 0.f), 0.9f);
 									}
@@ -834,7 +850,10 @@ public:
 								tmp_cams.cam.camvec = camtmp + cam_s.cam.camvec;
 							}
 							//被写体深度描画
-							Hostpassparts->BUF_draw([&]() { mapparts->sky_draw(); }, ram_draw, tmp_cams.cam);
+							Hostpassparts->BUF_draw(
+								[&]() { mapparts->sky_draw(); },
+								[&]() { Drawparts->Draw_by_Shadow(ram_draw); },
+								tmp_cams.cam);
 							//最終描画
 							Hostpassparts->MAIN_draw();
 
@@ -870,7 +889,20 @@ public:
 									//タイマー
 									UIparts->timer_draw(timer, ready_timer, Drawparts->use_vr);
 									//
-									voice.draw(Drawparts->disp_x, Drawparts->disp_y);
+									{
+										int yyy = Drawparts->disp_y / 36;
+										for (auto& v : voice.get_voice_str()) {
+											if (v.handle->check()) {
+												auto wide = font18.GetDrawWidth(v.str);
+												SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
+												DrawBox(Drawparts->disp_x / 2 - wide / 2, yyy - 2, Drawparts->disp_x / 2 + wide / 2, yyy + 18 + 2, GetColor(0, 0, 0), TRUE);
+												SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
+
+												font18.DrawString_MID(Drawparts->disp_x / 2, yyy, v.str, GetColor(100, 150, 255));
+												yyy += 24;
+											}
+										}
+									}
 									//
 									if (timer <= 0.f) {
 										//リザルト
@@ -901,12 +933,12 @@ public:
 						Debugparts->end_way();
 						Debugparts->debug(10, 10, float(GetNowHiPerformanceCount() - waits) / 1000.f);
 					}
-					Drawparts->Screen_Flip(waits);
+					Drawparts->Screen_Flip();
 					//
 					if (ready_timer <= 0.f) {
 						timer -= 1.f / GetFPS();
 						if (timer <= 0.f && ending_win) {
-							bgm_main.stop();
+							bgm.stop();
 							bgm_win.play(DX_PLAYTYPE_BACK, TRUE);
 							ending_win = false;
 						}
@@ -941,7 +973,7 @@ public:
 					SetMouseDispFlag(TRUE);
 					SetMousePoint(Drawparts->disp_x / 2, Drawparts->disp_y / 2);
 					//音声ストップ
-					bgm_main.stop();
+					bgm.stop();
 					bgm_win.stop();
 					for (auto& c : chara) {
 						c.se.stop();
@@ -959,7 +991,7 @@ public:
 						c.vehicle.Dispose();
 					}
 					chara.clear();
-					mapparts->delete_map();
+					mapparts->Dispose();
 					Drawparts->Delete_Shadow();
 				}
 			}
