@@ -43,7 +43,7 @@ private:
 		std::vector<std::string> useammo;
 		uint16_t rounds = 0;
 
-		void set(const int& i,MV1& obj) {
+		void set(const int& i, MV1& obj) {
 			auto p2 = obj.frame_parent(i);
 			if (p2 >= 0) {
 				this->frame_turn.set(i, obj.frame(i) - obj.frame(int(p2)));//親がいる時引いとく
@@ -494,7 +494,7 @@ public:
 		}
 	};
 	//サウンド
-	class sounds_3D {
+	class ses_ {
 	public:
 		SoundHandle cockpit;
 		SoundHandle engine;
@@ -512,17 +512,24 @@ public:
 			SetCreate3DSoundFlag(FALSE);
 		}
 
-		void Duplicate(sounds_3D& handle) {
+		void Duplicate(ses_& handle) {
 			this->cockpit = handle.cockpit.Duplicate();
 			this->engine = handle.engine.Duplicate();
 			this->gun = handle.gun.Duplicate();
 			this->missile = handle.missile.Duplicate();
 			this->hit = handle.hit.Duplicate();
+		}
+
+		void setinfo(const float& se_vol) {
 			this->cockpit.Radius(600.f);
 			this->engine.Radius(600.f);
 			this->gun.Radius(300.f);
 			this->missile.Radius(300.f);
 			this->hit.Radius(900.f);
+			this->cockpit.vol(int(float(128)*se_vol));
+			this->gun.vol(int(float(728)*se_vol));
+			this->hit.vol(int(float(728)*se_vol));
+			this->missile.vol(int(float(728)*se_vol));
 		}
 
 		void setpos(const VECTOR_ref& pos) {
@@ -645,7 +652,7 @@ public:
 			return voice_str;
 		}
 		//
-		void play(int id,float tm, float vol) {
+		void play(int id, float tm, float vol) {
 			this->voice_[id].set(tm, this->voice_str, vol);
 		}
 	};
@@ -847,7 +854,6 @@ public:
 		}
 		//
 	};
-	//
 	//player
 	class Chara {
 	private:
@@ -1636,7 +1642,7 @@ public:
 		VECTOR_ref winpos;
 		VECTOR_ref winpos_if;
 		//機体サウンド
-		sounds_3D se;
+		ses_ se;
 		//コックピット
 		cockpits cocks;
 		//セット

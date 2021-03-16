@@ -46,7 +46,7 @@ public:
 		this->g_fTime = 0.f;
 		this->OldTime = GetNowCount();
 	}
-	void set(const char* buf, const VECTOR_ref& ray,const DxLib::COLOR_F& col_f,const float x_max = 10.f, const float z_max = 10.f, const float x_min = -10.f, const float z_min = -10.f) {
+	void set(const char* buf, const VECTOR_ref& ray, const DxLib::COLOR_F& col_f, const float x_max = 10.f, const float z_max = 10.f, const float x_min = -10.f, const float z_min = -10.f) {
 		this->sun_pos = ray.Norm() * -1500.f;
 		this->map.material_AlphaTestAll(true, DX_CMP_GREATER, 128);
 		VECTOR_ref size;

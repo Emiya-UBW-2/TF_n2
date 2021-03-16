@@ -17,10 +17,9 @@ protected:
 	std::vector<Mainclass::Ammos> Ammo;		//弾薬
 	std::vector<Mainclass::Vehcs> Vehicles;	//車輛データ
 	//サウンド
-	Mainclass::voices_ voice;
-	Mainclass::sounds_3D se;
+	Mainclass::ses_ se;
 	Mainclass::bgms_ bgm;
-	SoundHandle bgm_main;
+	Mainclass::voices_ voice;
 
 	SoundHandle se_alert;
 	SoundHandle se_alert2;
@@ -38,14 +37,13 @@ protected:
 	float danger_height = 300.f;
 	//設定
 	float fov_pc = 45.f;
-
 	float bgm_vol = 0.5f;
 	float se_vol = 0.35f;
 	float vc_vol = 1.f;
 	//キー
 	Mainclass::key_bind k_;
 	Mainclass::views_ view_;
-	//
+	//sumapo
 	std::unique_ptr<DXDraw, std::default_delete<DXDraw>> Drawparts;
 	std::unique_ptr<UI, std::default_delete<UI>> UIparts;
 	std::unique_ptr<DeBuG, std::default_delete<DeBuG>> Debugparts;
@@ -104,9 +102,10 @@ public:
 		auto shadow_draw_menu = [&]() {
 			Vehicles[chara[0].vehicle.use_id].obj.DrawModel();
 		};
-		auto ram_draw_menu =
-			[&]() {
+		auto ram_draw_menu = [&]() {
+			//マップ
 			garage.DrawModel();
+			//機体
 			Vehicles[chara[0].vehicle.use_id].obj.DrawModel();
 		};
 		//ラムダ2
@@ -337,6 +336,9 @@ public:
 								endp = true;
 							}
 						}
+						for (auto& b : Vehicles[veh.use_id].burner) {
+							Vehicles[veh.use_id].obj.SetFrameLocalMatrix(b.first, MATRIX_ref::Scale(VGet(1.f, 1.f, 0.f)) * MATRIX_ref::Mtrans(b.second));
+						}
 						Vehicles[veh.use_id].obj.SetMatrix(MATRIX_ref::Mtrans(pos));
 					}
 					//視点取得
@@ -390,10 +392,7 @@ public:
 								tmp_cams.cam.camvec = camtmp + cam_s.cam.camvec;
 							}
 							//被写体深度描画
-							Hostpassparts->BUF_draw(
-								[&]() {},
-								[&]() { Drawparts->Draw_by_Shadow(ram_draw_menu); },
-								tmp_cams.cam);
+							Hostpassparts->BUF_draw([&]() {}, [&]() { Drawparts->Draw_by_Shadow(ram_draw_menu); }, tmp_cams.cam);
 							//最終描画
 							Hostpassparts->MAIN_draw();
 
@@ -488,7 +487,7 @@ public:
 					se_alert2.vol(int(float(192)*se_vol));
 					se_change.vol(int(float(728)*se_vol));
 					for (auto& c : chara) {
-						c.se.cockpit.vol(int(float(128)*se_vol));
+						c.se.setinfo(se_vol);
 					}
 					bgm_win.vol(int(float(255)*bgm_vol));
 					//se
@@ -850,10 +849,7 @@ public:
 								tmp_cams.cam.camvec = camtmp + cam_s.cam.camvec;
 							}
 							//被写体深度描画
-							Hostpassparts->BUF_draw(
-								[&]() { mapparts->sky_draw(); },
-								[&]() { Drawparts->Draw_by_Shadow(ram_draw); },
-								tmp_cams.cam);
+							Hostpassparts->BUF_draw([&]() { mapparts->sky_draw(); }, [&]() { Drawparts->Draw_by_Shadow(ram_draw); }, tmp_cams.cam);
 							//最終描画
 							Hostpassparts->MAIN_draw();
 

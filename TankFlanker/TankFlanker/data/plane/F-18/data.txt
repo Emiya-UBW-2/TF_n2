@@ -1,8 +1,8 @@
 isfloat=false
-maxspeed=800
-midspeed=450
+maxspeed=1950
+midspeed=1060
 minspeed=250
-rad=90
+rad=45
 HP=100
 canlook=2000
 gun_0_name=M61

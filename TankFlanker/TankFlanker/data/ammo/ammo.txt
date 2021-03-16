@@ -18,4 +18,11 @@ caliber    =0.025
 penetration=30
 speed      =1000
 damage     =32
+
+name       =30x86B
+type       =1
+caliber    =0.030
+penetration=35
+speed      =741
+damage     =40
 end
