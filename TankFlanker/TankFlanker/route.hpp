@@ -4,8 +4,9 @@ protected:
 	cam_info cam_mine, cam_view;
 	VECTOR_ref eyezvec, eyeyvec;	//視点
 	//描画スクリーン
-	GraphHandle UI_Screen;		//
-	MV1 cockpit;				//コックピット
+	GraphHandle UI_Screen;			//
+	MV1 cockpit;					//コックピット
+	MV1 human;						//コックピット
 	MV1 garage;
 	//操作
 	Mainclass::CAMS cam_s;
@@ -93,6 +94,7 @@ public:
 		//機体モデル読み込み
 		Mainclass::Vehcs::set_vehicles_pre("data/plane/", &Vehicles, true);
 		MV1::Load("data/model/cockpit/model.mv1", &cockpit, true);
+		MV1::Load("data/model/human/model.mv1", &human, true);
 		MV1::Load("data/model/garage/model.mv1", &garage, true);
 		UIparts->load_window("車両モデル");					//ロード画面
 		//機体データ読み込み
@@ -464,7 +466,7 @@ public:
 						//set
 						c.set_human(Vehicles, Ammo);
 						//コックピット
-						c.cocks.set_(cockpit);
+						c.cocks.set_(cockpit,human);
 						//se
 						c.se.Duplicate(se);
 						//spawn
@@ -706,7 +708,7 @@ public:
 							eyeyvec = HMDmat.yvec();
 						}
 						else {
-							eye_pos_ads = VGet(0, 0.58f, 0);
+							eye_pos_ads = VGet(0, 0.68f, -0.1f);
 							mouse_aim(eyezvec);
 						}
 					}
@@ -827,7 +829,7 @@ public:
 						Set3DSoundListenerPosAndFrontPosAndUpVec(cam_s.cam.campos.get(), cam_s.cam.camvec.get(), cam_s.cam.camup.get());
 						//コックピット演算
 						if (cam_s.Rot >= ADS) {
-							mine.cocks.ready_(mine);
+							mine.cocks.ready_(mine, cam_mine.campos);
 						}
 						//UI
 						if (!view_.use && view_.on) {
@@ -860,6 +862,7 @@ public:
 								//コックピット
 								if (tmp_cams.Rot >= ADS) {
 									mine.cocks.obj.DrawModel();
+									mine.cocks.humen.DrawModel();
 								}
 								//UI
 								if (!view_.use && view_.on) {
