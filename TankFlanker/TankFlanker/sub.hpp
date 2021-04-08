@@ -1535,19 +1535,18 @@ public:
 						this->RIGHThand_f = { i,humen.GetFrameLocalMatrix(i).pos() };
 					}
 				}
-
 				//
 			}
 			//
 			void ready_(Chara& c,const VECTOR_ref& campos) {
+				float stick_x = (c.p_animes_rudder[1].second - c.p_animes_rudder[0].second)*deg2rad(30);//エレベーター
+				float stick_z = (c.p_animes_rudder[2].second - c.p_animes_rudder[3].second)*deg2rad(30);//ロール
+				float stick_y = (c.p_animes_rudder[5].second - c.p_animes_rudder[4].second)*deg2rad(20);//ラダー
 				{
-					float px = (c.p_animes_rudder[1].second - c.p_animes_rudder[0].second)*deg2rad(30);
-					float pz = (c.p_animes_rudder[2].second - c.p_animes_rudder[3].second)*deg2rad(30);
-					float py = (c.p_animes_rudder[5].second - c.p_animes_rudder[4].second)*deg2rad(20);
 					//操縦桿
-					obj.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(py) * MATRIX_ref::Mtrans(sticky_f.second));
-					obj.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(pz) * MATRIX_ref::Mtrans(stickz_f.second));
-					obj.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(px) * MATRIX_ref::Mtrans(stickx_f.second));
+					obj.SetFrameLocalMatrix(sticky_f.first, MATRIX_ref::RotY(stick_y) * MATRIX_ref::Mtrans(sticky_f.second));
+					obj.SetFrameLocalMatrix(stickz_f.first, MATRIX_ref::RotZ(stick_z) * MATRIX_ref::Mtrans(stickz_f.second));
+					obj.SetFrameLocalMatrix(stickx_f.first, MATRIX_ref::RotX(stick_x) * MATRIX_ref::Mtrans(stickx_f.second));
 					//ジャイロコンパス
 					obj.SetFrameLocalMatrix(compass_f.first, c.vehicle.mat.Inverse() * MATRIX_ref::Mtrans(compass_f.second));
 					obj.SetFrameLocalMatrix(compass2_f.first, c.vehicle.mat.Inverse() * MATRIX_ref::Mtrans(compass2_f.second));
@@ -1691,8 +1690,11 @@ public:
 					}
 					{
 						//基準
-						VECTOR_ref tgt_pt = obj.frame(stickz_f.first + 2);
-						MATRIX_ref tgt_mat = MATRIX_ref::RotZ(deg2rad(-45)) * MATRIX_ref::RotY(deg2rad(-90)) * MATRIX_ref::RotZ(deg2rad(90)) * MATRIX_ref::RotY(deg2rad(-30)) * c.vehicle.mat;
+						VECTOR_ref tgt_pt = obj.frame(stickz_f.first + 1);
+						MATRIX_ref tgt_mat = MATRIX_ref::RotZ(deg2rad(-45)) * MATRIX_ref::RotY(deg2rad(-90)) * MATRIX_ref::RotZ(deg2rad(90)) * 
+							MATRIX_ref::RotZ(stick_z) * 
+							MATRIX_ref::RotX(stick_x) * 
+							MATRIX_ref::RotY(deg2rad(-30)) *c.vehicle.mat;
 						VECTOR_ref vec_a1 = MATRIX_ref::Vtrans((tgt_pt - humen.frame(RIGHTarm1_f.first)).Norm(), m_inv.Inverse());//基準
 						VECTOR_ref vec_a1L1 = MATRIX_ref::Vtrans(VECTOR_ref(VGet(0.f, -1.f, vec_a1.y() / vec_a1.z())).Norm(), MATRIX_ref::RotZ(deg2rad(-45)));//x=0とする
 
