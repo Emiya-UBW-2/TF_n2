@@ -15,6 +15,7 @@ private:
 	//
 	float ber = 0;
 	//font
+	FontHandle font72_t;
 	FontHandle font36;
 	FontHandle font24;
 	FontHandle font18;
@@ -29,6 +30,8 @@ private:
 	VECTOR_ref aimpos_2;
 	//
 	size_t id_near = 0;
+
+	LPCSTR font_path;
 public:
 	UI(int d_x, int d_y) {
 		disp_x = d_x;
@@ -42,13 +45,22 @@ public:
 		dmg = GraphHandle::Load("data/UI/damage.png");
 		hit = GraphHandle::Load("data/UI/battle_hit.bmp");
 
+		font_path = "data/x14y24pxHeadUpDaisy.ttf"; // 読み込むフォントファイルのパス
+		if (AddFontResourceEx(font_path, FR_PRIVATE, NULL) < 0) {
+			MessageBox(NULL, "フォント読込失敗", "", MB_OK);
+		}
 
+		font72_t = FontHandle::Create("x14y24pxHeadUpDaisy",y_r(72));
 		font36 = FontHandle::Create(y_r(36), DX_FONTTYPE_EDGE);
 		font24 = FontHandle::Create(y_r(24), DX_FONTTYPE_EDGE);
 		font18 = FontHandle::Create(y_r(18), DX_FONTTYPE_EDGE);
 		font12 = FontHandle::Create(y_r(12), DX_FONTTYPE_EDGE);
 	}
 	~UI() {
+		if (!RemoveFontResourceEx(font_path, FR_PRIVATE, NULL)) {
+			MessageBox(NULL, "remove failure", "", MB_OK);
+		}
+
 	}
 	void load_window(const char* mes) {
 		SetUseASyncLoadFlag(FALSE);
@@ -114,6 +126,8 @@ public:
 				font12.DrawString(xp - y_r(120), yp - y_r(ys + 15), "Weapon", GetColor(0, 255, 0));
 			}
 		}
+		//
+		font72_t.DrawString(0, 0, "Air Hoppers 2", GetColor(255, 0, 0));
 	}
 	//
 	void warning(Mainclass::Chara& chara, const int& xp, const int &yp, float danger_height, bool uses_vr = true, bool mid = true) {

@@ -29,6 +29,59 @@ enum Effect {
 
 //要改善
 class Mainclass {
+public:
+	//エフェクトリソース
+	class EffectControl {
+		//ファイル走査
+		std::vector<WIN32_FIND_DATA> data_t;
+		void GetFileNames(std::string path_t) {
+			data_t.clear();
+			WIN32_FIND_DATA win32fdt;
+			HANDLE hFind = FindFirstFile((path_t + "*").c_str(), &win32fdt);
+			if (hFind != INVALID_HANDLE_VALUE) {
+				do {
+					if (win32fdt.cFileName[0] != '.') {
+						data_t.resize(data_t.size() + 1);
+						data_t.back() = win32fdt;
+					}
+
+				} while (FindNextFile(hFind, &win32fdt));
+			} //else{ return false; }
+			FindClose(hFind);
+		}
+		LONGLONG Update_effect_was = 0;					//エフェクトのアップデートタイミングタイマー
+	public:
+		bool Update_effect_f{ true };					//エフェクトのアップデートタイミングフラグ
+		std::vector<EffekseerEffectHandle> effsorce;	/*エフェクトリソース*/
+
+		void Init(void) noexcept {
+			GetFileNames("data/effect/");
+			for (auto& d : data_t) {
+				std::string p = d.cFileName;
+				if (p.find(".efk") != std::string::npos) {
+					effsorce.resize(effsorce.size() + 1);
+					effsorce.back() = EffekseerEffectHandle::load("data/effect/" + p);
+				}
+			}
+			effsorce.resize(effsorce.size() + 1);
+			effsorce.back() = EffekseerEffectHandle::load("data/effect/gndsmk.efk");								//戦車用エフェクト
+			Update_effect_was = GetNowHiPerformanceCount();
+		}
+
+		void Calc(void) noexcept {
+			Update_effect_f = ((GetNowHiPerformanceCount() - Update_effect_was) >= 1000000 / 60);
+			if (Update_effect_f) {
+				Update_effect_was = GetNowHiPerformanceCount();
+			}
+		}
+
+		void Dispose(void) noexcept {
+			for (auto& e : effsorce) {
+				e.Dispose();
+			}
+		}
+	};
+	EffectControl effectControl;
 private:
 	//
 	class gun_frame {
@@ -46,16 +99,16 @@ private:
 		void set(const int& i, MV1& obj) {
 			auto p2 = obj.frame_parent(i);
 			if (p2 >= 0) {
-				this->frame_turn.set(i, obj.frame(i) - obj.frame(int(p2)));//親がいる時引いとく
+				this->frame_turn.Set(i, obj.frame(i) - obj.frame(int(p2)));//親がいる時引いとく
 			}
 			else {
-				this->frame_turn.set(i, obj.frame(i));
+				this->frame_turn.Set(i, obj.frame(i));
 			}
 			if (obj.frame_child_num(this->frame_turn.first) >= 0) {
-				this->frame_elevation.set(this->frame_turn.first + 1, obj.frame(this->frame_turn.first + 1) - obj.frame(this->frame_turn.first));
+				this->frame_elevation.Set(this->frame_turn.first + 1, obj.frame(this->frame_turn.first + 1) - obj.frame(this->frame_turn.first));
 				//
 				if (obj.frame_child_num(this->frame_elevation.first) >= 0) {
-					this->frame_muzzle.set(this->frame_elevation.first + 1, obj.frame(this->frame_elevation.first + 1) - obj.frame(this->frame_elevation.first));
+					this->frame_muzzle.Set(this->frame_elevation.first + 1, obj.frame(this->frame_elevation.first + 1) - obj.frame(this->frame_elevation.first));
 				}
 				else {
 					this->frame_muzzle.first = -1;
@@ -126,7 +179,7 @@ public:
 			void math(std::unique_ptr<Y, D>& mapparts, Chara* c, bool *hit_f) {
 				auto& veh = c->vehicle;
 				easing_set(&this->gndsmkeffcs.scale, 0.01f, 0.9f);
-				auto tmp = veh.obj.frame(int(this->frame.first + 1)) - VGet(0.f, 0.2f, 0.f);
+				auto tmp = veh.obj.frame(int(this->frame.first + 1)) - VECTOR_ref::vget(0.f, 0.2f, 0.f);
 				//地面
 				{
 					auto hp = mapparts->col_line(tmp + (veh.mat.yvec() * (0.5f)), tmp, 0);
@@ -400,12 +453,12 @@ public:
 							this->poscam = chara.vehicle.pos + chara.vehicle.mat.zvec()*-550.f;
 						}
 						cam_view.campos -= this->poscam;
-						easing_set(&cam_view.campos, VGet(float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f), 0.95f);
+						easing_set(&cam_view.campos, VECTOR_ref::vget(float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f), 0.95f);
 						cam_view.campos += this->poscam;
 
-						easing_set(&cam_view.camvec, chara.vehicle.pos + VGet(float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f), 0.925f);
+						easing_set(&cam_view.camvec, chara.vehicle.pos + VECTOR_ref::vget(float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f, float(GetRand(500 * 2) - 500) / 100.f), 0.925f);
 
-						cam_view.camup = VGet(0.f, 1.f, 0.f);
+						cam_view.camup = VECTOR_ref::vget(0.f, 1.f, 0.f);
 						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
 					}
 					if (this->time >= 10.f && this->time < 15.f) {
@@ -413,7 +466,7 @@ public:
 							cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f;
 						}
 						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*-2.f + chara.vehicle.mat.yvec()*2.f + chara.vehicle.mat.zvec()*-0.f;
-						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f + VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
+						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f + VECTOR_ref::vget(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
 						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
 						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
 					}
@@ -422,7 +475,7 @@ public:
 							cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f;
 						}
 						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*-0.f + chara.vehicle.mat.yvec()*2.f + chara.vehicle.mat.zvec()*-10.f;
-						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f + VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
+						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f + VECTOR_ref::vget(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
 						//cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*100.f;
 						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
 						//cam_view.camup = chara.vehicle.mat.yvec();
@@ -433,7 +486,7 @@ public:
 							cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f;
 						}
 						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*0.f + chara.vehicle.mat.yvec()*-2.f + chara.vehicle.mat.zvec()*-0.f;
-						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f + VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
+						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f + VECTOR_ref::vget(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f), 0.925f);
 						//cam_view.camvec = chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f;
 						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
 						//cam_view.camup = chara.vehicle.mat.yvec();
@@ -450,18 +503,18 @@ public:
 						/*
 						cam_view.campos = chara.vehicle.pos + chara.vehicle.mat.xvec()*-2.f + chara.vehicle.mat.yvec()*2.f + chara.vehicle.mat.zvec()*-0.f;
 						easing_set(&cam_view.camvec, chara.vehicle.pos + chara.vehicle.mat.zvec()*-200.f +
-							VGet(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f)
+							VECTOR_ref::vget(float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f, float(GetRand(200 * 2) - 200) / 100.f)
 							, 0.925f);
 						easing_set(&cam_view.camup, chara.vehicle.mat.yvec(), 0.9f);
 						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
 						*/
 						this->eyezvec = (veh.mat.xvec()*sin(this->rad) + veh.mat.zvec()*-cos(this->rad)).Norm();
 						cam_view.campos -= this->poscam2;
-						easing_set(&cam_view.campos, this->eyezvec*this->range + VGet(float(GetRand(50 * 2) - 50) / 100.f, float(GetRand(50 * 2) - 50) / 100.f, float(GetRand(50 * 2) - 50) / 100.f), 0.9f);
+						easing_set(&cam_view.campos, this->eyezvec*this->range + VECTOR_ref::vget(float(GetRand(50 * 2) - 50) / 100.f, float(GetRand(50 * 2) - 50) / 100.f, float(GetRand(50 * 2) - 50) / 100.f), 0.9f);
 						this->poscam2 = veh.pos + veh.mat.yvec() * (this->range / 6.f + 1.f);
 						cam_view.campos += this->poscam2;
 						cam_view.camvec = this->poscam2;
-						easing_set(&cam_view.camup, VGet(0, 1.f, 0), 0.9f);
+						easing_set(&cam_view.camup, VECTOR_ref::vget(0, 1.f, 0), 0.9f);
 						cam_view.set_cam_info(fov_view, 3.f, 1000.f);
 						this->rad += deg2rad(5 + GetRand(20)) / GetFPS();
 						this->range -= 5.f / GetFPS();
@@ -470,7 +523,7 @@ public:
 					else {
 						cam_view.camvec -= cam_view.campos;
 						cam_view.campos -= this->poscam;
-						easing_set(&cam_view.campos, VGet(0, 0, 0), 0.9f);
+						easing_set(&cam_view.campos, VECTOR_ref::vget(0, 0, 0), 0.9f);
 						this->poscam = cam_mine.campos;
 						cam_view.campos += this->poscam;
 						eyezvec = MATRIX_ref::Vtrans(veh.mat.zvec(), veh.mat.Inverse());
@@ -679,11 +732,11 @@ public:
 				case 0:
 					return CheckHitKey(this->first) != 0;
 				case 1:
-					on_off.get_in(CheckHitKey(this->first) != 0);
+					on_off.GetInput(CheckHitKey(this->first) != 0);
 					return on_off.on();
 				case 2:
-					on_off.get_in(CheckHitKey(this->first) != 0);
-					return on_off.push();
+					on_off.GetInput(CheckHitKey(this->first) != 0);
+					return on_off.trigger();
 				default:
 					return CheckHitKey(this->first) != 0;
 				}
@@ -989,11 +1042,11 @@ public:
 							u.yadd = 0.f;
 							u.repos = u.pos;
 							if (u.spec.type_a != 2) {
-								c->effcs[ef_fire].set(pp, u.vec, u.spec.caliber_a / 0.1f);
+								c->effcs[ef_fire].Set(pp, u.vec, u.spec.caliber_a / 0.1f);
 								c->se.gun.play(DX_PLAYTYPE_BACK, TRUE);
 							}
 							else {
-								c->effcs_missile[c->effcs_missile_cnt].first.set(pp, u.vec);
+								c->effcs_missile[c->effcs_missile_cnt].first.Set(pp, u.vec);
 								c->effcs_missile[c->effcs_missile_cnt].second = &u;
 								c->effcs_missile[c->effcs_missile_cnt].count = 0.f;
 								++c->effcs_missile_cnt %= c->effcs_missile.size();
@@ -1084,13 +1137,13 @@ public:
 										{
 											a.spec.pene_a -= 1.0f / fps / size;
 											a.spec.speed_a -= 5.f / fps / size;
-											a.pos += VGet(0.f, a.yadd / size, 0.f);
+											a.pos += VECTOR_ref::vget(0.f, a.yadd / size, 0.f);
 										}
 										break;
 										case 1: //HE
 										{
 											a.spec.speed_a -= 5.f / fps / size;
-											a.pos += VGet(0.f, a.yadd / size, 0.f);
+											a.pos += VECTOR_ref::vget(0.f, a.yadd / size, 0.f);
 										}
 										break;
 										case 2: //ミサイル
@@ -1125,7 +1178,7 @@ public:
 														float limit = deg2rad(22.5f) / fps;
 														float y = atan2f(a.vec.x(), a.vec.z()) + std::clamp(view_yrad_t, -limit, limit);
 														float x = atan2f(a.vec.y(), std::hypotf(a.vec.x(), a.vec.z())) + std::clamp(view_xrad_t, -limit, limit);
-														a.vec = VGet(cos(x) * sin(y), sin(x), cos(x) * cos(y));
+														a.vec = VECTOR_ref::vget(cos(x) * sin(y), sin(x), cos(x) * cos(y));
 													}
 												}
 											}
@@ -1344,7 +1397,7 @@ public:
 				this->ishover = false;
 			}
 			void draw() {
-				if (!CheckCameraViewClip_Box((this->pos + VGet(-7.f, -7.f, -7.f)).get(), (this->pos + VGet(7.f, 7.f, 7.f)).get())) {
+				if (!CheckCameraViewClip_Box((this->pos + VECTOR_ref::vget(-7.f, -7.f, -7.f)).get(), (this->pos + VECTOR_ref::vget(7.f, 7.f, 7.f)).get())) {
 					for (auto& h : this->HP_m) {
 						size_t i = &h - &this->HP_m[0];
 						if (i >= 3) {
@@ -1393,7 +1446,7 @@ public:
 			//
 			void set_(const MV1& cock_obj, const MV1& humen_obj) {
 				obj = cock_obj.Duplicate();
-				humen_obj.DuplicateonAnime(&humen);
+				humen_obj.DuplicateonAnime(&humen, &humen);
 				humen.get_anime(0).per = 1.f;
 				humen.get_anime(1).per = 1.f;
 				humen.get_anime(2).per = 1.f;
@@ -1566,7 +1619,7 @@ public:
 							else {
 								spd = 180.f*(400.f / 440.f + (spd_buf - 400.f) / 880.f);
 							}
-							obj.frame_reset(speed_f.first);
+							obj.frame_Reset(speed_f.first);
 							obj.SetFrameLocalMatrix(speed_f.first, MATRIX_ref::RotAxis(speed2_f.second, -deg2rad(spd)) * MATRIX_ref::Mtrans(speed_f.second));
 						}
 						{
@@ -1593,9 +1646,9 @@ public:
 								obj.SetFrameLocalMatrix(alt1_f.first, MATRIX_ref::RotX(-alt1_fp) * MATRIX_ref::Mtrans(alt1_f.second));
 							}
 							{
-								obj.frame_reset(alt_1000_f.first);
+								obj.frame_Reset(alt_1000_f.first);
 								obj.SetFrameLocalMatrix(alt_1000_f.first, MATRIX_ref::RotAxis(alt_1000_2_f.second, -deg2rad(360.f *alt_buf / 1000)) * MATRIX_ref::Mtrans(alt_1000_f.second));
-								obj.frame_reset(alt_100_f.first);
+								obj.frame_Reset(alt_100_f.first);
 								obj.SetFrameLocalMatrix(alt_100_f.first, MATRIX_ref::RotAxis(alt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(alt_100_f.second));
 							}
 							{
@@ -1610,16 +1663,16 @@ public:
 								obj.SetFrameLocalMatrix(salt1_f.first, MATRIX_ref::RotX(-salt1_fp) * MATRIX_ref::Mtrans(salt1_f.second));
 							}
 							{
-								obj.frame_reset(salt_1000_f.first);
+								obj.frame_Reset(salt_1000_f.first);
 								obj.SetFrameLocalMatrix(salt_1000_f.first, MATRIX_ref::RotAxis(salt_1000_2_f.second, -deg2rad(360.f *alt_buf / 1000)) * MATRIX_ref::Mtrans(salt_1000_f.second));
-								obj.frame_reset(salt_100_f.first);
+								obj.frame_Reset(salt_100_f.first);
 								obj.SetFrameLocalMatrix(salt_100_f.first, MATRIX_ref::RotAxis(salt_100_2_f.second, -deg2rad(360.f *alt_buf / 100)) * MATRIX_ref::Mtrans(salt_100_f.second));
 							}
 						}
 						{
 							float fuel_buf = 1.f;
 
-							obj.frame_reset(fuel_f.first);
+							obj.frame_Reset(fuel_f.first);
 							obj.SetFrameLocalMatrix(fuel_f.first, MATRIX_ref::RotAxis(fuel_2_f.second, -deg2rad(300.f * fuel_buf)) * MATRIX_ref::Mtrans(fuel_f.second));
 						}
 
@@ -1628,20 +1681,20 @@ public:
 					{
 						DATEDATA DateBuf;
 						GetDateTime(&DateBuf);
-						obj.frame_reset(clock_h_f.first);
+						obj.frame_Reset(clock_h_f.first);
 						obj.SetFrameLocalMatrix(clock_h_f.first, MATRIX_ref::RotAxis(clock_h2_f.second, -deg2rad(360.f *DateBuf.Hour / 12 + 360.f / 12.f*DateBuf.Min / 60)) * MATRIX_ref::Mtrans(clock_h_f.second));
-						obj.frame_reset(clock_m_f.first);
+						obj.frame_Reset(clock_m_f.first);
 						obj.SetFrameLocalMatrix(clock_m_f.first, MATRIX_ref::RotAxis(clock_m2_f.second, -deg2rad(360.f *DateBuf.Min / 60 + 360.f / 60.f*DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_m_f.second));
-						obj.frame_reset(clock_s_f.first);
+						obj.frame_Reset(clock_s_f.first);
 						obj.SetFrameLocalMatrix(clock_s_f.first, MATRIX_ref::RotAxis(clock_s2_f.second, -deg2rad(360.f *DateBuf.Sec / 60)) * MATRIX_ref::Mtrans(clock_s_f.second));
 					}
 					//コンパス
 					{
 						VECTOR_ref tmp = c.vehicle.mat.zvec();
-						tmp = VGet(tmp.x(), 0.f, tmp.z());
+						tmp = VECTOR_ref::vget(tmp.x(), 0.f, tmp.z());
 						tmp = tmp.Norm();
 
-						obj.frame_reset(subcompass_f.first);
+						obj.frame_Reset(subcompass_f.first);
 						obj.SetFrameLocalMatrix(subcompass_f.first, MATRIX_ref::RotAxis(subcompass2_f.second, std::atan2f(tmp.z(), -tmp.x())) * MATRIX_ref::Mtrans(subcompass_f.second));
 					}
 					obj.SetMatrix(c.vehicle.mat*MATRIX_ref::Mtrans(c.vehicle.obj.frame(c.vehicle.use_veh.fps_view.first) - MATRIX_ref::Vtrans(cockpit_f.second, c.vehicle.mat)));
@@ -1669,7 +1722,7 @@ public:
 						//tgt_mat = tgt_mat *MATRIX_ref::RotAxis(tgt_mat.yvec(), deg2rad(60));
 
 						VECTOR_ref vec_a1 = MATRIX_ref::Vtrans((tgt_pt - humen.frame(LEFTarm1_f.first)).Norm(), m_inv.Inverse());//基準
-						VECTOR_ref vec_a1L1 = MATRIX_ref::Vtrans(VECTOR_ref(VGet(0.f, -1.f, vec_a1.y() / vec_a1.z())).Norm(), MATRIX_ref::RotZ(deg2rad(45)));//x=0とする
+						VECTOR_ref vec_a1L1 = MATRIX_ref::Vtrans(VECTOR_ref(VECTOR_ref::vget(0.f, -1.f, vec_a1.y() / vec_a1.z())).Norm(), MATRIX_ref::RotZ(deg2rad(45)));//x=0とする
 
 						humen.SetFrameLocalMatrix(LEFThandneck_f.first, MATRIX_ref::Mtrans(LEFThandneck_f.second));
 
@@ -1696,7 +1749,7 @@ public:
 							MATRIX_ref::RotX(stick_x) * 
 							MATRIX_ref::RotY(deg2rad(-30)) *c.vehicle.mat;
 						VECTOR_ref vec_a1 = MATRIX_ref::Vtrans((tgt_pt - humen.frame(RIGHTarm1_f.first)).Norm(), m_inv.Inverse());//基準
-						VECTOR_ref vec_a1L1 = MATRIX_ref::Vtrans(VECTOR_ref(VGet(0.f, -1.f, vec_a1.y() / vec_a1.z())).Norm(), MATRIX_ref::RotZ(deg2rad(-45)));//x=0とする
+						VECTOR_ref vec_a1L1 = MATRIX_ref::Vtrans(VECTOR_ref(VECTOR_ref::vget(0.f, -1.f, vec_a1.y() / vec_a1.z())).Norm(), MATRIX_ref::RotZ(deg2rad(-45)));//x=0とする
 
 						humen.SetFrameLocalMatrix(RIGHThandneck_f.first, MATRIX_ref::Mtrans(RIGHThandneck_f.second));
 
@@ -1769,7 +1822,7 @@ public:
 				this->use_auto_thrust = true;
 				this->speed_auto_thrust = 400.f;
 				//脚スイッチ
-				this->changegear.get_in(true);
+				this->changegear.GetInput(true);
 				//チョーク
 				this->chock = true;
 			}
@@ -1904,7 +1957,7 @@ public:
 
 											veh_t.DEATH_COUNT++;
 											veh_t.DEATH_ID = (int)(this - &tgts[0]);
-											t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame_turn.first), VGet(0, 0, 0));
+											t.effcs[ef_bomb].Set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame_turn.first), VECTOR_ref::vget(0, 0, 0));
 										}
 										//弾処理
 										c.hit = true;
@@ -1932,10 +1985,10 @@ public:
 										}
 									}
 									if (c.spec.caliber_a >= 0.020f) {
-										this->effcs[ef_reco].set(c.pos, normal);
+										this->effcs[ef_reco].Set(c.pos, normal);
 									}
 									else {
-										this->effcs[ef_reco2].set(c.pos, normal);
+										this->effcs[ef_reco2].Set(c.pos, normal);
 									}
 								}
 							}
@@ -1947,10 +2000,10 @@ public:
 							for (auto& a : veh_t.use_veh.space_mesh) {
 								if (sort_ == a) {
 									if (c.spec.caliber_a >= 0.020f) {
-										this->effcs[ef_reco].set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
+										this->effcs[ef_reco].Set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
 									}
 									else {
-										this->effcs[ef_reco2].set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
+										this->effcs[ef_reco2].Set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
 									}
 									auto& hp_m = veh_t.HP_m[sort_];
 
@@ -1974,17 +2027,17 @@ public:
 									}
 									//破壊時時エフェクト
 									if (hp_m == 0) {
-										t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame_turn.first), VGet(0, 0, 0));
+										t.effcs[ef_bomb].Set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame_turn.first), VECTOR_ref::vget(0, 0, 0));
 									}
 								}
 							}
 							for (auto& a : veh_t.use_veh.module_mesh) {
 								if (sort_ == a.first) {
 									if (c.spec.caliber_a >= 0.020f) {
-										this->effcs[ef_reco].set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
+										this->effcs[ef_reco].Set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
 									}
 									else {
-										this->effcs[ef_reco2].set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
+										this->effcs[ef_reco2].Set(VECTOR_ref(tt.res.HitPosition) + VECTOR_ref(tt.res.Normal) * (0.1f), tt.res.Normal);
 									}
 									auto& hp_m = veh_t.HP_m[sort_];
 
@@ -2008,7 +2061,7 @@ public:
 									}
 									//破壊時時エフェクト
 									if (hp_m == 0) {
-										t.effcs[ef_bomb].set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame_turn.first), VGet(0, 0, 0));
+										t.effcs[ef_bomb].Set(veh_t.obj.frame(veh_t.use_veh.gunframe[0].frame_turn.first), VECTOR_ref::vget(0, 0, 0));
 									}
 								}
 							}
@@ -2170,7 +2223,7 @@ public:
 				}
 				//脚演算
 				{
-					//this->changegear.get_in(this->key[10]);
+					//this->changegear.GetInput(this->key[10]);
 					this->changegear.first = (veh.speed <= veh.use_veh.min_speed_limit*1.5f) && (veh.pos.y() <= 100.f);
 					easing_set(&this->p_anime_geardown.second, float(this->changegear.first), 0.95f);
 				}
@@ -2183,7 +2236,7 @@ public:
 				{
 					//
 					if (veh.speed >= veh.use_veh.min_speed_limit) {
-						easing_set(&veh.add_, VGet(0.f, 0.f, 0.f), 0.95f);
+						easing_set(&veh.add_, VECTOR_ref::vget(0.f, 0.f, 0.f), 0.95f);
 						veh.ishover = false;
 					}
 					else {
@@ -2191,7 +2244,7 @@ public:
 							veh.ishover = this->key[18];//true
 						}
 						if (veh.use_veh.isfloat && veh.ishover) {
-							easing_set(&veh.add_, VGet(
+							easing_set(&veh.add_, VECTOR_ref::vget(
 								(veh.mat.yvec().x()*(veh.speed / fps)*0.5f)*this->p_anime_hover.second,
 								(veh.mat.yvec().y()*(veh.speed / fps))*this->p_anime_hover.second*((veh.accel - 9.f) / 100.f),
 								(veh.mat.yvec().z()*(veh.speed / fps)*0.5f)*this->p_anime_hover.second
@@ -2224,7 +2277,7 @@ public:
 						veh.wheel_Left += veh.wheel_Leftadd;
 						veh.wheel_Right += veh.wheel_Rightadd;
 						for (auto& f : veh.use_veh.wheelframe2) {
-							veh.obj.SetFrameLocalMatrix(f.frame.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(VGet(0.f, 0.f, 0.f), MV1GetFrameLocalMatrix(veh.obj.get(), f.frame.first + 1)), (f.frame.second.x() >= 0) ? veh.wheel_Left : veh.wheel_Right) *MATRIX_ref::Mtrans(f.frame.second));
+							veh.obj.SetFrameLocalMatrix(f.frame.first, MATRIX_ref::RotAxis(MATRIX_ref::Vtrans(VECTOR_ref::vget(0.f, 0.f, 0.f), MV1GetFrameLocalMatrix(veh.obj.get(), f.frame.first + 1)), (f.frame.second.x() >= 0) ? veh.wheel_Left : veh.wheel_Right) *MATRIX_ref::Mtrans(f.frame.second));
 						}
 					}
 					else {
@@ -2254,10 +2307,10 @@ public:
 				{
 					bool hitb = false;
 					{
-						VECTOR_ref p_0 = veh.pos + MATRIX_ref::Vtrans(VGet(veh.use_veh.minpos.x(), 0.f, veh.use_veh.maxpos.z()), veh.mat);
-						VECTOR_ref p_1 = veh.pos + MATRIX_ref::Vtrans(VGet(veh.use_veh.maxpos.x(), 0.f, veh.use_veh.maxpos.z()), veh.mat);
-						VECTOR_ref p_2 = veh.pos + MATRIX_ref::Vtrans(VGet(veh.use_veh.maxpos.x(), 0.f, veh.use_veh.minpos.z()), veh.mat);
-						VECTOR_ref p_3 = veh.pos + MATRIX_ref::Vtrans(VGet(veh.use_veh.minpos.x(), 0.f, veh.use_veh.minpos.z()), veh.mat);
+						VECTOR_ref p_0 = veh.pos + MATRIX_ref::Vtrans(VECTOR_ref::vget(veh.use_veh.minpos.x(), 0.f, veh.use_veh.maxpos.z()), veh.mat);
+						VECTOR_ref p_1 = veh.pos + MATRIX_ref::Vtrans(VECTOR_ref::vget(veh.use_veh.maxpos.x(), 0.f, veh.use_veh.maxpos.z()), veh.mat);
+						VECTOR_ref p_2 = veh.pos + MATRIX_ref::Vtrans(VECTOR_ref::vget(veh.use_veh.maxpos.x(), 0.f, veh.use_veh.minpos.z()), veh.mat);
+						VECTOR_ref p_3 = veh.pos + MATRIX_ref::Vtrans(VECTOR_ref::vget(veh.use_veh.minpos.x(), 0.f, veh.use_veh.minpos.z()), veh.mat);
 						if (p_0.y() <= 0.f || p_1.y() <= 0.f || p_2.y() <= 0.f || p_3.y() <= 0.f) {
 							hitb = true;
 						}
@@ -2347,41 +2400,41 @@ public:
 				MV1SetAttachAnimBlendRate(veh.obj.get(), this->p_anime_geardown.first, this->p_anime_geardown.second);
 				//バーナー
 				for (auto& be : this->p_burner) {
-					veh.obj.SetFrameLocalMatrix(be.first, MATRIX_ref::Scale(VGet(1.f, 1.f, std::clamp(veh.speed / veh.use_veh.mid_speed_limit, 0.1f, 1.f))) * MATRIX_ref::Mtrans(be.second));
+					veh.obj.SetFrameLocalMatrix(be.first, MATRIX_ref::GetScale(VECTOR_ref::vget(1.f, 1.f, std::clamp(veh.speed / veh.use_veh.mid_speed_limit, 0.1f, 1.f))) * MATRIX_ref::Mtrans(be.second));
 				}
 			}
 			//effect
 			for (auto& t : this->effcs) {
 				const size_t index = &t - &this->effcs[0];
 				if (index != ef_smoke1 && index != ef_smoke2 && index != ef_smoke3) {
-					t.put(Drawparts->get_effHandle(int(index)));
+					t.put(effectControl.data_t[int(index)]);
 				}
 			}
 			//脚フレーム
 			{
 				for (auto& t : veh.use_veh.wheelframe) {
-					t.gndsmkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), t.gndsmkeffcs.scale);
+					t.gndsmkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VECTOR_ref::vget(0, 1, 0), t.gndsmkeffcs.scale);
 				}
 				if (start_c2) {
 					for (auto& t : veh.use_veh.wheelframe) {
-						t.gndsmkeffcs.set_loop(Drawparts->get_effHandle(ef_gndsmoke));
+						t.gndsmkeffcs.set_loop(effectControl.data_t.back());
 					}
 				}
 			}
 			//撃破エフェクト
 			{
 				auto& t = veh.use_veh.breakframe;
-				t.smkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VGet(0, 1, 0), 10.f);
+				t.smkeffcs.put_loop(veh.obj.frame(int(t.frame.first + 1)), VECTOR_ref::vget(0, 1, 0), 10.f);
 				if (!this->death) {
 					t.smkeffcs.handle.Stop();
 				}
 				else if (this->death_timer == 3.f) {
-					t.smkeffcs.set_loop(Drawparts->get_effHandle(ef_smoke3));
+					t.smkeffcs.set_loop(effectControl.data_t[ef_smoke3]);
 				}
 			}
 			//ミサイル
 			for (auto& t : this->effcs_missile) {
-				t.first.put(Drawparts->get_effHandle(ef_smoke1));
+				t.first.put(effectControl.data_t[ef_smoke1]);
 			}
 			//モデルに反映
 			{
@@ -2404,7 +2457,7 @@ public:
 			auto& veh = this->vehicle;
 			//当たり判定クリア
 			if (veh.hit_check) {
-				veh.col.SetMatrix(MATRIX_ref::Mtrans(VGet(0.f, -100.f, 0.f)));
+				veh.col.SetMatrix(MATRIX_ref::Mtrans(VECTOR_ref::vget(0.f, -100.f, 0.f)));
 				for (int i = 0; i < veh.col.mesh_num(); i++) {
 					veh.col.RefreshCollInfo(-1, i);
 				}
@@ -2427,7 +2480,7 @@ public:
 				if (GetRand(100) < 12) {
 					auto tmp = GetRand(int(veh.HP_m.size() - 1 - 1));
 					if (veh.HP_m[tmp] != 0) {
-						this->effcs[ef_bomb].set(veh.obj.frame(veh.use_veh.gunframe[0].frame_turn.first), VGet(0, 0, 0), 0.5f);
+						this->effcs[ef_bomb].Set(veh.obj.frame(veh.use_veh.gunframe[0].frame_turn.first), VECTOR_ref::vget(0, 0, 0), 0.5f);
 					}
 					veh.HP_m[tmp] = 0;
 				}
@@ -2523,7 +2576,7 @@ public:
 				auto tmpv = veh.pos;
 				tmpv.y(0);
 				if (tmpv.size() >= 5000) {
-					tgt_pos = VGet(0, 0, 0);
+					tgt_pos = VECTOR_ref::vget(0, 0, 0);
 					ret = true;
 				}
 				if (veh.pos.y() <= 400) {
@@ -2577,7 +2630,7 @@ public:
 			//ロール
 			{
 				if (tmp_id == chara->size() && !ret && !up) {
-					tgt_zvec = VGet(0, 1, 0);
+					tgt_zvec = VECTOR_ref::vget(0, 1, 0);
 				}
 				auto tgt_xvec = tgt_zvec.cross(my_zvec).Norm();
 				auto tgt_yvec = tgt_xvec.cross(my_zvec);
