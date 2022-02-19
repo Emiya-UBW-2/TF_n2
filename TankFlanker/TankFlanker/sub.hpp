@@ -81,7 +81,6 @@ public:
 			}
 		}
 	};
-	EffectControl effectControl;
 private:
 	//
 	class gun_frame {
@@ -187,7 +186,8 @@ public:
 						veh.add_ = (VECTOR_ref(hp.HitPosition) - tmp);
 						{
 							auto normal = veh.mat.yvec();
-							easing_set(&normal, hp.Normal, 0.95f);
+							VECTOR_ref normal_Base = hp.Normal;
+							easing_set(&normal, normal_Base, 0.95f);
 							veh.mat *= MATRIX_ref::RotVec2(veh.mat.yvec(), normal);
 						}
 						this->gndsmkeffcs.scale = std::clamp(veh.speed * 3.6f / 50.f, 0.1f, 1.f);
@@ -1103,10 +1103,10 @@ public:
 									if (!hitplane) {
 										if (ground_hit) {
 											if (a.spec.caliber_a >= 0.020f) {
-												c->effcs[ef_gndhit].set(a.pos + normal * (0.1f), normal);
+												c->effcs[ef_gndhit].Set(a.pos + normal * (0.1f), normal);
 											}
 											else {
-												c->effcs[ef_gndhit2].set(a.pos + normal * (0.1f), normal);
+												c->effcs[ef_gndhit2].Set(a.pos + normal * (0.1f), normal);
 											}
 											switch (a.spec.type_a) {
 											case 0: //AP
@@ -1396,7 +1396,7 @@ public:
 				std::for_each(this->HP_m.begin(), this->HP_m.end(), [&](int16_t& m) {m = this->use_veh.HP; });	//モジュール耐久
 				this->ishover = false;
 			}
-			void draw() {
+			void draw()const noexcept {
 				if (!CheckCameraViewClip_Box((this->pos + VECTOR_ref::vget(-7.f, -7.f, -7.f)).get(), (this->pos + VECTOR_ref::vget(7.f, 7.f, 7.f)).get())) {
 					for (auto& h : this->HP_m) {
 						size_t i = &h - &this->HP_m[0];
@@ -1801,6 +1801,7 @@ public:
 		switchs changegear;							//ギアアップスイッチ
 		bool chock = false;							//チョーク
 		//飛行機//==================================================
+		int default_anim = -1;
 		p_animes p_anime_geardown;					//車輪アニメーション
 		std::array<p_animes, 6> p_animes_rudder;	//ラダーアニメーション
 		std::vector<frames> p_burner;				//バーナー
@@ -1832,6 +1833,7 @@ public:
 				veh.init(vehcs[veh.use_id], Ammo_);
 				//追加アニメーション
 				{
+					default_anim = MV1AttachAnim(veh.obj.get(), 0);
 					//脚
 					this->p_anime_geardown.first = MV1AttachAnim(veh.obj.get(), 1);
 					this->p_anime_geardown.second = 1.f;
@@ -2083,7 +2085,9 @@ public:
 			return u ? p : (d ? p / 3.f : 0.f);
 		}
 		template<class Y, class D>
-		void update(std::unique_ptr<Y, D>& mapparts, std::unique_ptr<DXDraw, std::default_delete<DXDraw>>& Drawparts, std::vector<Chara>* chara, bool& start_c2) {
+		void update(std::unique_ptr<Y, D>& mapparts, std::vector<Chara>* chara, bool& start_c2, EffectControl& effectControl) {
+			//auto* DrawParts = DXDraw::Instance();
+
 			auto fps = GetFPS();
 			fps = (fps <= 60) ? 60.f : fps;
 			auto& veh = this->vehicle;
@@ -2392,6 +2396,7 @@ public:
 			}
 			//飛行機演算共通
 			{
+				MV1SetAttachAnimBlendRate(veh.obj.get(), default_anim, 1.0f);
 				//舵
 				for (auto& r : this->p_animes_rudder) {
 					MV1SetAttachAnimBlendRate(veh.obj.get(), r.first, r.second);
@@ -2407,7 +2412,7 @@ public:
 			for (auto& t : this->effcs) {
 				const size_t index = &t - &this->effcs[0];
 				if (index != ef_smoke1 && index != ef_smoke2 && index != ef_smoke3) {
-					t.put(effectControl.data_t[int(index)]);
+					t.put(effectControl.effsorce[int(index)]);
 				}
 			}
 			//脚フレーム
@@ -2417,7 +2422,7 @@ public:
 				}
 				if (start_c2) {
 					for (auto& t : veh.use_veh.wheelframe) {
-						t.gndsmkeffcs.set_loop(effectControl.data_t.back());
+						t.gndsmkeffcs.set_loop(effectControl.effsorce.back());
 					}
 				}
 			}
@@ -2429,12 +2434,12 @@ public:
 					t.smkeffcs.handle.Stop();
 				}
 				else if (this->death_timer == 3.f) {
-					t.smkeffcs.set_loop(effectControl.data_t[ef_smoke3]);
+					t.smkeffcs.set_loop(effectControl.effsorce[ef_smoke3]);
 				}
 			}
 			//ミサイル
 			for (auto& t : this->effcs_missile) {
-				t.first.put(effectControl.data_t[ef_smoke1]);
+				t.first.put(effectControl.effsorce[ef_smoke1]);
 			}
 			//モデルに反映
 			{
