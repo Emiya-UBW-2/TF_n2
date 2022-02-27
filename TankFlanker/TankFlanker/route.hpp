@@ -46,7 +46,6 @@ protected:
 	Mainclass::views_ view_;
 	//sumapo
 	std::unique_ptr<UI, std::default_delete<UI>> UIparts;
-	std::unique_ptr<HostPassEffect, std::default_delete<HostPassEffect>> Hostpassparts;
 	std::unique_ptr<Mapclass, std::default_delete<Mapclass>> mapparts;
 	//
 	Mainclass::EffectControl effectControl;
@@ -62,7 +61,8 @@ public:
 		OptionParts->Set_useVR(DrawParts->use_vr);
 		UIparts = std::make_unique<UI>(DrawParts->disp_x, DrawParts->disp_y);										//UI
 		DeBuG::Create(FRAME_RATE);
-		Hostpassparts = std::make_unique<HostPassEffect>();	//ホストパスエフェクト
+		PostPassEffect::Create();
+		auto* PostPassParts = PostPassEffect::Instance();	//ホストパスエフェクト
 		mapparts = std::make_unique<Mapclass>();																	//map
 		UI_Screen = GraphHandle::Make(DrawParts->disp_x, DrawParts->disp_y, true);										//VR、フルスクリーン共用UI
 
@@ -401,13 +401,13 @@ public:
 								tmp_cams.cam.camvec = camtmp + cam_s.cam.camvec;
 							}
 							//被写体深度描画
-							Hostpassparts->BUF_Draw([&]() {}, [&]() { DrawParts->Draw_by_Shadow(ram_draw_menu); }, tmp_cams.cam);
+							PostPassParts->BUF_Draw([&]() {}, [&]() { DrawParts->Draw_by_Shadow(ram_draw_menu); }, tmp_cams.cam);
 							//最終描画
-							Hostpassparts->Set_MAIN_Draw();
+							PostPassParts->Set_MAIN_Draw();
 
 							GraphHandle::SetDraw_Screen(tmp, tmp_cams.cam.campos, tmp_cams.cam.camvec, tmp_cams.cam.camup, tmp_cams.cam.fov, tmp_cams.cam.near_, tmp_cams.cam.far_);
 							{
-								Hostpassparts->MAIN_Draw();
+								PostPassParts->MAIN_Draw();
 
 								SetDrawBlendMode(DX_BLENDMODE_ALPHA, std::clamp(255 - int(255.f * pos.z() / -10.f), 0, 255));
 								UI_Screen.DrawGraph(0, 0, true);
@@ -862,13 +862,13 @@ public:
 								tmp_cams.cam.camvec = camtmp + cam_s.cam.camvec;
 							}
 							//被写体深度描画
-							Hostpassparts->BUF_Draw([&]() { mapparts->sky_draw(); }, [&]() { DrawParts->Draw_by_Shadow(ram_draw); }, tmp_cams.cam);
+							PostPassParts->BUF_Draw([&]() { mapparts->sky_draw(); }, [&]() { DrawParts->Draw_by_Shadow(ram_draw); }, tmp_cams.cam);
 							//最終描画
-							Hostpassparts->Set_MAIN_Draw();
+							PostPassParts->Set_MAIN_Draw();
 
 							GraphHandle::SetDraw_Screen(tmp, tmp_cams.cam.campos, tmp_cams.cam.camvec, tmp_cams.cam.camup, tmp_cams.cam.fov, tmp_cams.cam.near_, tmp_cams.cam.far_);
 							{
-								Hostpassparts->MAIN_Draw();
+								PostPassParts->MAIN_Draw();
 								SetCameraNearFar(0.01f, 2.f);
 								//コックピット
 								if (tmp_cams.Rot >= ADS) {
