@@ -1446,7 +1446,9 @@ public:
 			//
 			void set_(const MV1& cock_obj, const MV1& humen_obj) {
 				obj = cock_obj.Duplicate();
-				humen_obj.DuplicateonAnime(&humen, &humen);
+				humen = humen_obj.Duplicate();
+				humen.SetAnime(&humen, humen);
+
 				humen.get_anime(0).per = 1.f;
 				humen.get_anime(1).per = 1.f;
 				humen.get_anime(2).per = 1.f;

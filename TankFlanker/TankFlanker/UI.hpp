@@ -202,7 +202,11 @@ public:
 		//
 	}
 	//
+#ifdef _USE_OPENVR_
 	void draw(Mainclass::Chara& chara, const bool& adss, const DXDraw::system_VR& vr_sys, float danger_height, bool uses_vr = true) {
+#else
+	void draw(Mainclass::Chara& chara, const bool& adss, float danger_height, bool uses_vr = true) {
+#endif
 		int xs = 0, xp = 0, ys = 0, yp = 0;
 		FontHandle* font = (!uses_vr) ? &font18 : &font24;
 		auto font_hight = (!uses_vr) ? y_r(18) : y_r(24);
@@ -344,6 +348,7 @@ public:
 				SetDrawBright(255, 255, 255);
 			}
 			//VR用オプション
+#ifdef _USE_OPENVR_
 			if (uses_vr && false) {
 				const float vr_sys_yvec_y = vr_sys.yvec.y();
 				const float vr_sys_yvec_x = vr_sys.yvec.x();
@@ -385,6 +390,7 @@ public:
 					DXDraw::Line2D(xp + xs / 2 + z_pos, yp - 5, xp + xs / 2 + z_pos, yp + 5, GetColor(255, 100, 50), 2);
 				}
 			}
+#endif
 			//ピッチ
 			/*
 			{

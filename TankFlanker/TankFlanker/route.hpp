@@ -211,6 +211,7 @@ public:
 						auto& veh = mine.vehicle;
 						if (!start_c2) {
 							if (DrawParts->use_vr) {
+#ifdef _USE_OPENVR_
 								auto& ptr_LEFTHAND = *DrawParts->get_device_hand1();
 								if (&ptr_LEFTHAND != nullptr) {
 									if (ptr_LEFTHAND.turn && ptr_LEFTHAND.now) {
@@ -269,6 +270,7 @@ public:
 										//
 									}
 								}
+#endif
 							}
 							else {
 								{
@@ -596,6 +598,7 @@ public:
 							}
 							//VRê—p
 							if (DrawParts->use_vr) {
+#ifdef _USE_OPENVR_
 								std::for_each(mine.key.begin(), mine.key.end(), [](bool& g) {g = false; });
 
 								auto& ptr_LEFTHAND = *DrawParts->get_device_hand1();
@@ -642,6 +645,7 @@ public:
 										//
 									}
 								}
+#endif
 							}
 							//’Êí
 							else {
@@ -846,7 +850,11 @@ public:
 						if (!view_.use && view_.on) {
 							UI_Screen.SetDraw_Screen();
 							{
+#ifdef _USE_OPENVR_
 								UIparts->draw(mine, cam_s.Rot >= ADS, *DrawParts->get_device_hand1(), danger_height, DrawParts->use_vr);
+#else
+								UIparts->draw(mine, cam_s.Rot >= ADS, danger_height, DrawParts->use_vr);
+#endif
 							}
 						}
 						//VR‚ÉˆÚ‚·
